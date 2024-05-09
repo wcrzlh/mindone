@@ -29,8 +29,11 @@ decoder_input_ids = Tensor(decoder_input_ids.numpy(), ms.int64)
 decoder_input_ids_ms = model._shift_right(decoder_input_ids)
 
 # forward pass
+# t5-v1.1-xxl
 outputs = model(input_ids=input_ids)
+# t5-small
 # outputs = model(input_ids=input_ids, decoder_input_ids=decoder_input_ids_ms)
+# flan-t5-large
 # outputs = model(input_ids=input_ids, labels=decoder_input_ids)
 
 # for encoder only
@@ -49,16 +52,19 @@ decoder_input_ids = tokenizer("Studies show that", return_tensors="pt").input_id
 decoder_input_ids_torch = model._shift_right(decoder_input_ids)
 
 # forward pass
-# outputs = model(input_ids=input_ids, decoder_input_ids=decoder_input_ids_torch)
+# t5-v1.1-xxl
 outputs = model(input_ids=input_ids)
-outputs = model(input_ids=input_ids, labels=labels)
+# t5-small
+# outputs = model(input_ids=input_ids, decoder_input_ids=decoder_input_ids_torch)
+# flan-t5-large
+# outputs = model(input_ids=input_ids, labels=labels)
 
 # for decoder only
 encoder_last_hidden_states_torch = outputs.last_hidden_state
 
 # for encoder and decoder
-last_hidden_states_torch = outputs.last_hidden_state
-encoder_last_hidden_states_torch = outputs.encoder_last_hidden_state
+# last_hidden_states_torch = outputs.last_hidden_state
+# encoder_last_hidden_states_torch = outputs.encoder_last_hidden_state
 
 
 # print("mean diff", np.mean(np.abs(last_hidden_states_mindspore.asnumpy()-last_hidden_states_torch.detach().numpy())))
