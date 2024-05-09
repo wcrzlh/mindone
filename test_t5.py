@@ -20,6 +20,7 @@ model = T5EncoderModel.from_pretrained("DeepFloyd/t5-v1_1-xxl", revision="refs/p
 # tokenizer = AutoTokenizer.from_pretrained("google/flan-t5-large")
 # model = T5ForConditionalGeneration.from_pretrained("google/flan-t5-large")
 
+model.set_train(False)
 
 input_ids = tokenizer("Studies have been shown that owning a dog is good for you", return_tensors="pt").input_ids  # Batch size 1
 decoder_input_ids = tokenizer("Studies show that", return_tensors="pt").input_ids  # Batch size 1
@@ -46,6 +47,7 @@ encoder_last_hidden_states_mindspore = outputs
 from transformers import T5Model, T5EncoderModel, T5ForConditionalGeneration
 
 model = T5EncoderModel.from_pretrained("DeepFloyd/t5-v1_1-xxl", revision="refs/pr/3", resume_download=True)
+model.eval()
 
 input_ids = tokenizer("Studies have been shown that owning a dog is good for you", return_tensors="pt").input_ids  # Batch size 1
 decoder_input_ids = tokenizer("Studies show that", return_tensors="pt").input_ids  # Batch size 1
