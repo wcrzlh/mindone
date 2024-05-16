@@ -100,7 +100,7 @@ def get_parser_sample():
     parser.add_argument(
         "--ms_mode", type=int, default=1, help="Running in GRAPH_MODE(0) or PYNATIVE_MODE(1) (default=1)"
     )
-    parser.add_argument("--ms_jit", type=ast.literal_eval, default=True, help="use jit or not")
+    parser.add_argument("--ms_jit", type=ast.literal_eval, default=False, help="use jit or not")
     parser.add_argument("--ms_amp_level", type=str, default="O2")
     parser.add_argument(
         "--ms_enable_graph_kernel", type=ast.literal_eval, default=False, help="use enable_graph_kernel or not"

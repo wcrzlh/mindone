@@ -143,7 +143,7 @@ def get_parser_train():
     # args for env
     parser.add_argument("--device_target", type=str, default="Ascend", help="device target, Ascend/GPU/CPU")
     parser.add_argument(
-        "--ms_mode", type=int, default=0, help="Running in GRAPH_MODE(0) or PYNATIVE_MODE(1) (default=1)"
+        "--ms_mode", type=int, default=1, help="Running in GRAPH_MODE(0) or PYNATIVE_MODE(1) (default=1)"
     )
     parser.add_argument("--ms_amp_level", type=str, default="O2")
     parser.add_argument(
@@ -264,7 +264,7 @@ def train(args):
         train_step_fn = partial(
             model.train_step_pynative,
             grad_func=model.get_grad_func(
-                optimizer, reducer, scaler, jit=True, overflow_still_update=args.overflow_still_update
+                optimizer, reducer, scaler, jit=False, overflow_still_update=args.overflow_still_update
             ),
         )
         model = auto_mixed_precision(model, args.ms_amp_level)

@@ -351,7 +351,7 @@ class FrozenCLIPEmbedder(AbstractEmbModel):
             )
         return last_hidden_state, pooler_output, hidden_states, max_embeddings_multiples
 
-    @ms.jit
+    ##@ms.jit
     def construct(self, tokens):
         (
             last_hidden_state,
@@ -515,7 +515,7 @@ class FrozenCnCLIPEmbedder(AbstractEmbModel):
         length = np.array(batch_encoding["length"], np.int32)
         return tokens, length
 
-    @ms.jit
+    ###@ms.jit
     def construct(self, tokens):
         (last_hidden_state, _, hidden_states, _) = self.embedding(input_ids=tokens)
 
@@ -621,7 +621,7 @@ class FrozenOpenCLIPEmbedder2(AbstractEmbModel):
             return tokens_embeds, pooled
         return tokens_embeds
 
-    @ms.jit
+    ###@ms.jit
     def construct(self, tokens):
         max_embeddings_multiples = (tokens.shape[1] - 2) // (self.max_length - 2)
         if max_embeddings_multiples > 1:
@@ -844,7 +844,7 @@ class ConcatTimestepEmbedderND(AbstractEmbModel):
         self.timestep = Timestep(outdim)
         self.outdim = outdim
 
-    @ms.jit
+    ##@ms.jit
     def construct(self, x):
         if x.ndim == 1:
             x = x[:, None]

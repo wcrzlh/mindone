@@ -105,7 +105,7 @@ def create_model(
         model.visual.image_mean = pretrained_cfg.get("mean", None) or OPENAI_DATASET_MEAN
         model.visual.image_std = pretrained_cfg.get("std", None) or OPENAI_DATASET_STD
 
-    @ms.jit
+    #@ms.jit
     def jit_func(*args, **kwargs):
         return model(*args, **kwargs)
 
@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
     model = create_model(model_name="ViT-H-14-Text", pretrained="")  # "laion2b_s32b_b79k"
 
-    @ms.jit
+    #@ms.jit
     def jit_warpper(token):
         return model.token_embedding(token)
 
