@@ -66,7 +66,7 @@ def _build_vision_tower(embed_dim: int, vision_cfg: CLIPVisionCfg, cast_dtype=No
         )
     else:
         vision_heads = vision_cfg.width // vision_cfg.head_width
-        norm_layer = LayerNormFp32 if cast_dtype in (ms.float16,) else nn.LayerNorm
+        norm_layer = LayerNormFp32 if cast_dtype in (ms.float16,) else nn.extend.LayerNorm
         visual = VisionTransformer(
             image_size=vision_cfg.image_size,
             patch_size=vision_cfg.patch_size,
@@ -94,7 +94,7 @@ def _build_text_tower(
         text_cfg = CLIPTextCfg(**text_cfg)
 
     act_layer = partial(nn.GELU, False)
-    norm_layer = LayerNormFp32 if cast_dtype in (ms.float16,) else nn.LayerNorm
+    norm_layer = LayerNormFp32 if cast_dtype in (ms.float16,) else nn.extend.LayerNorm
 
     text = TextTransformer(
         context_length=text_cfg.context_length,

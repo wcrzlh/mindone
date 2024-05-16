@@ -147,7 +147,7 @@ class DiffusionEngine(nn.Cell):
             overflow_tag = not grads_finite
             return scaler.unscale(loss), grads_finite, overflow_tag
 
-        #@ms.jit
+        # @ms.jit
         def jit_warpper(*args, **kwargs):
             return grad_and_update_func(*args, **kwargs)
 
@@ -462,7 +462,7 @@ class DiffusionEngineDreamBooth(DiffusionEngine):
             overflow_tag = not grads_finite
             return scaler.unscale(loss), unscaled_grads, overflow_tag
 
-        #@ms.jit
+        # @ms.jit
         def jit_warpper(*args, **kwargs):
             return grad_and_update_func(*args, **kwargs)
 
@@ -560,7 +560,7 @@ class DiffusionEngineControlNet(DiffusionEngine):
             overflow_tag = not grads_finite
             return scaler.unscale(loss), unscaled_grads, overflow_tag
 
-        #@ms.jit
+        # @ms.jit
         def jit_warpper(*args, **kwargs):
             return grad_and_update_func(*args, **kwargs)
 

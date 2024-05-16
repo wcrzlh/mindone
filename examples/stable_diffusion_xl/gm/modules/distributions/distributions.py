@@ -18,8 +18,8 @@ class DiagonalGaussianDistribution(nn.Cell):
         std = ops.exp(0.5 * logvar)
         var = ops.exp(logvar)
         if self.deterministic:
-            std = ops.zeros_like(mean)
-            var = ops.zeros_like(mean)
+            std = ops.zeros_like_ext(mean)
+            var = ops.zeros_like_ext(mean)
         return mean, logvar, var, std
 
     def sample(self, input):

@@ -66,14 +66,10 @@ class Upsample(nn.Cell):
             t_factor = 1 if not self.third_up else 2
 
             # x = ops.interpolate(x, size=(t_factor * x.shape[2], x.shape[3] * 2, x.shape[4] * 2), mode="nearest",)
-            x = ops.ResizeNearestNeighborV2()(x,
-                (t_factor * x.shape[2], x.shape[3] * 2, x.shape[4] * 2)
-            )
+            x = ops.ResizeNearestNeighborV2()(x, (t_factor * x.shape[2], x.shape[3] * 2, x.shape[4] * 2))
         else:
             # x = ops.interpolate(x, size=(x.shape[-2] * 2, x.shape[-1] * 2), mode="nearest")  # scale_factor=2., (not support with ms2.1)
-            x = ops.ResizeNearestNeighborV2()(x,
-                (x.shape[-2] * 2, x.shape[-1] * 2)
-            )
+            x = ops.ResizeNearestNeighborV2()(x, (x.shape[-2] * 2, x.shape[-1] * 2))
         if self.use_conv:
             x = self.conv(x)
         return x
@@ -228,7 +224,7 @@ class ResBlock(TimestepBlock):
             h = self.in_layers(x)
 
         if self.skip_t_emb:
-            emb_out = ops.zeros_like(h)
+            emb_out = ops.zeros_like_ext(h)
         else:
             emb_out = self.emb_layers(emb)
         while len(emb_out.shape) < len(h.shape):
@@ -767,7 +763,7 @@ class UNetModel(nn.Cell):
         if use_recompute:
             self.recompute_strategy_v1()
 
-    #@jit
+    # @jit
     def construct(self, x, timesteps=None, context=None, y=None, **kwargs):
         """
         Apply the model to an input batch.
@@ -1188,7 +1184,7 @@ class UNetModelStage1(nn.Cell):
         if use_recompute:
             self.recompute_strategy_v1()
 
-    #@jit
+    # @jit
     def construct(self, x, timesteps=None, context=None, y=None, **kwargs):
         hs, hs_idx = (), -1
         t_emb = timestep_embedding(timesteps, self.model_channels, repeat_only=False, dtype=x.dtype)
@@ -1477,7 +1473,7 @@ class UNetModelStage2(nn.Cell):
             # self.recompute_strategy_v0()
             self.recompute_strategy_v1()
 
-    #@jit
+    # @jit
     def construct(self, h, emb, context, *hs):
         # h, emb, context, hs[0:9]
         hs_idx = 8

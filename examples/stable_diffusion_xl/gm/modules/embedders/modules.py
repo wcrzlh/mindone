@@ -176,7 +176,7 @@ class GeneralConditioner(nn.Cell):
                         * emb
                     )
                 if hasattr(embedder, "input_key") and embedder.input_key in force_zero_embeddings:
-                    emb = ops.zeros_like(emb)
+                    emb = ops.zeros_like_ext(emb)
 
                 if not embedder.is_trainable:
                     emb = ops.stop_gradient(emb)
@@ -657,7 +657,7 @@ class FrozenOpenCLIPEmbedder2(AbstractEmbModel):
         _dtype = x.dtype
 
         # x = x[ops.arange(x.shape[0]), tokens.argmax(axis=-1)]
-        indices = ops.stack((ops.arange(x.shape[0]), tokens.argmax(axis=-1)), axis=-1)
+        indices = ops.stack_ext((ops.arange(x.shape[0]), tokens.argmax(axis=-1)), axis=-1)
         x = ops.gather_nd(x, indices)
 
         x = ops.matmul(x, ops.cast(self.model.text_projection, x.dtype)).astype(_dtype)

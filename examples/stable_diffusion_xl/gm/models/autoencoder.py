@@ -129,14 +129,14 @@ class AutoencoderKL(AutoencodingEngine):
         if ckpt_path is not None:
             self.load_checkpoint(ckpt_path, ignore_keys=ignore_keys)
 
-    #@ms.jit
+    # @ms.jit
     def encode(self, x, **kwargs):
         # only supports inference currently
         h = self.encoder(x)
         moments = self.quant_conv(h)
         return moments
 
-    #@ms.jit
+    # @ms.jit
     def decode(self, z, **decoder_kwargs):
         z = self.post_quant_conv(z)
         dec = self.decoder(z, **decoder_kwargs)
@@ -144,7 +144,7 @@ class AutoencoderKL(AutoencodingEngine):
 
 
 class AutoencoderKLInferenceWrapper(AutoencoderKL):
-    #@ms.jit
+    # @ms.jit
     def encode(self, x, **kwargs):
         h = self.encoder(x)
         moments = self.quant_conv(h)

@@ -12,7 +12,7 @@ from mindspore import Parameter, Tensor, nn, ops
 from mindspore.common import initializer as init
 
 
-class LayerNormFp32(nn.LayerNorm):
+class LayerNormFp32(nn.extend.LayerNorm):
     """Subclass mindspore's LayerNorm to handle fp16 (by casting to float32 and back)."""
 
     def __init__(self, *args, **kwargs):
@@ -146,7 +146,7 @@ class Attention(nn.Cell):
 
         if attn_mask is not None:
             if attn_mask.dtype == ms.bool_:
-                new_attn_mask = ops.zeros_like(attn_mask, dtype=q.dtype)
+                new_attn_mask = ops.zeros_like_ext(attn_mask, dtype=q.dtype)
                 new_attn_mask = ops.masked_fill(new_attn_mask, attn_mask, -1e5)
                 attn_mask = new_attn_mask
             attn += attn_mask
@@ -172,7 +172,7 @@ class ResidualAttentionBlock(nn.Cell):
         mlp_ratio: float = 4.0,
         ls_init_value: float = None,
         act_layer: Callable = nn.GELU,
-        norm_layer: Callable = nn.LayerNorm,
+        norm_layer: Callable = nn.extend.LayerNorm,
         is_cross_attention: bool = False,
     ):
         super().__init__()
@@ -241,7 +241,7 @@ class Transformer(nn.Cell):
         mlp_ratio: float = 4.0,
         ls_init_value: float = None,
         act_layer: Callable = nn.GELU,
-        norm_layer: Callable = nn.LayerNorm,
+        norm_layer: Callable = nn.extend.LayerNorm,
     ):
         super().__init__()
         self.width = width
@@ -278,7 +278,7 @@ class VisionTransformer(nn.Cell):
         input_patchnorm: bool = False,
         final_ln_after_pool: bool = False,
         act_layer: Callable = nn.GELU,
-        norm_layer: Callable = nn.LayerNorm,
+        norm_layer: Callable = nn.extend.LayerNorm,
     ):
         super().__init__()
         image_height, image_width = self.image_size = (image_size, image_size)
@@ -292,7 +292,7 @@ class VisionTransformer(nn.Cell):
 
         if input_patchnorm:
             patch_input_dim = patch_height * patch_width * 3
-            self.patchnorm_pre_ln = nn.LayerNorm([patch_input_dim], epsilon=1e-5)
+            self.patchnorm_pre_ln = nn.extend.LayerNorm([patch_input_dim], epsilon=1e-5)
             self.conv1 = nn.Dense(patch_input_dim, width)
         else:
             self.patchnorm_pre_ln = nn.Identity()
@@ -396,7 +396,7 @@ class TextTransformer(nn.Cell):
         ls_init_value: float = None,
         output_dim: int = 512,
         act_layer: Callable = nn.GELU,
-        norm_layer: Callable = nn.LayerNorm,
+        norm_layer: Callable = nn.extend.LayerNorm,
         embed_cls: bool = False,
         pad_id: int = 0,
     ):

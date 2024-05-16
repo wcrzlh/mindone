@@ -295,11 +295,11 @@ def train(args):
 
             if args.dynamic_shape:
                 input_dyn = Tensor(shape=[per_batch_size, 3, None, None], dtype=ms.float32)
-                token1 = Tensor(np.ones((per_batch_size, 77)),dtype=ms.int32)
-                token2 = Tensor(np.ones((per_batch_size, 77)),dtype=ms.int32)
-                token3 = Tensor(np.ones((per_batch_size, 2)),dtype=ms.float32)
-                token4 = Tensor(np.ones((per_batch_size, 2)),dtype=ms.float32)
-                token5 = Tensor(np.ones((per_batch_size, 2)),dtype=ms.float32)
+                token1 = Tensor(np.ones((per_batch_size, 77)), dtype=ms.int32)
+                token2 = Tensor(np.ones((per_batch_size, 77)), dtype=ms.int32)
+                token3 = Tensor(np.ones((per_batch_size, 2)), dtype=ms.float32)
+                token4 = Tensor(np.ones((per_batch_size, 2)), dtype=ms.float32)
+                token5 = Tensor(np.ones((per_batch_size, 2)), dtype=ms.float32)
                 token = [token1, token2, token3, token4, token5]
 
                 train_step_fn.set_inputs(input_dyn, *token)

@@ -66,7 +66,7 @@ class LinearAttention(nn.Cell):
         qkv = qkv.view(b, 3, self.heads, c, -1).swapaxes(
             0, 1
         )  # b (qkv heads c) h w -> b qkv heads c (h w) -> qkv b heads c (h w)
-        q, k, v = ops.split(qkv, 1)
+        q, k, v = ops.split_ext(qkv, 1)
         q, k, v = q.squeeze(0), k.squeeze(0), v.squeeze(0)
 
         k = ops.softmax(k, axis=-1)
@@ -84,15 +84,7 @@ class LinearAttention(nn.Cell):
 
 
 class MemoryEfficientCrossAttention(nn.Cell):
-    def __init__(
-        self,
-        query_dim,
-        context_dim=None,
-        heads=8,
-        dim_head=64,
-        dropout=0.0,
-        use_fa=False
-    ):
+    def __init__(self, query_dim, context_dim=None, heads=8, dim_head=64, dropout=0.0, use_fa=False):
         super().__init__()
 
         assert FLASH_IS_AVAILABLE
@@ -170,15 +162,7 @@ class MemoryEfficientCrossAttention(nn.Cell):
 
 
 class CrossAttention(nn.Cell):
-    def __init__(
-        self,
-        query_dim,
-        context_dim=None,
-        heads=8,
-        dim_head=64,
-        dropout=0.0,
-        use_fa=False
-    ):
+    def __init__(self, query_dim, context_dim=None, heads=8, dim_head=64, dropout=0.0, use_fa=False):
         super().__init__()
         inner_dim = dim_head * heads
         context_dim = default(context_dim, query_dim)
@@ -263,20 +247,15 @@ class BasicTransformerBlock(nn.Cell):
             dim_head=d_head,
             dropout=dropout,
             context_dim=context_dim if self.disable_self_attn else None,
-            use_fa=True
+            use_fa=True,
         )  # is a self-attention if not self.disable_self_attn
         self.ff = FeedForward(dim, dropout=dropout, glu=gated_ff)
         self.attn2 = attn_cls(
-            query_dim=dim,
-            context_dim=context_dim,
-            heads=n_heads,
-            dim_head=d_head,
-            dropout=dropout,
-            use_fa=False
+            query_dim=dim, context_dim=context_dim, heads=n_heads, dim_head=d_head, dropout=dropout, use_fa=False
         )  # is self-attn if context is none
-        self.norm1 = nn.LayerNorm([dim], epsilon=1e-5)
-        self.norm2 = nn.LayerNorm([dim], epsilon=1e-5)
-        self.norm3 = nn.LayerNorm([dim], epsilon=1e-5)
+        self.norm1 = nn.extend.LayerNorm([dim], epsilon=1e-5)
+        self.norm2 = nn.extend.LayerNorm([dim], epsilon=1e-5)
+        self.norm3 = nn.extend.LayerNorm([dim], epsilon=1e-5)
 
     def construct(self, x, context=None):
         x = self.attn1(self.norm1(x), context=context if self.disable_self_attn else None) + x
