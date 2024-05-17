@@ -11,7 +11,7 @@ from gm.modules.transformers import scaled_dot_product_attention
 from gm.util import default, exists
 
 import mindspore as ms
-from mindspore import nn, ops
+from mindspore import mint, nn, ops
 
 try:
     from mindspore.ops.operations.nn_ops import FlashAttentionScore as FlashAttention
@@ -66,7 +66,7 @@ class LinearAttention(nn.Cell):
         qkv = qkv.view(b, 3, self.heads, c, -1).swapaxes(
             0, 1
         )  # b (qkv heads c) h w -> b qkv heads c (h w) -> qkv b heads c (h w)
-        q, k, v = ms.mint.split(qkv, 1)
+        q, k, v = mint.split(qkv, 1)
         q, k, v = q.squeeze(0), k.squeeze(0), v.squeeze(0)
 
         k = ops.softmax(k, axis=-1)

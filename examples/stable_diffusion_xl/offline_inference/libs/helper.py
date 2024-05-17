@@ -9,7 +9,7 @@ from libs.util import set_random_seed
 from PIL import Image
 
 import mindspore as ms
-from mindspore import ops
+from mindspore import mint, ops
 
 logger = logging.getLogger()
 
@@ -182,7 +182,7 @@ class VaeImageProcessor:
                 )
 
         elif isinstance(image[0], ms.Tensor):
-            image = ops.concat(image, axis=0) if image[0].ndim == 4 else ms.mint.stack(image, axis=0)
+            image = ops.concat(image, axis=0) if image[0].ndim == 4 else mint.stack(image, dim=0)
             _, channel, height, width = image.shape
 
             # don't need any preprocess if the image is latents

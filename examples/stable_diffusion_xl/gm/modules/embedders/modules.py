@@ -19,7 +19,7 @@ from omegaconf import ListConfig
 from transformers import BertTokenizer, CLIPTokenizer
 
 import mindspore as ms
-from mindspore import Tensor, nn, ops
+from mindspore import Tensor, mint, nn, ops
 
 
 class AbstractEmbModel(nn.Cell):
@@ -657,7 +657,7 @@ class FrozenOpenCLIPEmbedder2(AbstractEmbModel):
         _dtype = x.dtype
 
         # x = x[ops.arange(x.shape[0]), tokens.argmax(axis=-1)]
-        indices = ms.mint.stack((ops.arange(x.shape[0]), tokens.argmax(axis=-1)), axis=-1)
+        indices = mint.stack((ops.arange(x.shape[0]), tokens.argmax(axis=-1)), dim=-1)
         x = ops.gather_nd(x, indices)
 
         x = ops.matmul(x, ops.cast(self.model.text_projection, x.dtype)).astype(_dtype)

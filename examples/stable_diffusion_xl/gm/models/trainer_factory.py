@@ -3,7 +3,7 @@
 from gm.util import append_dims, clip_grad_, clip_grad_global_, get_timestep_multinomial
 
 import mindspore as ms
-from mindspore import nn, ops
+from mindspore import mint, nn, ops
 from mindspore.boost.grad_accumulation import gradient_accumulation_op as _grad_accum_op
 from mindspore.boost.grad_accumulation import gradient_clear_op as _grad_clear_op
 from mindspore.ops import functional as F
@@ -89,7 +89,7 @@ class TrainOneStepCell(nn.Cell):
 
         if self.snr_gamma is not None:
             snr_gamma = ops.ones_like(w) * self.snr_gamma
-            w = ms.mint.stack((w, snr_gamma), axis=0).min(axis=0)
+            w = mint.stack((w, snr_gamma), dim=0).min(axis=0)
 
         # compute loss
         if self.enable_conditioner:
