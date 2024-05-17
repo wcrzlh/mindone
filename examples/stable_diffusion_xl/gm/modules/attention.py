@@ -66,7 +66,7 @@ class LinearAttention(nn.Cell):
         qkv = qkv.view(b, 3, self.heads, c, -1).swapaxes(
             0, 1
         )  # b (qkv heads c) h w -> b qkv heads c (h w) -> qkv b heads c (h w)
-        q, k, v = ops.split_ext(qkv, 1)
+        q, k, v = ms.mint.split(qkv, 1)
         q, k, v = q.squeeze(0), k.squeeze(0), v.squeeze(0)
 
         k = ops.softmax(k, axis=-1)

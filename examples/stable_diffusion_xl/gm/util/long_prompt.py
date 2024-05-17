@@ -89,7 +89,7 @@ def get_tokenize_functions(tokenizer, context_length, pad_with_eos=True):
                 if token_ids.shape[0] < max_len:
                     token_ids = ms.ops.concat([token_ids] + [pad_token_ids] * (max_len - token_ids.shape[0]), axis=0)
                 new_group_ids.append(token_ids)
-            group_ids = ms.ops.stack_ext(new_group_ids, axis=0)
+            group_ids = ms.mint.stack(new_group_ids, axis=0)
         return group_ids
 
     return get_prompt_token_ids, get_prompt_token_ids_batch
@@ -145,7 +145,7 @@ def get_text_embedding_functions(text_encoder_embedding_function):
                         )
                         text_embed = ms.ops.concat([text_embed, pad_tensor], axis=0)
                     new_text_embeddings.append(text_embed)
-                text_embeddings = ms.ops.stack_ext(
+                text_embeddings = ms.mint.stack(
                     new_text_embeddings, axis=0
                 )  # (bs, max_n_chunks, context_len, hidden_size)
 
@@ -202,7 +202,7 @@ def _text_embedder_tokenize_long_prompt(embedder, input_value, force_n_chunks=No
         pad_token_ids = tokenize_func("")
         emb_token = [_force_n_chunks_token_ids(ids, pad_token_ids, force_n_chunks) for ids in emb_token]
         if return_tensor:
-            emb_token = ms.ops.stack_ext(emb_token, axis=0)
+            emb_token = ms.mint.stack(emb_token, axis=0)
     return emb_token
 
 
