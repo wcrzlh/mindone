@@ -145,9 +145,7 @@ def get_text_embedding_functions(text_encoder_embedding_function):
                         )
                         text_embed = ms.ops.concat([text_embed, pad_tensor], axis=0)
                     new_text_embeddings.append(text_embed)
-                text_embeddings = mint.stack(
-                    new_text_embeddings, dim=0
-                )  # (bs, max_n_chunks, context_len, hidden_size)
+                text_embeddings = mint.stack(new_text_embeddings, dim=0)  # (bs, max_n_chunks, context_len, hidden_size)
 
         elif isinstance(group_token_ids, ms.Tensor):
             assert (
