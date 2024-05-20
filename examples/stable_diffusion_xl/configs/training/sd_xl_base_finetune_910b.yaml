@@ -121,9 +121,7 @@ optim:
             beta1: 0.9
             beta2: 0.98
             weight_decay: 0.01
-            shard_size: 8
             use_parallel: True
-            opt_parallel_group: GlobalComm.WORLD_COMM_GROUP
 
 
 data:
