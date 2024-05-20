@@ -116,11 +116,14 @@ optim:
     base_learning_rate: 1.0e-5
 
     optimizer_config:
-        target: mindspore.nn.AdamWeightDecay  # mindspore.nn.SGD
+        target: gm.modules.optimizers.AdamWeightDecayZeRO2  # mindspore.nn.SGD
         params:
             beta1: 0.9
             beta2: 0.98
             weight_decay: 0.01
+            shard_size: 8
+            use_parallel: True
+            opt_parallel_group: GlobalComm.WORLD_COMM_GROUP
 
 
 data:
