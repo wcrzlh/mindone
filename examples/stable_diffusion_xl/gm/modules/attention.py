@@ -7,6 +7,7 @@ except ImportError:
     from typing_extensions import Literal  # FIXME: python 3.7
 
 from gm.modules.diffusionmodules.util import normalization, zero_module
+from gm.modules.ring_attention import RingAttention
 from gm.modules.transformers import scaled_dot_product_attention
 from gm.util import default, exists
 
@@ -217,6 +218,7 @@ class BasicTransformerBlock(nn.Cell):
     ATTENTION_MODES = {
         "vanilla": CrossAttention,  # vanilla attention
         "flash-attention": MemoryEfficientCrossAttention,  # flash attention
+        "ring-attention": RingAttention,
     }
 
     def __init__(
