@@ -218,7 +218,7 @@ class BasicTransformerBlock(nn.Cell):
     ATTENTION_MODES = {
         "vanilla": CrossAttention,  # vanilla attention
         "flash-attention": MemoryEfficientCrossAttention,  # flash attention
-        "ring-attention": RingAttention,
+        "ring-attention": RingAttention
     }
 
     def __init__(
@@ -243,18 +243,33 @@ class BasicTransformerBlock(nn.Cell):
             attn_mode = "vanilla"
         attn_cls = self.ATTENTION_MODES[attn_mode]
         self.disable_self_attn = disable_self_attn
-        self.attn1 = attn_cls(
-            query_dim=dim,
-            heads=n_heads,
-            dim_head=d_head,
-            dropout=dropout,
-            context_dim=context_dim if self.disable_self_attn else None,
-            use_fa=True,
-        )  # is a self-attention if not self.disable_self_attn
+        if attn_mode == "ring-attention":
+            self.flash_attention = RingAttention(
+                scale_value=dim ** -0.5,
+                head_num=n_heads,
+                input_layout="SBH",
+                keep_prob=1.-dropout,
+                dp=2,
+                sp=4
+            )
+        else:
+            self.attn1 = attn_cls(
+                query_dim=dim,
+                heads=n_heads,
+                dim_head=d_head,
+                dropout=dropout,
+                context_dim=context_dim if self.disable_self_attn else None,
+                use_fa=True,
+            )  # is a self-attention if not self.disable_self_attn
         self.ff = FeedForward(dim, dropout=dropout, glu=gated_ff)
-        self.attn2 = attn_cls(
-            query_dim=dim, context_dim=context_dim, heads=n_heads, dim_head=d_head, dropout=dropout, use_fa=False
-        )  # is self-attn if context is none
+        if attn_mode == "ring-attention":
+            self.attn2 = CrossAttention(
+                query_dim=dim, context_dim=context_dim, heads=n_heads, dim_head=d_head, dropout=dropout, use_fa=False
+            )  # is self-attn if context is none
+        else:
+            self.attn2 = attn_cls(
+                query_dim=dim, context_dim=context_dim, heads=n_heads, dim_head=d_head, dropout=dropout, use_fa=False
+            )  # is self-attn if context is none
         self.norm1 = nn.extend.LayerNorm([dim], epsilon=1e-5)
         self.norm2 = nn.extend.LayerNorm([dim], epsilon=1e-5)
         self.norm3 = nn.extend.LayerNorm([dim], epsilon=1e-5)

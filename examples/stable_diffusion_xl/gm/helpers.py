@@ -30,7 +30,7 @@ from PIL import Image
 import mindspore as ms
 from mindspore import Parameter, Tensor, context, nn, ops
 from mindspore.communication.management import get_group_size, get_rank, init
-
+from gm.models.modules.util import init_sp_group
 
 class BroadCast(nn.Cell):
     def __init__(self, root_rank):
@@ -123,6 +123,8 @@ def set_default(args):
         init()
         args.rank, args.rank_size, parallel_mode = get_rank(), get_group_size(), context.ParallelMode.DATA_PARALLEL
         context.set_auto_parallel_context(device_num=args.rank_size, parallel_mode=parallel_mode, gradients_mean=True)
+        # init for sp
+        init_sp_group(args.rank_size // 2)
     else:
         args.rank, args.rank_size = 0, 1
 
