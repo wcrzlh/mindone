@@ -12,6 +12,7 @@ except ImportError:
 
 import numpy as np
 import yaml
+from gm.models.modules.util import init_sp_group
 from gm.modules.diffusionmodules.discretizer import Img2ImgDiscretizationWrapper, Txt2NoisyDiscretizationWrapper
 from gm.modules.diffusionmodules.sampler import (
     AncestralSampler,
@@ -30,7 +31,7 @@ from PIL import Image
 import mindspore as ms
 from mindspore import Parameter, Tensor, context, nn, ops
 from mindspore.communication.management import get_group_size, get_rank, init
-from gm.models.modules.util import init_sp_group
+
 
 class BroadCast(nn.Cell):
     def __init__(self, root_rank):

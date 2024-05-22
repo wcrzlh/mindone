@@ -1,7 +1,7 @@
 import math
 import multiprocessing
-import numpy as np
 
+import numpy as np
 from gm.util import get_obj_from_str
 
 import mindspore.dataset as de
@@ -106,14 +106,18 @@ def create_loader(
         num_parallel_workers=min(8, num_parallel_workers),
         drop_remainder=drop_remainder,
     )
-    ds = ds.map(operations=[SeqRearrange(rank % 4, 4), ],
-                input_columns=["image"],
-                output_columns=["image"])
-
+    ds = ds.map(
+        operations=[
+            SeqRearrange(rank % 4, 4),
+        ],
+        input_columns=["image"],
+        output_columns=["image"],
+    )
 
     ds = ds.repeat(epoch_size)
 
     return ds
+
 
 class SeqRearrange:
     def __init__(self, shard_id, shard_size):
@@ -122,8 +126,11 @@ class SeqRearrange:
 
     def __call__(self, seq):
         splited_seq = np.split(seq, self.shard_size * 2, -2)
-        concat_seq = np.concatenate([splited_seq[self.shard_id], splited_seq[self.shard_id * 2 - 1 - self.shard_id]], -2)
+        concat_seq = np.concatenate(
+            [splited_seq[self.shard_id], splited_seq[self.shard_id * 2 - 1 - self.shard_id]], -2
+        )
         return concat_seq
+
 
 def create_loader_dreambooth(
     instance_data_path,

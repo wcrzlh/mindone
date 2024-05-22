@@ -218,7 +218,7 @@ class BasicTransformerBlock(nn.Cell):
     ATTENTION_MODES = {
         "vanilla": CrossAttention,  # vanilla attention
         "flash-attention": MemoryEfficientCrossAttention,  # flash attention
-        "ring-attention": RingAttention
+        "ring-attention": RingAttention,
     }
 
     def __init__(
@@ -245,12 +245,7 @@ class BasicTransformerBlock(nn.Cell):
         self.disable_self_attn = disable_self_attn
         if attn_mode == "ring-attention":
             self.flash_attention = RingAttention(
-                scale_value=dim ** -0.5,
-                head_num=n_heads,
-                input_layout="SBH",
-                keep_prob=1.-dropout,
-                dp=2,
-                sp=4
+                scale_value=dim**-0.5, head_num=n_heads, input_layout="SBH", keep_prob=1.0 - dropout, dp=2, sp=4
             )
         else:
             self.attn1 = attn_cls(
