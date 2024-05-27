@@ -241,6 +241,7 @@ class BasicTransformerBlock(nn.Cell):
                 f"FYI, you are running with MindSpore version {ms.__version__}"
             )
             attn_mode = "vanilla"
+        self.attn_mode = attn_mode
         attn_cls = self.ATTENTION_MODES[attn_mode]
         self.disable_self_attn = disable_self_attn
         if attn_mode == "ring-attention":
@@ -270,7 +271,11 @@ class BasicTransformerBlock(nn.Cell):
         self.norm3 = nn.extend.LayerNorm([dim], epsilon=1e-5)
 
     def construct(self, x, context=None):
+        if self.attn_mode:
+            x = x.transpose(1, 0, 2)
         x = self.attn1(self.norm1(x), context=context if self.disable_self_attn else None) + x
+        if self.attn_mode:
+            x = x.transpose(1, 0, 2)
         x = self.attn2(self.norm2(x), context=context) + x
         x = self.ff(self.norm3(x)) + x
 
