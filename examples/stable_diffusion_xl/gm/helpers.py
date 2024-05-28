@@ -12,7 +12,6 @@ except ImportError:
 
 import numpy as np
 import yaml
-from gm.modules.util import init_sp_group
 from gm.modules.diffusionmodules.discretizer import Img2ImgDiscretizationWrapper, Txt2NoisyDiscretizationWrapper
 from gm.modules.diffusionmodules.sampler import (
     AncestralSampler,
@@ -24,6 +23,7 @@ from gm.modules.diffusionmodules.sampler import (
     LCMSampler,
     LinearMultistepSampler,
 )
+from gm.modules.util import init_sp_group
 from gm.util import auto_mixed_precision, get_obj_from_str, instantiate_from_config, seed_everything
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from PIL import Image
