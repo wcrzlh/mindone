@@ -19,7 +19,7 @@ import mindspore as ms
 import mindspore.common.dtype as mstype
 from mindspore import Tensor, nn, ops
 from mindspore.communication import get_group_size
-from mindspore.ops.operations._inner_ops import Receive, Send
+from mindspore.ops import Receive, Send
 from mindspore.ops.operations.nn_ops import FlashAttentionScore
 
 from .utils import (
