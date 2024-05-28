@@ -12,7 +12,7 @@ except ImportError:
 
 import numpy as np
 import yaml
-from gm.models.modules.util import init_sp_group
+from gm.modules.util import init_sp_group
 from gm.modules.diffusionmodules.discretizer import Img2ImgDiscretizationWrapper, Txt2NoisyDiscretizationWrapper
 from gm.modules.diffusionmodules.sampler import (
     AncestralSampler,
