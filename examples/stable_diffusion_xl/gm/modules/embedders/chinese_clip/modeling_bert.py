@@ -487,7 +487,7 @@ class BertModel(BertPreTrainedModel):
 
     def construct(self, input_ids):
         token_type_ids = ops.zeros_like_ext(input_ids)
-        position_ids = ops.broadcast_to(ops.arange(ops.atleast_2d(input_ids).shape[-1]), input_ids.shape)
+        position_ids = ops.broadcast_to(mint.arange(ops.atleast_2d(input_ids).shape[-1]), input_ids.shape)
 
         embedding_output = self.embeddings(input_ids, position_ids=position_ids, token_type_ids=token_type_ids)
         encoder_outputs = self.encoder(embedding_output)

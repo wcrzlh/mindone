@@ -8,7 +8,7 @@ from gm.modules.transformers.activations import ACT2FN
 from transformers.models.clip.configuration_clip import CLIPConfig, CLIPTextConfig
 
 import mindspore as ms
-from mindspore import Parameter, Tensor, nn, ops
+from mindspore import Parameter, Tensor, nn, ops, mint
 
 MIN_VALUE = -1e5
 MAX_VALUE = 1e5
@@ -255,7 +255,7 @@ def _make_causal_mask(input_ids_shape, dtype, past_key_values_length: int = 0):
     """
     bsz, tgt_len = input_ids_shape
     mask = ops.full((tgt_len, tgt_len), MIN_VALUE, dtype=ms.float32)
-    mask_cond = ops.arange(mask.shape[-1])
+    mask_cond = mint.arange(mask.shape[-1])
     mask = ops.masked_fill(mask, mask_cond < (mask_cond + 1).view(mask.shape[-1], 1), 0.0)
     mask = mask.astype(dtype)
 
@@ -321,7 +321,7 @@ class CLIPTextTransformer(nn.Cell):
         # take features from the eot embedding (eot_token is the highest number in each sequence)
         # casting to int for onnx compatibility: argmax doesn't support int64 inputs with opset 14
         pooled_output = last_hidden_state[
-            ops.arange(last_hidden_state.shape[0]),
+            mint.arange(last_hidden_state.shape[0]),
             input_ids.argmax(axis=-1),
         ]
 

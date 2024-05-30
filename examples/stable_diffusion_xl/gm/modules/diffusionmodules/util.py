@@ -3,7 +3,7 @@
 import numpy as np
 
 import mindspore as ms
-from mindspore import Tensor, nn, ops
+from mindspore import Tensor, nn, ops, mint
 
 
 class ZeroInitModule(nn.Cell):
@@ -44,7 +44,7 @@ def timestep_embedding(timesteps, dim, max_period=10000, repeat_only=False, dtyp
         half = dim // 2
         freqs = ops.exp(
             -ops.log(ops.ones(1, dtype=ms.float32) * max_period)
-            * ops.arange(start=0, end=half, dtype=ms.float32)
+            * mint.arange(start=0, end=half, dtype=ms.float32)
             / half
         )
         args = timesteps[:, None].astype(ms.float32) * freqs[None]

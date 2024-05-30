@@ -19,7 +19,7 @@ from omegaconf import ListConfig
 from transformers import BertTokenizer, CLIPTokenizer
 
 import mindspore as ms
-from mindspore import Tensor, mint, nn, ops
+from mindspore import Tensor, mint, nn, ops, mint
 
 
 class AbstractEmbModel(nn.Cell):
@@ -342,7 +342,7 @@ class FrozenCLIPEmbedder(AbstractEmbModel):
             if self.layer == "hidden":
                 hidden_states = ops.concat(hidden_states_all, axis=1)
             pooler_output = last_hidden_state[
-                ops.arange(last_hidden_state.shape[0]),
+                mint.arange(last_hidden_state.shape[0]),
                 tokens.argmax(axis=-1),
             ]
         else:
@@ -656,8 +656,8 @@ class FrozenOpenCLIPEmbedder2(AbstractEmbModel):
         # take features from the eot embedding (eot_token is the highest number in each sequence)
         _dtype = x.dtype
 
-        # x = x[ops.arange(x.shape[0]), tokens.argmax(axis=-1)]
-        indices = mint.stack((ops.arange(x.shape[0]), tokens.argmax(axis=-1)), dim=-1)
+        # x = x[mint.arange(x.shape[0]), tokens.argmax(axis=-1)]
+        indices = mint.stack((mint.arange(x.shape[0]), tokens.argmax(axis=-1)), dim=-1)
         x = ops.gather_nd(x, indices)
 
         x = ops.matmul(x, ops.cast(self.model.text_projection, x.dtype)).astype(_dtype)

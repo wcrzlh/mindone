@@ -8,7 +8,7 @@ import numpy as np
 from gm.modules.util import linear, normalize
 
 import mindspore as ms
-from mindspore import Parameter, Tensor, nn, ops
+from mindspore import Parameter, Tensor, nn, ops, mint
 from mindspore.common import initializer as init
 
 
@@ -503,7 +503,7 @@ class TextTransformer(nn.Cell):
             pooled = self.ln_final(pooled)
         else:
             x = self.ln_final(x)
-            pooled = x[ops.arange(x.shape[0]), text.argmax(axis=-1)]
+            pooled = x[mint.arange(x.shape[0]), text.argmax(axis=-1)]
             # tokens = x
 
         if self.text_projection is not None:
