@@ -3,7 +3,7 @@
 import numpy as np
 
 import mindspore as ms
-from mindspore import Tensor, nn, ops, mint
+from mindspore import Tensor, mint, nn, ops
 
 
 class ZeroInitModule(nn.Cell):

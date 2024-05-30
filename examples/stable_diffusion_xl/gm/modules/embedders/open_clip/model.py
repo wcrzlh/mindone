@@ -8,7 +8,7 @@ import numpy as np
 from gm.modules.util import normalize as normalize_func
 
 import mindspore as ms
-from mindspore import Parameter, Tensor, nn, ops, mint
+from mindspore import Parameter, Tensor, mint, nn, ops
 
 from .modified_resnet import ModifiedResNet
 from .transformer import LayerNormFp32, TextTransformer, VisionTransformer

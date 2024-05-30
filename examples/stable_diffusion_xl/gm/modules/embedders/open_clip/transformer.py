@@ -8,7 +8,7 @@ import numpy as np
 from gm.modules.util import linear, normalize
 
 import mindspore as ms
-from mindspore import Parameter, Tensor, nn, ops, mint
+from mindspore import Parameter, Tensor, mint, nn, ops
 from mindspore.common import initializer as init
 
 

@@ -19,7 +19,7 @@ from omegaconf import ListConfig
 from transformers import BertTokenizer, CLIPTokenizer
 
 import mindspore as ms
-from mindspore import Tensor, mint, nn, ops, mint
+from mindspore import Tensor, mint, nn, ops
 
 
 class AbstractEmbModel(nn.Cell):
