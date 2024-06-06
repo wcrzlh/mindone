@@ -155,7 +155,7 @@ class DiffusionEngine(nn.Cell):
 
     def train_step_pynative(self, x, *tokens, grad_func=None):
         # get latent
-        with _no_grad:
+        with _no_grad():
             x = self.encode_first_stage(x)
 
             # get condition
