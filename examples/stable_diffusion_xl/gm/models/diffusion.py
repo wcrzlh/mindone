@@ -11,7 +11,7 @@ from gm.util import append_dims, default, get_obj_from_str, instantiate_from_con
 from omegaconf import ListConfig, OmegaConf
 
 import mindspore as ms
-from mindspore import Tensor, nn, ops
+from mindspore import Tensor, _no_grad, nn, ops
 
 
 class DiffusionEngine(nn.Cell):
@@ -155,17 +155,18 @@ class DiffusionEngine(nn.Cell):
 
     def train_step_pynative(self, x, *tokens, grad_func=None):
         # get latent
-        x = self.encode_first_stage(x)
+        with _no_grad:
+            x = self.encode_first_stage(x)
 
-        # get condition
-        vector, crossattn, concat = self.conditioner.embedding(*tokens)
-        cond = {"context": crossattn, "y": vector, "concat": concat}
+            # get condition
+            vector, crossattn, concat = self.conditioner.embedding(*tokens)
+            cond = {"context": crossattn, "y": vector, "concat": concat}
 
-        # get noise and sigma
-        sigmas = self.sigma_sampler(x.shape[0])
-        noise = ops.randn_like(x)
-        noised_input = self.loss_fn.get_noise_input(x, noise, sigmas)
-        w = append_dims(self.denoiser.w(sigmas), x.ndim)
+            # get noise and sigma
+            sigmas = self.sigma_sampler(x.shape[0])
+            noise = ops.randn_like(x)
+            noised_input = self.loss_fn.get_noise_input(x, noise, sigmas)
+            w = append_dims(self.denoiser.w(sigmas), x.ndim)
 
         # compute loss
         print("Compute Loss Starting...")
