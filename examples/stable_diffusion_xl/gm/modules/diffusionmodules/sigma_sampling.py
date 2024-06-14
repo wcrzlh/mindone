@@ -5,6 +5,8 @@ from gm.util import default, instantiate_from_config
 import mindspore as ms
 from mindspore import Tensor, nn, ops
 
+import numpy as np
+
 
 class EDMSampling(nn.Cell):
     def __init__(self, p_mean=-1.2, p_std=1.2):
@@ -33,5 +35,6 @@ class DiscreteSampling(nn.Cell):
         if rand is not None:
             idx = rand
         else:
-            idx = ops.randint(0, self.num_idx, (n_samples,))
+            # idx = ops.randint(0, self.num_idx, (n_samples,))
+            idx = Tensor(np.random.randint(0, self.num_idx, (n_samples,)))
         return self.idx_to_sigma(idx)

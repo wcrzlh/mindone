@@ -3,7 +3,7 @@
 import numpy as np
 
 import mindspore as ms
-from mindspore import nn, ops
+from mindspore import nn, ops, Tensor
 
 
 class DiagonalGaussianDistribution(nn.Cell):
@@ -24,7 +24,8 @@ class DiagonalGaussianDistribution(nn.Cell):
 
     def sample(self, input):
         mean, _, _, std = self.get_mean_and_var(input)
-        x = mean + std * ops.randn(*mean.shape)
+        # x = mean + std * ops.randn(*mean.shape)
+        x = mean + std * Tensor(np.random.randn(*mean.shape))
         return x
 
     def kl(self, input, other=None):
