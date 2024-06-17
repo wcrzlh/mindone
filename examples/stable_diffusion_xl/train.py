@@ -27,7 +27,7 @@ from omegaconf import OmegaConf
 
 import mindspore as ms
 from mindspore import Tensor, nn
-
+from mindspore._c_expression import _framework_profiler_step_start, _framework_profiler_step_end
 
 def get_parser_train():
     parser = argparse.ArgumentParser(description="train with sd-xl")

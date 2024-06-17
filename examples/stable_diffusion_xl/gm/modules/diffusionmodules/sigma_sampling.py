@@ -15,7 +15,7 @@ class EDMSampling(nn.Cell):
         self.p_std = p_std
 
     def construct(self, n_samples, rand=None):
-        log_sigma = self.p_mean + self.p_std * default(rand, ops.randn((n_samples,)))
+        log_sigma = self.p_mean + self.p_std * default(rand, Tensor(np.random.randn((n_samples,))))
         return log_sigma.exp()
 
 
