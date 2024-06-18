@@ -11,7 +11,7 @@ from gm.util import append_dims, default, get_obj_from_str, instantiate_from_con
 from omegaconf import ListConfig, OmegaConf
 
 import mindspore as ms
-from mindspore import Tensor, _no_grad, nn, ops
+from mindspore import Tensor, nn, ops
 
 
 class DiffusionEngine(nn.Cell):
@@ -155,18 +155,18 @@ class DiffusionEngine(nn.Cell):
 
     def train_step_pynative(self, x, *tokens, grad_func=None):
         # get latent
-        with _no_grad():
-            x = self.encode_first_stage(x)
+        x = self.encode_first_stage(x)
 
-            # get condition
-            vector, crossattn, concat = self.conditioner.embedding(*tokens)
-            cond = {"context": crossattn, "y": vector, "concat": concat}
+        # get condition
+        vector, crossattn, concat = self.conditioner.embedding(*tokens)
+        cond = {"context": crossattn, "y": vector, "concat": concat}
 
-            # get noise and sigma
-            sigmas = self.sigma_sampler(x.shape[0])
-            noise = ops.randn_like(x)
-            noised_input = self.loss_fn.get_noise_input(x, noise, sigmas)
-            w = append_dims(self.denoiser.w(sigmas), x.ndim)
+        # get noise and sigma
+        sigmas = self.sigma_sampler(x.shape[0])
+        # noise = ops.randn_like(x)
+        noise = Tensor(np.random.randn(*x.shape), dtype=x.dtype)
+        noised_input = self.loss_fn.get_noise_input(x, noise, sigmas)
+        w = append_dims(self.denoiser.w(sigmas), x.ndim)
 
         # compute loss
         print("Compute Loss Starting...")
@@ -334,7 +334,8 @@ class DiffusionEngine(nn.Cell):
             c[k] = uc[k] = additional_kwargs[k]
 
         z = img if skip_encode else self.encode_first_stage(img)
-        noise = ops.randn_like(z)
+        # noise = ops.randn_like(z)
+        noise = Tensor(np.random.randn(*z.shape), dtype=z.dtype)
 
         sigmas = sampler.discretization(sampler.num_steps)
         sigma = Tensor(sigmas[0], z.dtype)
@@ -342,7 +343,7 @@ class DiffusionEngine(nn.Cell):
         print(f"noising sigma: {sigmas[0]}")
 
         if offset_noise_level > 0.0:
-            noise = noise + offset_noise_level * append_dims(ops.randn(z.shape[0], dtype=z.dtype), z.ndim)
+            noise = noise + offset_noise_level * append_dims(Tensor(np.random.randn(z.shape[0], dtype=z.dtype)), z.ndim)
         if add_noise:
             noised_z = z + noise * append_dims(sigma, z.ndim)
             noised_z = noised_z / ops.sqrt(
@@ -479,7 +480,8 @@ class DiffusionEngineDreamBooth(DiffusionEngine):
 
         # get noise and sigma
         sigmas = self.sigma_sampler(x.shape[0])
-        noise = ops.randn_like(x)
+        # noise = ops.randn_like(x)
+        noise = Tensor(np.random.randn(*x.shape), dtype=x.dtype)
         noised_input = self.loss_fn.get_noise_input(x, noise, sigmas)
         w = append_dims(self.denoiser.w(sigmas), x.ndim)
         return x, noised_input, sigmas, w, cond
@@ -577,7 +579,8 @@ class DiffusionEngineControlNet(DiffusionEngine):
 
         # get noise and sigma
         sigmas = self.sigma_sampler(x.shape[0])
-        noise = ops.randn_like(x)
+        # noise = ops.randn_like(x)
+        noise = Tensor(np.random.randn(*x.shape), dtype=x.dtype)
         noised_input = self.loss_fn.get_noise_input(x, noise, sigmas)
         w = append_dims(self.denoiser.w(sigmas), x.ndim)
 

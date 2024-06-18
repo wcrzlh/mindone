@@ -1,6 +1,7 @@
 # reference to https://github.com/Stability-AI/generative-models
 from typing import Any, Dict, Tuple, Union
 
+from gm.modules.conv2d import Conv2d
 from gm.modules.diffusionmodules.model import Decoder, Encoder
 from gm.modules.distributions.distributions import DiagonalGaussianDistribution
 from gm.util import default, instantiate_from_config
@@ -121,8 +122,8 @@ class AutoencoderKL(AutoencodingEngine):
         assert ddconfig["double_z"]
         self.encoder = Encoder(**ddconfig)
         self.decoder = Decoder(**ddconfig)
-        self.quant_conv = nn.Conv2d(2 * ddconfig["z_channels"], 2 * embed_dim, 1, has_bias=True, pad_mode="valid")
-        self.post_quant_conv = nn.Conv2d(embed_dim, ddconfig["z_channels"], 1, has_bias=True, pad_mode="valid")
+        self.quant_conv = Conv2d(2 * ddconfig["z_channels"], 2 * embed_dim, 1, has_bias=True, pad_mode="valid")
+        self.post_quant_conv = Conv2d(embed_dim, ddconfig["z_channels"], 1, has_bias=True, pad_mode="valid")
         self.embed_dim = embed_dim
         self.posterior = DiagonalGaussianDistribution()
 

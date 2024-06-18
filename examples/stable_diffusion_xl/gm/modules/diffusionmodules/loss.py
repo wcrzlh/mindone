@@ -4,8 +4,9 @@ from gm.util import append_dims
 from omegaconf import ListConfig
 
 import mindspore as ms
-from mindspore import nn, ops
+from mindspore import nn, ops, Tensor
 
+import numpy as np
 
 class StandardDiffusionLoss(nn.Cell):
     def __init__(
@@ -34,7 +35,7 @@ class StandardDiffusionLoss(nn.Cell):
         input = pred
         if self.offset_noise_level > 0.0:
             noise = noise + self.offset_noise_level * append_dims(
-                ops.randn(input.shape[0], dtype=input.dtype), input.ndim
+                Tensor(np.random.randn(input.shape[0], dtype=input.dtype)), input.ndim
             )
         noised_input = input + noise * append_dims(sigmas, input.ndim)
         return noised_input

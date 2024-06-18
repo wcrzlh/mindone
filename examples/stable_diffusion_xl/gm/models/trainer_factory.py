@@ -3,11 +3,12 @@
 from gm.util import append_dims, clip_grad_, clip_grad_global_, get_timestep_multinomial
 
 import mindspore as ms
-from mindspore import mint, nn, ops
+from mindspore import mint, nn, ops, Tensor
 from mindspore.boost.grad_accumulation import gradient_accumulation_op as _grad_accum_op
 from mindspore.boost.grad_accumulation import gradient_clear_op as _grad_clear_op
 from mindspore.ops import functional as F
 
+import numpy as np
 
 class TrainOneStepCell(nn.Cell):
     def __init__(
@@ -83,7 +84,8 @@ class TrainOneStepCell(nn.Cell):
             # timesteps = ops.multinomial(self.timestep_bias_weighting, x.shape[0], replacement=True).long()
             timesteps = get_timestep_multinomial(self.timestep_bias_weighting, x.shape[0])
             sigmas = self.sigma_sampler(x.shape[0], rand=timesteps)
-        noise = ops.randn_like(x)
+        # noise = ops.randn_like(x)
+        noise = Tensor(np.random.randn(*x.shape), dtype=x.dtype)
         noised_input = self.loss_fn.get_noise_input(x, noise, sigmas)
         w = append_dims(self.denoiser.w(sigmas), x.ndim)
 
@@ -342,7 +344,8 @@ class TrainOneStepCellDreamBooth(nn.Cell):
 
         # get noise and sigma
         sigmas = self.sigma_sampler(x.shape[0])
-        noise = ops.randn_like(x)
+        # noise = ops.randn_like(x)
+        noise = Tensor(np.random.randn(*x.shape), dtype=x.dtype)
         noised_input = self.loss_fn.get_noise_input(x, noise, sigmas)
         w = append_dims(self.denoiser.w(sigmas), x.ndim)
 
@@ -507,7 +510,8 @@ class PreProcessModel(nn.Cell):
 
         # get noise and sigma
         sigmas = self.sigma_sampler(x.shape[0])
-        noise = ops.randn_like(x)
+        # noise = ops.randn_like(x)
+        noise = Tensor(np.random.randn(*x.shape), dtype=x.dtype)
         noised_input = self.loss_fn.get_noise_input(x, noise, sigmas)
         w = append_dims(self.denoiser.w(sigmas), x.ndim)
 
@@ -535,7 +539,8 @@ class PreProcessModelWithoutConditioner(nn.Cell):
 
         # get noise and sigma
         sigmas = self.sigma_sampler(x.shape[0])
-        noise = ops.randn_like(x)
+        # noise = ops.randn_like(x)
+        noise = Tensor(np.random.randn(*x.shape), dtype=x.dtype)
         noised_input = self.loss_fn.get_noise_input(x, noise, sigmas)
         w = append_dims(self.denoiser.w(sigmas), x.ndim)
 

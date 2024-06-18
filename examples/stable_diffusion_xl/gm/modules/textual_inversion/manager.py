@@ -1,7 +1,9 @@
 from gm.modules.embedders.modules import FrozenCLIPEmbedder, FrozenOpenCLIPEmbedder2_CLIPTokenizer
 
 import mindspore as ms
+from mindspore import Tensor
 
+import numpy as np
 
 class TextualInversionManager:
     def __init__(self, model, placeholder_token=None, num_vectors=None):
@@ -41,7 +43,8 @@ class TextualInversionManager:
             else:
                 # text embedding 1, original value range: [-0.5059,0.6538] # regular [-0.05,+0.05]
                 # text embedding 2, original value range:  [-0.6885,0.1948] # regular [-0.05,+0.05]
-                token_embeds[token_id] = ms.ops.randn_like(token_embeds[token_id]) * 0.01  # start with [-0.04,+0.04]
+                # token_embeds[token_id] = ms.ops.randn_like(token_embeds[token_id]) * 0.01  # start with [-0.04,+0.04]
+                token_embeds[token_id] = Tensor(np.randn_like(*token_embeds[token_id].shape), dtype=token_embeds[token_id].dtype) * 0.01
 
     @staticmethod
     def _get_text_encoders(model):

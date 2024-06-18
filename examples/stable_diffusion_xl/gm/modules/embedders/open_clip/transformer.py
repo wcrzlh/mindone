@@ -5,6 +5,7 @@ from collections import OrderedDict
 from typing import Callable, Optional, Tuple
 
 import numpy as np
+from gm.modules.conv2d import Conv2d
 from gm.modules.util import linear, normalize
 
 import mindspore as ms
@@ -296,7 +297,7 @@ class VisionTransformer(nn.Cell):
             self.conv1 = nn.Dense(patch_input_dim, width)
         else:
             self.patchnorm_pre_ln = nn.Identity()
-            self.conv1 = nn.Conv2d(
+            self.conv1 = Conv2d(
                 in_channels=3,
                 out_channels=width,
                 kernel_size=patch_size,
