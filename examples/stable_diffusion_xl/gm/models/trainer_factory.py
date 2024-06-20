@@ -1,14 +1,14 @@
 # This file only applies to static graph mode
 
+import numpy as np
 from gm.util import append_dims, clip_grad_, clip_grad_global_, get_timestep_multinomial
 
 import mindspore as ms
-from mindspore import mint, nn, ops, Tensor
+from mindspore import Tensor, mint, nn, ops
 from mindspore.boost.grad_accumulation import gradient_accumulation_op as _grad_accum_op
 from mindspore.boost.grad_accumulation import gradient_clear_op as _grad_clear_op
 from mindspore.ops import functional as F
 
-import numpy as np
 
 class TrainOneStepCell(nn.Cell):
     def __init__(

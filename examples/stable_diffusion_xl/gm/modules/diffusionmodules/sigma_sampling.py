@@ -1,11 +1,10 @@
 # reference to https://github.com/Stability-AI/generative-models
 
+import numpy as np
 from gm.util import default, instantiate_from_config
 
 import mindspore as ms
 from mindspore import Tensor, nn, ops
-
-import numpy as np
 
 
 class EDMSampling(nn.Cell):

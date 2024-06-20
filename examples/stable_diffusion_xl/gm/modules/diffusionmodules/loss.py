@@ -1,12 +1,12 @@
 from typing import List, Optional, Union
 
+import numpy as np
 from gm.util import append_dims
 from omegaconf import ListConfig
 
 import mindspore as ms
-from mindspore import nn, ops, Tensor
+from mindspore import Tensor, nn, ops
 
-import numpy as np
 
 class StandardDiffusionLoss(nn.Cell):
     def __init__(

@@ -3,7 +3,7 @@
 import numpy as np
 
 import mindspore as ms
-from mindspore import nn, ops, Tensor
+from mindspore import Tensor, nn, ops
 
 
 class DiagonalGaussianDistribution(nn.Cell):

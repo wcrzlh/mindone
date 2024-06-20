@@ -37,7 +37,8 @@ class Conv2d(nn.Cell):
         self.bias_init = bias_init
 
         self.weight = Parameter(
-            init.initializer(weight_init, [out_channels, in_channels // group, self.kernel_size, self.kernel_size]), name="weight"
+            init.initializer(weight_init, [out_channels, in_channels // group, self.kernel_size, self.kernel_size]),
+            name="weight",
         )
 
         if has_bias:
