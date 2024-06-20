@@ -109,6 +109,8 @@ def set_default(args):
         enable_graph_kernel=True,
         graph_kernel_flags="--disable_expand_ops=BiasAdd,BiasAddGrad",
     )
+    if args.ms_mode == 1:
+        context.set_context(jit_config={"jit_level": "O0"})
     if args.device_target == "Ascend":
         device_id = int(os.getenv("DEVICE_ID", 0))
         context.set_context(device_id=device_id)
