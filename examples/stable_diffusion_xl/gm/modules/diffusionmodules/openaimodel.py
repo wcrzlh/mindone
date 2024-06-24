@@ -312,12 +312,12 @@ class QKVAttentionLegacy(nn.Cell):
         # weight = th.einsum(
         #     "bct,bcs->bts", q * scale, k * scale
         # )  # More stable with f16 than dividing afterwards
-        weight = ops.BatchMatMul()((q * scale).transpose(0, 2, 1), (k * scale))  # (b, c, t) -> (b, t, c)  # (b, c, s)
+        weight = ops.bmm((q * scale).transpose(0, 2, 1), (k * scale))  # (b, c, t) -> (b, t, c)  # (b, c, s)
 
         weight = ops.softmax(weight, axis=-1)
 
         # a = th.einsum("bts,bcs->bct", weight, v)
-        a = ops.BatchMatMul()(weight, v.transpose(0, 2, 1)).transpose(  # (b, t, s)  # (b, c, s) -> (b, s, c)
+        a = ops.bmm(weight, v.transpose(0, 2, 1)).transpose(  # (b, t, s)  # (b, c, s) -> (b, s, c)
             0, 2, 1
         )  # (b, t, c) -> (b, c, t)
 
@@ -350,7 +350,7 @@ class QKVAttention(nn.Cell):
         #     (q * scale).view(bs * self.n_heads, ch, length),
         #     (k * scale).view(bs * self.n_heads, ch, length),
         # )  # More stable with f16 than dividing afterwards
-        weight = ops.BatchMatMul()(
+        weight = ops.bmm(
             (q * scale).view(bs * self.n_heads, ch, length).transpose(0, 2, 1),  # (b, c, t) -> (b, t, c)
             (k * scale).view(bs * self.n_heads, ch, length),  # (b, c, s)
         )
@@ -358,7 +358,7 @@ class QKVAttention(nn.Cell):
         weight = ops.softmax(weight, axis=-1)
 
         # a = th.einsum("bts,bcs->bct", weight, v.reshape(bs * self.n_heads, ch, length))
-        a = ops.BatchMatMul()(
+        a = ops.bmm(
             weight, v.reshape(bs * self.n_heads, ch, length).transpose(0, 2, 1)  # (b, t, s)  # (b, c, s) -> (b, s, c)
         ).transpose(
             0, 2, 1

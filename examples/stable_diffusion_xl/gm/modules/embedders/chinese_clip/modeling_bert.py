@@ -190,7 +190,7 @@ class BertSelfAttention(nn.Cell):
         self.dropout = nn.Dropout(p=config.attention_probs_dropout_prob)
 
         self.softmax = nn.Softmax(-1)
-        self.matmul = ops.BatchMatMul()
+        self.matmul = ops.bmm
 
     def transpose_for_scores(self, input_x):
         r"""

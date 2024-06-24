@@ -137,13 +137,13 @@ class Attention(nn.Cell):
         v = v.view(L, N * self.num_heads, -1).swapaxes(0, 1)
 
         if self.logit_scale is not None:
-            attn = ops.BatchMatMul()(normalize(q, dim=-1), normalize(k, dim=-1).swapaxes(-1, -2))
+            attn = ops.bmm(normalize(q, dim=-1), normalize(k, dim=-1).swapaxes(-1, -2))
             logit_scale = ops.clip(self.logit_scale, max=self.logit_scale_max).exp()
             attn = attn.view(N, self.num_heads, L, L) * logit_scale
             attn = attn.view(-1, L, L)
         else:
             q = q * self.scale
-            attn = ops.BatchMatMul()(q, k.swapaxes(-1, -2))
+            attn = ops.bmm(q, k.swapaxes(-1, -2))
 
         if attn_mask is not None:
             if attn_mask.dtype == ms.bool_:
@@ -155,7 +155,7 @@ class Attention(nn.Cell):
         attn = ops.softmax(attn, axis=-1)
         attn = self.attn_drop(attn)
 
-        x = ops.BatchMatMul()(attn, v)
+        x = ops.bmm(attn, v)
         if self.head_scale is not None:
             x = x.view(N, self.num_heads, L, C) * self.head_scale
             x = x.view(-1, L, C)

@@ -90,7 +90,7 @@ class CLIPAttention(nn.Cell):
         value_states = value_states.view(*proj_shape)
 
         src_len = key_states.shape[1]
-        attn_weights = ops.BatchMatMul()(query_states, key_states.swapaxes(1, 2))
+        attn_weights = ops.bmm(query_states, key_states.swapaxes(1, 2))
 
         if attn_weights.shape != (bsz * self.num_heads, tgt_len, src_len):
             raise ValueError(
@@ -112,7 +112,7 @@ class CLIPAttention(nn.Cell):
 
         attn_probs = ops.dropout(attn_weights, p=self.dropout, training=self.training)
 
-        attn_output = ops.BatchMatMul()(attn_probs, value_states)
+        attn_output = ops.bmm(attn_probs, value_states)
 
         if attn_output.shape != (bsz * self.num_heads, tgt_len, self.head_dim):
             raise ValueError(
