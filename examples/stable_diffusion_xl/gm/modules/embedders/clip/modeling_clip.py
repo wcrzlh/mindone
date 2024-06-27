@@ -62,10 +62,10 @@ class CLIPAttention(nn.Cell):
         self.scale = self.head_dim**-0.5
         self.dropout = config.attention_dropout
 
-        self.k_proj = nn.Dense(self.embed_dim, self.embed_dim)
-        self.v_proj = nn.Dense(self.embed_dim, self.embed_dim)
-        self.q_proj = nn.Dense(self.embed_dim, self.embed_dim)
-        self.out_proj = nn.Dense(self.embed_dim, self.embed_dim)
+        self.k_proj = mint.nn.Linear(self.embed_dim, self.embed_dim)
+        self.v_proj = mint.nn.Linear(self.embed_dim, self.embed_dim)
+        self.q_proj = mint.nn.Linear(self.embed_dim, self.embed_dim)
+        self.out_proj = mint.nn.Linear(self.embed_dim, self.embed_dim)
 
     def _shape(self, tensor: Tensor, seq_len: int, bsz: int):
         return tensor.view(bsz, seq_len, self.num_heads, self.head_dim).swapaxes(1, 2)
@@ -108,7 +108,7 @@ class CLIPAttention(nn.Cell):
             attn_weights = attn_weights.view(bsz, self.num_heads, tgt_len, src_len) + causal_attention_mask
             attn_weights = attn_weights.view(bsz * self.num_heads, tgt_len, src_len)
 
-        attn_weights = ops.softmax(attn_weights, axis=-1)
+        attn_weights = mint.softmax(attn_weights, dim=-1)
 
         attn_probs = ops.dropout(attn_weights, p=self.dropout, training=self.training)
 
@@ -134,8 +134,8 @@ class CLIPMLP(nn.Cell):
         super().__init__()
         self.config = config
         self.activation_fn = ACT2FN[config.hidden_act]
-        self.fc1 = nn.Dense(config.hidden_size, config.intermediate_size)
-        self.fc2 = nn.Dense(config.intermediate_size, config.hidden_size)
+        self.fc1 = mint.nn.Linear(config.hidden_size, config.intermediate_size)
+        self.fc2 = mint.nn.Linear(config.intermediate_size, config.hidden_size)
 
     def construct(self, hidden_states: Tensor) -> Tensor:
         hidden_states = self.fc1(hidden_states)
@@ -149,9 +149,9 @@ class CLIPEncoderLayer(nn.Cell):
         super().__init__()
         self.embed_dim = config.hidden_size
         self.self_attn = CLIPAttention(config)
-        self.layer_norm1 = nn.extend.LayerNorm([self.embed_dim], epsilon=config.layer_norm_eps)
+        self.layer_norm1 = nn.extend.LayerNorm([self.embed_dim], eps=config.layer_norm_eps)
         self.mlp = CLIPMLP(config)
-        self.layer_norm2 = nn.extend.LayerNorm([self.embed_dim], epsilon=config.layer_norm_eps)
+        self.layer_norm2 = nn.extend.LayerNorm([self.embed_dim], eps=config.layer_norm_eps)
 
     def construct(
         self,
@@ -287,7 +287,7 @@ class CLIPTextTransformer(nn.Cell):
         embed_dim = config.hidden_size
         self.embeddings = CLIPTextEmbeddings(config)
         self.encoder = CLIPEncoder(config)
-        self.final_layer_norm = nn.extend.LayerNorm([embed_dim], epsilon=config.layer_norm_eps)
+        self.final_layer_norm = nn.extend.LayerNorm([embed_dim], eps=config.layer_norm_eps)
 
     def construct(
         self,

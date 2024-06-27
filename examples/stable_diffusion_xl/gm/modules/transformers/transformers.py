@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 from gm.modules.util import linear
 
 import mindspore as ms
-from mindspore import Tensor, ops
+from mindspore import Tensor, mint, ops
 
 
 def scaled_dot_product_attention(query, key, value, attn_mask=None, dtype=None):
@@ -16,11 +16,11 @@ def scaled_dot_product_attention(query, key, value, attn_mask=None, dtype=None):
 
     if attn_mask is not None:
         attn_mask = attn_mask.masked_fill(not attn_mask, -1e5) if attn_mask.dtype == ms.bool_ else attn_mask
-        attn_weight = ops.softmax(
-            ops.matmul(query, key.swapaxes(-2, -1)) / (query.shape[-1] ** 0.5) + attn_mask, axis=-1
+        attn_weight = mint.softmax(
+            ops.matmul(query, key.swapaxes(-2, -1)) / (query.shape[-1] ** 0.5) + attn_mask, dim=-1
         )
     else:
-        attn_weight = ops.softmax(ops.matmul(query, key.swapaxes(-2, -1)) / (query.shape[-1] ** 0.5), axis=-1)
+        attn_weight = mint.softmax(ops.matmul(query, key.swapaxes(-2, -1)) / (query.shape[-1] ** 0.5), dim=-1)
 
     out = ops.matmul(attn_weight, value)
     out = out.astype(_dtype)

@@ -8,7 +8,7 @@ from gm.modules.transformers import scaled_dot_product_attention
 
 import mindspore as ms
 import mindspore.numpy as mnp
-from mindspore import Tensor, nn, ops
+from mindspore import Tensor, mint, nn, ops
 
 
 def nonlinearity(x):
@@ -85,7 +85,7 @@ class ResnetBlock(nn.Cell):
             in_channels, out_channels, kernel_size=3, stride=1, padding=1, pad_mode="pad", has_bias=True
         )
         if temb_channels > 0:
-            self.temb_proj = nn.Dense(temb_channels, out_channels)
+            self.temb_proj = mint.nn.Linear(temb_channels, out_channels)
         self.norm2 = Normalize(out_channels)
         self.dropout = nn.Dropout(p=dropout)
         self.conv2 = Conv2d(

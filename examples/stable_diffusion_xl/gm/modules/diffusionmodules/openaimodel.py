@@ -14,7 +14,7 @@ from gm.modules.diffusionmodules.util import (
 )
 from gm.util import default, exists
 
-from mindspore import jit, nn, ops
+from mindspore import jit, mint, nn, ops
 
 
 class TimestepBlock(nn.Cell):
@@ -314,7 +314,7 @@ class QKVAttentionLegacy(nn.Cell):
         # )  # More stable with f16 than dividing afterwards
         weight = ops.bmm((q * scale).transpose(0, 2, 1), (k * scale))  # (b, c, t) -> (b, t, c)  # (b, c, s)
 
-        weight = ops.softmax(weight, axis=-1)
+        weight = mint.softmax(weight, dim=-1)
 
         # a = th.einsum("bts,bcs->bct", weight, v)
         a = ops.bmm(weight, v.transpose(0, 2, 1)).transpose(  # (b, t, s)  # (b, c, s) -> (b, s, c)
@@ -355,7 +355,7 @@ class QKVAttention(nn.Cell):
             (k * scale).view(bs * self.n_heads, ch, length),  # (b, c, s)
         )
 
-        weight = ops.softmax(weight, axis=-1)
+        weight = mint.softmax(weight, dim=-1)
 
         # a = th.einsum("bts,bcs->bct", weight, v.reshape(bs * self.n_heads, ch, length))
         a = ops.bmm(
@@ -524,7 +524,7 @@ class UNetModel(nn.Cell):
                 self.label_emb = nn.Embedding(num_classes, time_embed_dim)
             elif self.num_classes == "continuous":
                 print("setting up linear c_adm embedding layer")
-                self.label_emb = nn.Dense(1, time_embed_dim)
+                self.label_emb = mint.nn.Linear(1, time_embed_dim)
             elif self.num_classes == "timestep":
                 self.label_emb = nn.SequentialCell(
                     [
@@ -1029,7 +1029,7 @@ class UNetModelStage1(nn.Cell):
                 self.label_emb = nn.Embedding(num_classes, time_embed_dim)
             elif self.num_classes == "continuous":
                 print("setting up linear c_adm embedding layer")
-                self.label_emb = nn.Dense(1, time_embed_dim)
+                self.label_emb = mint.nn.Linear(1, time_embed_dim)
             elif self.num_classes == "timestep":
                 self.label_emb = nn.SequentialCell(
                     [

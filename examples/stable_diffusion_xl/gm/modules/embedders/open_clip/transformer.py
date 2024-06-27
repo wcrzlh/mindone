@@ -47,13 +47,13 @@ class MultiheadAttention(nn.Cell):
         self.num_heads = n_head
         self.head_dim = self.embed_dim // self.num_heads
 
-        # self.in_proj = nn.Dense(self.embed_dim, 3 * self.embed_dim)
+        # self.in_proj = mint.nn.Linear(self.embed_dim, 3 * self.embed_dim)
         self.in_proj_weight = Parameter(
             init.initializer(init.XavierUniform(), (3 * self.embed_dim, self.embed_dim), ms.float32), "in_proj_weight"
         )
         self.in_proj_bias = Parameter(init.initializer("zeros", (3 * self.embed_dim), ms.float32), "in_proj_bias")
 
-        self.out_proj = nn.Dense(self.embed_dim, self.embed_dim)
+        self.out_proj = mint.nn.Linear(self.embed_dim, self.embed_dim)
         self.split = ops.Split(-1, 3)
         self.expand_dims = ops.ExpandDims()
         self.softmax = nn.Softmax(-1)
@@ -110,7 +110,7 @@ class Attention(nn.Cell):
         self.scale = self.head_dim**-0.5
         self.logit_scale_max = logit_scale_max
 
-        # keeping in_proj in this form (instead of nn.Dense) to match weight scheme of original
+        # keeping in_proj in this form (instead of mint.nn.Linear) to match weight scheme of original
         self.in_proj_weight = Parameter(Tensor(np.random.randn((dim * 3, dim)) * self.scale, ms.float32))
         if qkv_bias:
             self.in_proj_bias = Parameter(Tensor(np.random.zeros(dim * 3), ms.float32))
@@ -126,7 +126,7 @@ class Attention(nn.Cell):
             self.head_scale = Parameter(Tensor(np.ones((num_heads, 1, 1)), ms.float32))
         else:
             self.head_scale = None
-        self.out_proj = nn.Dense(dim, dim)
+        self.out_proj = mint.nn.Linear(dim, dim)
         self.out_drop = nn.Dropout(p=proj_drop)
 
     def construct(self, x, attn_mask: Optional[Tensor] = None):
@@ -152,7 +152,7 @@ class Attention(nn.Cell):
                 attn_mask = new_attn_mask
             attn += attn_mask
 
-        attn = ops.softmax(attn, axis=-1)
+        attn = mint.softmax(attn, dim=-1)
         attn = self.attn_drop(attn)
 
         x = ops.bmm(attn, v)
@@ -178,21 +178,21 @@ class ResidualAttentionBlock(nn.Cell):
     ):
         super().__init__()
 
-        self.ln_1 = norm_layer([d_model], epsilon=1e-5)
+        self.ln_1 = norm_layer([d_model], eps=1e-5)
         self.attn = MultiheadAttention(d_model, n_head)
         self.ls_1 = LayerScale(d_model, ls_init_value) if ls_init_value is not None else nn.Identity()
         self.is_cross_attention = is_cross_attention
         if is_cross_attention:
-            self.ln_1_kv = norm_layer([d_model], epsilon=1e-5)
+            self.ln_1_kv = norm_layer([d_model], eps=1e-5)
 
-        self.ln_2 = norm_layer([d_model], epsilon=1e-5)
+        self.ln_2 = norm_layer([d_model], eps=1e-5)
         mlp_width = int(d_model * mlp_ratio)
         self.mlp = nn.SequentialCell(
             OrderedDict(
                 [
-                    ("c_fc", nn.Dense(d_model, mlp_width)),
+                    ("c_fc", mint.nn.Linear(d_model, mlp_width)),
                     ("gelu", act_layer()),
-                    ("c_proj", nn.Dense(mlp_width, d_model)),
+                    ("c_proj", mint.nn.Linear(mlp_width, d_model)),
                 ]
             )
         )
@@ -294,7 +294,7 @@ class VisionTransformer(nn.Cell):
         if input_patchnorm:
             patch_input_dim = patch_height * patch_width * 3
             self.patchnorm_pre_ln = nn.extend.LayerNorm([patch_input_dim], epsilon=1e-5)
-            self.conv1 = nn.Dense(patch_input_dim, width)
+            self.conv1 = mint.nn.Linear(patch_input_dim, width)
         else:
             self.patchnorm_pre_ln = nn.Identity()
             self.conv1 = Conv2d(
@@ -316,7 +316,7 @@ class VisionTransformer(nn.Cell):
         # setting a patch_dropout of 0. would mean it is disabled and this function would be the identity fn
         # self.patch_dropout = nn.Identity()
 
-        self.ln_pre = norm_layer([width], epsilon=1e-5)
+        self.ln_pre = norm_layer([width], eps=1e-5)
         self.transformer = Transformer(
             width,
             layers,
@@ -330,7 +330,7 @@ class VisionTransformer(nn.Cell):
         self.global_average_pool = global_average_pool
 
         self.attn_pool = None
-        self.ln_post = norm_layer([width], epsilon=1e-5)
+        self.ln_post = norm_layer([width], eps=1e-5)
         self.proj = Parameter(Tensor(scale * np.random.randn(width, output_dim), ms.float32))
 
     def _global_pool(self, x: Tensor) -> Tuple[Tensor, Tensor]:
@@ -427,7 +427,7 @@ class TextTransformer(nn.Cell):
             act_layer=act_layer,
             norm_layer=norm_layer,
         )
-        self.ln_final = norm_layer([width], epsilon=1e-5)
+        self.ln_final = norm_layer([width], eps=1e-5)
 
         _attn_mask_tensor = self.build_attention_mask()
         self.attn_mask = Parameter(_attn_mask_tensor, requires_grad=False)
