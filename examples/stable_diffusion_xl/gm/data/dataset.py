@@ -150,7 +150,9 @@ class Text2ImageDataset:
             epoch_num, batch_num = batch_info.get_epoch_num(), batch_info.get_batch_num()
             cur_seed = epoch_num * 10 + batch_num
             random.seed(cur_seed)
-            new_size = random.choice(self.multi_aspect)
+            length = len(self.multi_aspect)
+            choice = epoch_num % length
+            new_size = self.multi_aspect[choice]
 
         for bs_trans in self.batched_transforms:
             samples = bs_trans(samples, target_size=new_size)
