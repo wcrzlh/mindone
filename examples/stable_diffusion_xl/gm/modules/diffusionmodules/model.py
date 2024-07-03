@@ -4,6 +4,7 @@ from typing import Callable
 
 from gm.modules.attention import FLASH_IS_AVAILABLE, FlashAttention, LinearAttention
 from gm.modules.transformers import scaled_dot_product_attention
+from gm.modules.conv2d import Conv2d
 
 import mindspore as ms
 from mindspore import Tensor, nn, ops, mint
@@ -23,7 +24,7 @@ class Upsample(nn.Cell):
         super().__init__()
         self.with_conv = with_conv
         if self.with_conv:
-            self.conv = nn.Conv2d(
+            self.conv = Conv2d(
                 in_channels, in_channels, kernel_size=3, stride=1, padding=1, pad_mode="pad", has_bias=True
             )
 
@@ -42,7 +43,7 @@ class Downsample(nn.Cell):
         self.with_conv = with_conv
         if self.with_conv:
             # no asymmetric padding in mindspore conv, must do it ourselves
-            self.conv = nn.Conv2d(
+            self.conv = Conv2d(
                 in_channels, in_channels, kernel_size=3, stride=2, padding=0, pad_mode="pad", has_bias=True
             )
 
@@ -77,23 +78,23 @@ class ResnetBlock(nn.Cell):
         self.use_conv_shortcut = conv_shortcut
 
         self.norm1 = Normalize(in_channels)
-        self.conv1 = nn.Conv2d(
+        self.conv1 = Conv2d(
             in_channels, out_channels, kernel_size=3, stride=1, padding=1, pad_mode="pad", has_bias=True
         )
         if temb_channels > 0:
             self.temb_proj = mint.nn.Linear(temb_channels, out_channels)
         self.norm2 = Normalize(out_channels)
         self.dropout = nn.Dropout(p=dropout)
-        self.conv2 = nn.Conv2d(
+        self.conv2 = Conv2d(
             out_channels, out_channels, kernel_size=3, stride=1, padding=1, pad_mode="pad", has_bias=True
         )
         if self.in_channels != self.out_channels:
             if self.use_conv_shortcut:
-                self.conv_shortcut = nn.Conv2d(
+                self.conv_shortcut = Conv2d(
                     in_channels, out_channels, kernel_size=3, stride=1, padding=1, pad_mode="pad", has_bias=True
                 )
             else:
-                self.nin_shortcut = nn.Conv2d(
+                self.nin_shortcut = Conv2d(
                     in_channels, out_channels, kernel_size=1, stride=1, padding=0, pad_mode="pad", has_bias=True
                 )
 
@@ -127,10 +128,10 @@ class AttnBlock(nn.Cell):
         self.attn_dtype = attn_dtype
 
         self.norm = Normalize(in_channels)
-        self.q = nn.Conv2d(in_channels, in_channels, kernel_size=1, stride=1, pad_mode="valid", has_bias=True)
-        self.k = nn.Conv2d(in_channels, in_channels, kernel_size=1, stride=1, pad_mode="valid", has_bias=True)
-        self.v = nn.Conv2d(in_channels, in_channels, kernel_size=1, stride=1, pad_mode="valid", has_bias=True)
-        self.proj_out = nn.Conv2d(in_channels, in_channels, kernel_size=1, stride=1, pad_mode="valid", has_bias=True)
+        self.q = Conv2d(in_channels, in_channels, kernel_size=1, stride=1, pad_mode="valid", has_bias=True)
+        self.k = Conv2d(in_channels, in_channels, kernel_size=1, stride=1, pad_mode="valid", has_bias=True)
+        self.v = Conv2d(in_channels, in_channels, kernel_size=1, stride=1, pad_mode="valid", has_bias=True)
+        self.proj_out = Conv2d(in_channels, in_channels, kernel_size=1, stride=1, pad_mode="valid", has_bias=True)
 
     def attention(self, h_: Tensor) -> Tensor:
         h_ = self.norm(h_)
@@ -175,10 +176,10 @@ class MemoryEfficientAttnBlock(nn.Cell):
         self.attn_dtype = attn_dtype
 
         self.norm = Normalize(in_channels)
-        self.q = nn.Conv2d(in_channels, in_channels, kernel_size=1, stride=1, pad_mode="valid", has_bias=True)
-        self.k = nn.Conv2d(in_channels, in_channels, kernel_size=1, stride=1, pad_mode="valid", has_bias=True)
-        self.v = nn.Conv2d(in_channels, in_channels, kernel_size=1, stride=1, pad_mode="valid", has_bias=True)
-        self.proj_out = nn.Conv2d(in_channels, in_channels, kernel_size=1, stride=1, pad_mode="valid", has_bias=True)
+        self.q = Conv2d(in_channels, in_channels, kernel_size=1, stride=1, pad_mode="valid", has_bias=True)
+        self.k = Conv2d(in_channels, in_channels, kernel_size=1, stride=1, pad_mode="valid", has_bias=True)
+        self.v = Conv2d(in_channels, in_channels, kernel_size=1, stride=1, pad_mode="valid", has_bias=True)
+        self.proj_out = Conv2d(in_channels, in_channels, kernel_size=1, stride=1, pad_mode="valid", has_bias=True)
 
         self.flash_attention = FlashAttention()
 
@@ -284,7 +285,7 @@ class Encoder(nn.Cell):
         self.in_channels = in_channels
 
         # downsampling
-        self.conv_in = nn.Conv2d(
+        self.conv_in = Conv2d(
             in_channels, self.ch, kernel_size=3, stride=1, padding=1, pad_mode="pad", has_bias=True
         )
 
@@ -341,7 +342,7 @@ class Encoder(nn.Cell):
 
         # end
         self.norm_out = Normalize(block_in)
-        self.conv_out = nn.Conv2d(
+        self.conv_out = Conv2d(
             block_in,
             2 * z_channels if double_z else z_channels,
             kernel_size=3,
@@ -427,7 +428,7 @@ class Decoder(nn.Cell):
         make_resblock_cls = self._make_resblock()
         make_conv_cls = self._make_conv()
         # z to block_in
-        self.conv_in = nn.Conv2d(
+        self.conv_in = Conv2d(
             z_channels, block_in, kernel_size=3, stride=1, padding=1, pad_mode="pad", has_bias=True
         )
 
@@ -495,7 +496,7 @@ class Decoder(nn.Cell):
         return ResnetBlock
 
     def _make_conv(self) -> Callable:
-        return nn.Conv2d
+        return Conv2d
 
     def get_last_layer(self, **kwargs):
         return self.conv_out.weight

@@ -2,8 +2,11 @@
 
 import numpy as np
 
+from gm.modules.conv2d import Conv2d
+
 import mindspore as ms
 from mindspore import Tensor, nn, ops, mint
+
 
 
 class ZeroInitModule(nn.Cell):
@@ -95,7 +98,7 @@ def conv_nd(dims, *args, **kwargs):
             *args, has_bias=kwargs.pop("has_bias", True), pad_mode=kwargs.pop("pad_mode", "valid"), **kwargs
         )
     elif dims == 2:
-        return nn.Conv2d(
+        return Conv2d(
             *args, has_bias=kwargs.pop("has_bias", True), pad_mode=kwargs.pop("pad_mode", "valid"), **kwargs
         )
     elif dims == 3:

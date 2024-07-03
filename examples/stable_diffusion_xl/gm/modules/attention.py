@@ -8,6 +8,7 @@ except ImportError:
 
 from gm.modules.diffusionmodules.util import normalization, zero_module
 from gm.modules.transformers import scaled_dot_product_attention
+from gm.modules.conv2d import Conv2d
 from gm.util import default, exists
 
 import mindspore as ms
@@ -59,8 +60,8 @@ class LinearAttention(nn.Cell):
         super().__init__()
         self.heads = heads
         hidden_dim = dim_head * heads
-        self.to_qkv = nn.Conv2d(dim, hidden_dim * 3, 1, has_bias=False, pad_mode="valid")
-        self.to_out = nn.Conv2d(hidden_dim, dim, 1, has_bias=True, pad_mode="valid")
+        self.to_qkv = Conv2d(dim, hidden_dim * 3, 1, has_bias=False, pad_mode="valid")
+        self.to_out = Conv2d(hidden_dim, dim, 1, has_bias=True, pad_mode="valid")
 
     def construct(self, x):
         b, c, h, w = x.shape
@@ -308,7 +309,7 @@ class SpatialTransformer(nn.Cell):
         inner_dim = n_heads * d_head
         self.norm = normalization(in_channels, eps=1e-6)
         if not use_linear:
-            self.proj_in = nn.Conv2d(
+            self.proj_in = Conv2d(
                 in_channels, inner_dim, kernel_size=1, stride=1, padding=0, has_bias=True, pad_mode="valid"
             )
         else:
@@ -330,7 +331,7 @@ class SpatialTransformer(nn.Cell):
         )
         if not use_linear:
             self.proj_out = zero_module(
-                nn.Conv2d(inner_dim, in_channels, kernel_size=1, stride=1, padding=0, has_bias=True, pad_mode="valid")
+                Conv2d(inner_dim, in_channels, kernel_size=1, stride=1, padding=0, has_bias=True, pad_mode="valid")
             )
         else:
             self.proj_out = zero_module(mint.nn.Linear(inner_dim, in_channels))
