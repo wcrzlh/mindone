@@ -16,7 +16,7 @@ from gm.modules.diffusionmodules.util import (
 from gm.util import default, exists
 
 import mindspore as ms
-from mindspore import jit, nn, ops, mint
+from mindspore import jit, mint, nn, ops
 
 _logger = logging.getLogger(__name__)
 

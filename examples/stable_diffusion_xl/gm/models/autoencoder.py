@@ -1,9 +1,9 @@
 # reference to https://github.com/Stability-AI/generative-models
 from typing import Any, Dict, Tuple, Union
 
+from gm.modules.conv2d import Conv2d
 from gm.modules.diffusionmodules.model import Decoder, Encoder
 from gm.modules.distributions.distributions import DiagonalGaussianDistribution
-from gm.modules.conv2d import Conv2d
 from gm.util import default, instantiate_from_config
 from omegaconf import ListConfig
 

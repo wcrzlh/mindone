@@ -1,12 +1,10 @@
 # reference to https://github.com/Stability-AI/generative-models
 
 import numpy as np
-
 from gm.modules.conv2d import Conv2d
 
 import mindspore as ms
-from mindspore import Tensor, nn, ops, mint
-
+from mindspore import Tensor, mint, nn, ops
 
 
 class ZeroInitModule(nn.Cell):
@@ -98,9 +96,7 @@ def conv_nd(dims, *args, **kwargs):
             *args, has_bias=kwargs.pop("has_bias", True), pad_mode=kwargs.pop("pad_mode", "valid"), **kwargs
         )
     elif dims == 2:
-        return Conv2d(
-            *args, has_bias=kwargs.pop("has_bias", True), pad_mode=kwargs.pop("pad_mode", "valid"), **kwargs
-        )
+        return Conv2d(*args, has_bias=kwargs.pop("has_bias", True), pad_mode=kwargs.pop("pad_mode", "valid"), **kwargs)
     elif dims == 3:
         return nn.Conv3d(
             *args, has_bias=kwargs.pop("has_bias", True), pad_mode=kwargs.pop("pad_mode", "valid"), **kwargs

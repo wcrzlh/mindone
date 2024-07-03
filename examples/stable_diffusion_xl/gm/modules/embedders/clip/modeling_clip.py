@@ -8,7 +8,7 @@ from gm.modules.transformers.activations import ACT2FN
 from transformers.models.clip.configuration_clip import CLIPConfig, CLIPTextConfig
 
 import mindspore as ms
-from mindspore import mint, Parameter, Tensor, nn, ops
+from mindspore import Parameter, Tensor, mint, nn, ops
 
 MIN_VALUE = -1e5
 MAX_VALUE = 1e5

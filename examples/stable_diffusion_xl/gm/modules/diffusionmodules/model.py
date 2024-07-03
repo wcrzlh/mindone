@@ -3,11 +3,11 @@
 from typing import Callable
 
 from gm.modules.attention import FLASH_IS_AVAILABLE, FlashAttention, LinearAttention
-from gm.modules.transformers import scaled_dot_product_attention
 from gm.modules.conv2d import Conv2d
+from gm.modules.transformers import scaled_dot_product_attention
 
 import mindspore as ms
-from mindspore import Tensor, nn, ops, mint
+from mindspore import Tensor, mint, nn, ops
 
 
 def nonlinearity(x):
@@ -285,9 +285,7 @@ class Encoder(nn.Cell):
         self.in_channels = in_channels
 
         # downsampling
-        self.conv_in = Conv2d(
-            in_channels, self.ch, kernel_size=3, stride=1, padding=1, pad_mode="pad", has_bias=True
-        )
+        self.conv_in = Conv2d(in_channels, self.ch, kernel_size=3, stride=1, padding=1, pad_mode="pad", has_bias=True)
 
         curr_res = resolution
         in_ch_mult = (1,) + tuple(ch_mult)
@@ -428,9 +426,7 @@ class Decoder(nn.Cell):
         make_resblock_cls = self._make_resblock()
         make_conv_cls = self._make_conv()
         # z to block_in
-        self.conv_in = Conv2d(
-            z_channels, block_in, kernel_size=3, stride=1, padding=1, pad_mode="pad", has_bias=True
-        )
+        self.conv_in = Conv2d(z_channels, block_in, kernel_size=3, stride=1, padding=1, pad_mode="pad", has_bias=True)
 
         # middle
         self.mid = nn.Cell()

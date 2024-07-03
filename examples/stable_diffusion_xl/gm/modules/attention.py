@@ -6,13 +6,13 @@ try:
 except ImportError:
     from typing_extensions import Literal  # FIXME: python 3.7
 
+from gm.modules.conv2d import Conv2d
 from gm.modules.diffusionmodules.util import normalization, zero_module
 from gm.modules.transformers import scaled_dot_product_attention
-from gm.modules.conv2d import Conv2d
 from gm.util import default, exists
 
 import mindspore as ms
-from mindspore import nn, ops, mint
+from mindspore import mint, nn, ops
 
 try:
     from mindone.models.modules.flash_attention import MSFlashAttention as FlashAttention
@@ -46,7 +46,9 @@ class FeedForward(nn.Cell):
         super().__init__()
         inner_dim = int(dim * mult)
         dim_out = default(dim_out, dim)
-        project_in = nn.SequentialCell([mint.nn.Linear(dim, inner_dim), nn.GELU(False)]) if not glu else GEGLU(dim, inner_dim)
+        project_in = (
+            nn.SequentialCell([mint.nn.Linear(dim, inner_dim), nn.GELU(False)]) if not glu else GEGLU(dim, inner_dim)
+        )
 
         self.net = nn.SequentialCell([project_in, nn.Dropout(p=dropout), mint.nn.Linear(inner_dim, dim_out)])
 

@@ -3,11 +3,11 @@
 from collections import OrderedDict
 
 import numpy as np
-from gm.modules.transformers import multi_head_attention_forward
 from gm.modules.conv2d import Conv2d
+from gm.modules.transformers import multi_head_attention_forward
 
 import mindspore as ms
-from mindspore import Parameter, Tensor, nn, ops
+from mindspore import Parameter, Tensor, nn, ops, mint
 from mindspore.common import initializer as init
 
 

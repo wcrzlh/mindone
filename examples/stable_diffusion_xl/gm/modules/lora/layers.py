@@ -2,7 +2,7 @@
 
 import math
 
-from mindspore import mint, Tensor, nn, ops
+from mindspore import Tensor, mint, nn, ops
 from mindspore.common import initializer as init
 
 

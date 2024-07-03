@@ -21,7 +21,7 @@ from collections import OrderedDict
 from gm.modules.embedders.chinese_clip.configuration_bert import BertConfig
 
 import mindspore.common.dtype as mstype
-from mindspore import Tensor, nn, ops
+from mindspore import Tensor, nn, ops, mint
 from mindspore.amp import auto_mixed_precision
 from mindspore.common.initializer import Normal, TruncatedNormal, initializer
 
