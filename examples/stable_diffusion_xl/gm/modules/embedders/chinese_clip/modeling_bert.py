@@ -171,17 +171,17 @@ class BertSelfAttention(nn.Cell):
         self.attention_head_size = int(config.hidden_size / config.num_attention_heads)
         self.all_head_size = self.num_attention_heads * self.attention_head_size
 
-        self.query = nn.Dense(
+        self.query = mint.nn.Linear(
             config.hidden_size,
             self.all_head_size,
             weight_init=TruncatedNormal(config.initializer_range),
         )
-        self.key = nn.Dense(
+        self.key = mint.nn.Linear(
             config.hidden_size,
             self.all_head_size,
             weight_init=TruncatedNormal(config.initializer_range),
         )
-        self.value = nn.Dense(
+        self.value = mint.nn.Linear(
             config.hidden_size,
             self.all_head_size,
             weight_init=TruncatedNormal(config.initializer_range),
@@ -241,7 +241,7 @@ class BertSelfOutput(nn.Cell):
 
     def __init__(self, config):
         super().__init__()
-        self.dense = nn.Dense(
+        self.dense = mint.nn.Linear(
             config.hidden_size,
             config.hidden_size,
             weight_init=TruncatedNormal(config.initializer_range),
@@ -280,7 +280,7 @@ class BertIntermediate(nn.Cell):
 
     def __init__(self, config):
         super().__init__()
-        self.dense = nn.Dense(
+        self.dense = mint.nn.Linear(
             config.hidden_size,
             config.intermediate_size,
             weight_init=TruncatedNormal(config.initializer_range),
@@ -300,7 +300,7 @@ class BertOutput(nn.Cell):
 
     def __init__(self, config):
         super().__init__()
-        self.dense = nn.Dense(
+        self.dense = mint.nn.Linear(
             config.intermediate_size,
             config.hidden_size,
             weight_init=TruncatedNormal(config.initializer_range),
@@ -389,7 +389,7 @@ class BertPooler(nn.Cell):
 
     def __init__(self, config):
         super().__init__()
-        self.dense = nn.Dense(
+        self.dense = mint.nn.Linear(
             config.hidden_size,
             config.hidden_size,
             activation="tanh",
@@ -416,7 +416,7 @@ class BertPreTrainedModel(nn.Cell):
 
     def _init_weights(self, cell):
         """Initialize the weights"""
-        if isinstance(cell, nn.Dense):
+        if isinstance(cell, mint.nn.Linear):
             # Slightly different from the TF version which uses truncated_normal for initialization
             # cf https://github.com/pytorch/pytorch/pull/5617
             cell.weight.set_data(

@@ -3,7 +3,7 @@
 import numpy as np
 
 import mindspore as ms
-from mindspore import Tensor, nn, ops
+from mindspore import Tensor, nn, ops, mint
 
 
 class ZeroInitModule(nn.Cell):
@@ -109,7 +109,7 @@ def linear(*args, **kwargs):
     """
     Create a linear module.
     """
-    return nn.Dense(*args, **kwargs)
+    return mint.nn.Linear(*args, **kwargs)
 
 
 def avg_pool_nd(dims, *args, **kwargs):

@@ -11,7 +11,7 @@ from gm.modules.transformers import scaled_dot_product_attention
 from gm.util import default, exists
 
 import mindspore as ms
-from mindspore import nn, ops
+from mindspore import nn, ops, mint
 
 try:
     from mindone.models.modules.flash_attention import MSFlashAttention as FlashAttention
@@ -33,7 +33,7 @@ _logger = logging.getLogger(__name__)
 class GEGLU(nn.Cell):
     def __init__(self, dim_in, dim_out):
         super().__init__()
-        self.proj = nn.Dense(dim_in, dim_out * 2)
+        self.proj = mint.nn.Linear(dim_in, dim_out * 2)
 
     def construct(self, x):
         x, gate = self.proj(x).chunk(2, axis=-1)
@@ -45,9 +45,9 @@ class FeedForward(nn.Cell):
         super().__init__()
         inner_dim = int(dim * mult)
         dim_out = default(dim_out, dim)
-        project_in = nn.SequentialCell([nn.Dense(dim, inner_dim), nn.GELU(False)]) if not glu else GEGLU(dim, inner_dim)
+        project_in = nn.SequentialCell([mint.nn.Linear(dim, inner_dim), nn.GELU(False)]) if not glu else GEGLU(dim, inner_dim)
 
-        self.net = nn.SequentialCell([project_in, nn.Dropout(p=dropout), nn.Dense(inner_dim, dim_out)])
+        self.net = nn.SequentialCell([project_in, nn.Dropout(p=dropout), mint.nn.Linear(inner_dim, dim_out)])
 
     def construct(self, x):
         return self.net(x)
@@ -100,11 +100,11 @@ class MemoryEfficientCrossAttention(nn.Cell):
         self.scale = dim_head**-0.5
         self.heads = heads
 
-        self.to_q = nn.Dense(query_dim, inner_dim, has_bias=False)
-        self.to_k = nn.Dense(context_dim, inner_dim, has_bias=False)
-        self.to_v = nn.Dense(context_dim, inner_dim, has_bias=False)
+        self.to_q = mint.nn.Linear(query_dim, inner_dim, bias=False)
+        self.to_k = mint.nn.Linear(context_dim, inner_dim, bias=False)
+        self.to_v = mint.nn.Linear(context_dim, inner_dim, bias=False)
 
-        self.to_out = nn.SequentialCell(nn.Dense(inner_dim, query_dim), nn.Dropout(p=dropout))
+        self.to_out = nn.SequentialCell(mint.nn.Linear(inner_dim, query_dim), nn.Dropout(p=dropout))
 
         self.flash_attention = FlashAttention(head_dim=dim_head, head_num=heads, high_precision=True)
         self.use_fa = use_fa
@@ -164,11 +164,11 @@ class CrossAttention(nn.Cell):
         self.scale = dim_head**-0.5
         self.heads = heads
 
-        self.to_q = nn.Dense(query_dim, inner_dim, has_bias=False)
-        self.to_k = nn.Dense(context_dim, inner_dim, has_bias=False)
-        self.to_v = nn.Dense(context_dim, inner_dim, has_bias=False)
+        self.to_q = mint.nn.Linear(query_dim, inner_dim, bias=False)
+        self.to_k = mint.nn.Linear(context_dim, inner_dim, bias=False)
+        self.to_v = mint.nn.Linear(context_dim, inner_dim, bias=False)
 
-        self.to_out = nn.SequentialCell(nn.Dense(inner_dim, query_dim), nn.Dropout(p=dropout))
+        self.to_out = nn.SequentialCell(mint.nn.Linear(inner_dim, query_dim), nn.Dropout(p=dropout))
 
     def construct(self, x, context=None, mask=None, additional_tokens=None):
         h = self.heads
@@ -312,7 +312,7 @@ class SpatialTransformer(nn.Cell):
                 in_channels, inner_dim, kernel_size=1, stride=1, padding=0, has_bias=True, pad_mode="valid"
             )
         else:
-            self.proj_in = nn.Dense(in_channels, inner_dim)
+            self.proj_in = mint.nn.Linear(in_channels, inner_dim)
 
         self.transformer_blocks = nn.CellList(
             [
@@ -333,7 +333,7 @@ class SpatialTransformer(nn.Cell):
                 nn.Conv2d(inner_dim, in_channels, kernel_size=1, stride=1, padding=0, has_bias=True, pad_mode="valid")
             )
         else:
-            self.proj_out = zero_module(nn.Dense(inner_dim, in_channels))
+            self.proj_out = zero_module(mint.nn.Linear(inner_dim, in_channels))
         self.use_linear = use_linear
 
     def construct(self, x, context=None):
