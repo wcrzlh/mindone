@@ -98,7 +98,7 @@ class TrainOneStepCell(nn.Cell):
 
         if self.snr_gamma is not None:
             snr_gamma = ops.ones_like(w) * self.snr_gamma
-            w = ops.stack((w, snr_gamma), axis=0).min(axis=0)
+            w = ops.stack_ext((w, snr_gamma), axis=0).min(axis=0)
 
         # compute loss
         if self.enable_conditioner:

@@ -660,7 +660,7 @@ class FrozenOpenCLIPEmbedder2(AbstractEmbModel):
         _dtype = x.dtype
 
         # x = x[ops.arange(x.shape[0]), tokens.argmax(axis=-1)]
-        indices = ops.stack((ops.arange(x.shape[0]), tokens.argmax(axis=-1)), axis=-1)
+        indices = ops.stack_ext((ops.arange(x.shape[0]), tokens.argmax(axis=-1)), axis=-1)
         x = ops.gather_nd(x, indices)
 
         x = ops.matmul(x, ops.cast(self.model.text_projection, x.dtype)).astype(_dtype)

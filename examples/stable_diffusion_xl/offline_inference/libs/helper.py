@@ -182,7 +182,7 @@ class VaeImageProcessor:
                 )
 
         elif isinstance(image[0], ms.Tensor):
-            image = ops.concat(image, axis=0) if image[0].ndim == 4 else ops.stack(image, axis=0)
+            image = ops.concat(image, axis=0) if image[0].ndim == 4 else ops.stack_ext(image, axis=0)
             _, channel, height, width = image.shape
 
             # don't need any preprocess if the image is latents
