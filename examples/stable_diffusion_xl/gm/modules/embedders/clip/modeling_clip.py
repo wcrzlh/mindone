@@ -149,9 +149,9 @@ class CLIPEncoderLayer(nn.Cell):
         super().__init__()
         self.embed_dim = config.hidden_size
         self.self_attn = CLIPAttention(config)
-        self.layer_norm1 = nn.LayerNorm([self.embed_dim], epsilon=config.layer_norm_eps)
+        self.layer_norm1 = nn.extend.LayerNorm([self.embed_dim], eps=config.layer_norm_eps)
         self.mlp = CLIPMLP(config)
-        self.layer_norm2 = nn.LayerNorm([self.embed_dim], epsilon=config.layer_norm_eps)
+        self.layer_norm2 = nn.extend.LayerNorm([self.embed_dim], eps=config.layer_norm_eps)
 
     def construct(
         self,
@@ -287,7 +287,7 @@ class CLIPTextTransformer(nn.Cell):
         embed_dim = config.hidden_size
         self.embeddings = CLIPTextEmbeddings(config)
         self.encoder = CLIPEncoder(config)
-        self.final_layer_norm = nn.LayerNorm([embed_dim], epsilon=config.layer_norm_eps)
+        self.final_layer_norm = nn.extend.LayerNorm([embed_dim], eps=config.layer_norm_eps)
 
     def construct(
         self,

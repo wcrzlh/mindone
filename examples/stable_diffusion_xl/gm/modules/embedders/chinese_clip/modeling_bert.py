@@ -103,7 +103,7 @@ def torch_to_mindspore(pth_file, **kwargs):
     return ms_ckpt_path
 
 
-class LayerNormFp32(nn.LayerNorm):
+class LayerNormFp32(nn.extend.LayerNorm):
     """Subclass mindspore's LayerNorm to handle fp16 (by casting to float32 and back)."""
 
     def __init__(self, *args, **kwargs):
@@ -437,7 +437,7 @@ class BertPreTrainedModel(nn.Cell):
             if cell.padding_idx is not None:
                 embedding_table[cell.padding_idx] = 0
             cell.embedding_table.set_data(embedding_table)
-        elif isinstance(cell, nn.LayerNorm):
+        elif isinstance(cell, nn.extend.LayerNorm):
             cell.gamma.set_data(initializer("ones", cell.gamma.shape, cell.gamma.dtype))
             cell.beta.set_data(initializer("zeros", cell.beta.shape, cell.beta.dtype))
 

@@ -247,9 +247,9 @@ class BasicTransformerBlock(nn.Cell):
         self.attn2 = attn_cls(
             query_dim=dim, context_dim=context_dim, heads=n_heads, dim_head=d_head, dropout=dropout, use_fa=False
         )  # is self-attn if context is none
-        self.norm1 = nn.LayerNorm([dim], epsilon=1e-5)
-        self.norm2 = nn.LayerNorm([dim], epsilon=1e-5)
-        self.norm3 = nn.LayerNorm([dim], epsilon=1e-5)
+        self.norm1 = nn.extend.LayerNorm([dim], eps=1e-5)
+        self.norm2 = nn.extend.LayerNorm([dim], eps=1e-5)
+        self.norm3 = nn.extend.LayerNorm([dim], eps=1e-5)
 
     def construct(self, x, context=None):
         x = self.attn1(self.norm1(x), context=context if self.disable_self_attn else None) + x
