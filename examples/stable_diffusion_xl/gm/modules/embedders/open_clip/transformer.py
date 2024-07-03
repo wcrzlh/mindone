@@ -146,7 +146,7 @@ class Attention(nn.Cell):
 
         if attn_mask is not None:
             if attn_mask.dtype == ms.bool_:
-                new_attn_mask = ops.zeros_like(attn_mask, dtype=q.dtype)
+                new_attn_mask = ops.zeros_like_ext(attn_mask, dtype=q.dtype)
                 new_attn_mask = ops.masked_fill(new_attn_mask, attn_mask, -1e5)
                 attn_mask = new_attn_mask
             attn += attn_mask

@@ -176,7 +176,7 @@ class GeneralConditioner(nn.Cell):
                         * emb
                     )
                 if hasattr(embedder, "input_key") and embedder.input_key in force_zero_embeddings:
-                    emb = ops.zeros_like(emb)
+                    emb = ops.zeros_like_ext(emb)
 
                 if not embedder.is_trainable:
                     emb = ops.stop_gradient(emb)
