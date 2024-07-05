@@ -132,8 +132,8 @@ def get_parser_train():
     parser.add_argument("--resume_step", type=int, default=0, help="resume from step_n")
     parser.add_argument("--optimizer_weight", type=str, default=None, help="load optimizer weight")
     parser.add_argument("--save_optimizer", type=ast.literal_eval, default=False, help="enable save optimizer")
-    parser.add_argument("--data_sink", type=ast.literal_eval, default=False)
-    parser.add_argument("--sink_size", type=int, default=1000)
+    parser.add_argument("--data_sink", type=ast.literal_eval, default=True)
+    parser.add_argument("--sink_size", type=int, default=10)
     parser.add_argument("--sink_queue_size", type=int, default=-1, help="export MS_DATASET_SINK_QUEUE")
     parser.add_argument(
         "--dataset_load_tokenizer", type=ast.literal_eval, default=True, help="create dataset with tokenizer"
