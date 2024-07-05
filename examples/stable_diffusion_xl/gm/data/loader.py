@@ -61,7 +61,7 @@ def create_loader(
         from gm.data.dataset_cache import Text2ImageCacheDataset
 
         multi_aspect = (
-            len(dataset_config["params"]["multi_aspect"].shape) if "multi_aspect" in dataset_config["params"] else 0
+            len(dataset_config["params"]["multi_aspect"]) if "multi_aspect" in dataset_config["params"] else 0
         )
         dataset = Text2ImageCacheDataset(data_path, cache_path, multi_aspect=multi_aspect)
     else:
