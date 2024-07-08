@@ -23,10 +23,12 @@ class Text2ImageCacheDataset:
         if self.multi_aspect:
             file_pick = random.randint(0, self.multi_aspect - 1)
             latent_path = os.path.join(self.cache_path, "latent_cache", str(file_pick) + ".npy")
+            vector_path = os.path.join(self.cache_path, "vector_cache", str(file_pick) + ".npy")
+            crossattn_path = os.path.join(self.cache_path, "crossattn_cache", str(file_pick) + ".npy")
         else:
             latent_path = os.path.join(self.cache_path, "latent_cache", file_name)
-        vector_path = os.path.join(self.cache_path, "vector_cache", file_name)
-        crossattn_path = os.path.join(self.cache_path, "crossattn_cache", file_name)
+            vector_path = os.path.join(self.cache_path, "vector_cache", file_name)
+            crossattn_path = os.path.join(self.cache_path, "crossattn_cache", file_name)
 
         latent = np.load(latent_path).astype(np.float32)
         vector = np.load(vector_path).astype(np.float32)
@@ -38,6 +40,9 @@ class Text2ImageCacheDataset:
         if self.multi_aspect and len(latents) > 1:
             latent_rp = latents[0]
             latents = [latent_rp] * len(latents)
+            vectors = vectors[0] * len(vectors)
+            crossattns = crossattns * len(crossattns)
+
         batch_latent = np.concatenate(latents, 0)
         batch_vector = np.concatenate(vectors, 0)
         batch_crossattn = np.concatenate(crossattns, 0)

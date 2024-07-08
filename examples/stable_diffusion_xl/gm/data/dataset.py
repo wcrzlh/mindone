@@ -53,10 +53,11 @@ class Text2ImageDataset:
         self.filter_small_size = filter_small_size
 
         self.multi_aspect = list(multi_aspect) if multi_aspect is not None else None
-        if self.multi_aspect and len(self.multi_aspect) > 10:
-            random.seed(seed)
-            self.multi_aspect = random.sample(self.multi_aspect, 10)
-            print(f"Text2ImageDataset: modify multi_aspect sizes to {self.multi_aspect}")
+        # ignore multi_aspect length
+        # if self.multi_aspect and len(self.multi_aspect) > 10:
+        #     random.seed(seed)
+        #     self.multi_aspect = random.sample(self.multi_aspect, 10)
+        #     print(f"Text2ImageDataset: modify multi_aspect sizes to {self.multi_aspect}")
 
         self.seed = seed
         self.per_batch_size = per_batch_size

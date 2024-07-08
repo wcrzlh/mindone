@@ -607,8 +607,11 @@ def cache_data(args):
         num_epochs=1,
         shuffle=False,
         return_sample_name=True,
+        cache_path=args.cache_path,
         **config.data,
     )
+
+    dynamic_shape = True if "multi_aspect" in config.data.dataset_config.params.keys() else False
 
     # 4. Cache Data
     os.makedirs(args.cache_path, exist_ok=True)
@@ -643,11 +646,18 @@ def cache_data(args):
 
         if args.cache_latent:
             latent = first_stage_model.encode(image)
-            np.save(os.path.join(args.cache_path, "latent_cache", f"{sample_name}.npy"), latent.asnumpy())
+            if dynamic_shape:
+                np.save(os.path.join(args.cache_path, "latent_cache", str(i) + ".npy"), latent.asnumpy())
+            else:
+                np.save(os.path.join(args.cache_path, "latent_cache", f"{sample_name}.npy"), latent.asnumpy())
         if args.cache_text_embedding:
             vector, crossattn, _ = conditioner(*tokens)
-            np.save(os.path.join(args.cache_path, "vector_cache", f"{sample_name}.npy"), vector.asnumpy())
-            np.save(os.path.join(args.cache_path, "crossattn_cache", f"{sample_name}.npy"), crossattn.asnumpy())
+            if dynamic_shape:
+                np.save(os.path.join(args.cache_path, "vector_cache", str(i) + ".npy"), vector.asnumpy())
+                np.save(os.path.join(args.cache_path, "crossattn_cache", str(i) + ".npy"), crossattn.asnumpy())
+            else:
+                np.save(os.path.join(args.cache_path, "vector_cache", f"{sample_name}.npy"), vector.asnumpy())
+                np.save(os.path.join(args.cache_path, "crossattn_cache", f"{sample_name}.npy"), crossattn.asnumpy())
 
         txt = " " if args.dataset_load_tokenizer else data["txt"]
         sample_list += [

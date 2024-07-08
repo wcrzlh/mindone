@@ -81,7 +81,10 @@ def create_loader(
     )
     dataset_size = len(dataset)
     num_step_per_epoch = dataset_size // (per_batch_size * rank_size)
-    epoch_size = num_epochs if num_epochs else math.ceil(total_step / num_step_per_epoch)
+    if cache_path is not None:
+        epoch_size = len(multi_aspect)
+    else:
+        epoch_size = num_epochs if num_epochs else math.ceil(total_step / num_step_per_epoch)
 
     de.config.set_seed(1236517205 + rank)
     cores = multiprocessing.cpu_count()
