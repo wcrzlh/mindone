@@ -12,7 +12,7 @@ class ZeroInitModule(nn.Cell):
         super(ZeroInitModule, self).__init__(auto_prefix=False)
         self.module = module
         for n, p in self.parameters_and_names():
-            ops.assign(p, ops.zeros_like_ext_ext(p))
+            ops.assign(p, mint.zeros_like(p))
 
     def construct(self, *inputs, **kwargs):
         return self.module(*inputs, **kwargs)
@@ -51,7 +51,7 @@ def timestep_embedding(timesteps, dim, max_period=10000, repeat_only=False, dtyp
         args = timesteps[:, None].astype(ms.float32) * freqs[None]
         embedding = ops.concat((ops.cos(args), ops.sin(args)), axis=-1)
         if dim % 2:
-            embedding = ops.concat((embedding, ops.zeros_like_ext(embedding[:, :1])), axis=-1)
+            embedding = ops.concat((embedding, mint.zeros_like(embedding[:, :1])), axis=-1)
     else:
         embedding = ops.broadcast_to(timesteps[:, None], (-1, dim))
     return embedding.astype(dtype)
@@ -62,7 +62,7 @@ def zero_module(module):
     Zero out the parameters of a module and return it.
     """
     for n, p in module.parameters_and_names():
-        ops.assign(p, ops.zeros_like_ext(p))
+        ops.assign(p, mint.zeros_like(p))
     return module
 
 

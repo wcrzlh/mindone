@@ -277,7 +277,7 @@ def embedding(model, *tokens, force_zero_embeddings=None):
                     * emb
                 )
             if hasattr(embedder, "input_key") and embedder.input_key in force_zero_embeddings:
-                emb = ops.zeros_like_ext(emb)
+                emb = mint.zeros_like(emb)
 
             # CONCAT
             # OUTPUT_DIM2KEYS = {2: "vector", 3: "crossattn", 4: "concat", 5: "concat"}

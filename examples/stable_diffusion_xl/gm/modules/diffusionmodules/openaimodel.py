@@ -224,7 +224,7 @@ class ResBlock(TimestepBlock):
             h = self.in_layers(x)
 
         if self.skip_t_emb:
-            emb_out = ops.zeros_like_ext(h)
+            emb_out = mint.zeros_like(h)
         else:
             emb_out = self.emb_layers(emb)
         while len(emb_out.shape) < len(h.shape):
