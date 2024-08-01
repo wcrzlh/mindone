@@ -1,6 +1,6 @@
 # reference to https://github.com/Stability-AI/generative-models
 
-from mindspore import nn, ops
+from mindspore import nn, ops, mint
 
 
 class UnitWeighting(nn.Cell):
