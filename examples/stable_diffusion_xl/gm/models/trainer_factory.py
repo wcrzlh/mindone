@@ -90,7 +90,7 @@ class TrainOneStepCell(nn.Cell):
         w = append_dims(self.denoiser.w(sigmas), x.ndim)
 
         if self.snr_gamma is not None:
-            snr_gamma = ops.ones_like_ext(w) * self.snr_gamma
+            snr_gamma = mint.ones_like(w) * self.snr_gamma
             w = mint.stack((w, snr_gamma), dim=0).min(axis=0)
 
         # compute loss

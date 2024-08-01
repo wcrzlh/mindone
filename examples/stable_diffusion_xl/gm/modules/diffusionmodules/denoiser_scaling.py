@@ -19,7 +19,7 @@ class EDMScaling(nn.Cell):
 
 class EpsScaling(nn.Cell):
     def construct(self, sigma):
-        c_skip = ops.ones_like_ext(sigma)
+        c_skip = mint.ones_like(sigma)
         c_out = -sigma
         c_in = 1 / (sigma**2 + 1.0) ** 0.5
         c_noise = sigma.copysign(1.0)

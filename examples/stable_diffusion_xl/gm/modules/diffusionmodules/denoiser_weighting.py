@@ -5,7 +5,7 @@ from mindspore import nn, ops
 
 class UnitWeighting(nn.Cell):
     def construct(self, sigma):
-        return ops.ones_like_ext(sigma)
+        return mint.ones_like(sigma)
 
 
 class EDMWeighting(nn.Cell):
