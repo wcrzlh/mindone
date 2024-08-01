@@ -1,4 +1,4 @@
-from mindspore import Parameter, nn, ops
+from mindspore import Parameter, nn, ops, mint
 from mindspore.common import initializer as init
 
 
