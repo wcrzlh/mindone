@@ -1,7 +1,7 @@
 # reference to https://github.com/Stability-AI/generative-models
 from typing import Tuple
 
-from mindspore import Tensor, nn, ops
+from mindspore import Tensor, nn, ops, mint
 
 
 class EDMScaling(nn.Cell):
