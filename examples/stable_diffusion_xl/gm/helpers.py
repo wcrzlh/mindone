@@ -106,8 +106,6 @@ def set_default(args):
     context.set_context(
         mode=args.ms_mode,
         device_target=args.device_target,
-        enable_graph_kernel=True,
-        graph_kernel_flags="--disable_expand_ops=BiasAdd,BiasAddGrad",
     )
     if args.ms_mode == 1:
         context.set_context(jit_config={"jit_level": "O0"})
