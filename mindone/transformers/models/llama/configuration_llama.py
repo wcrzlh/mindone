@@ -19,7 +19,7 @@
 # limitations under the License.
 """LLaMA model configuration"""
 
-from ...configuration_utils import PretrainedConfig
+from transformers import PretrainedConfig
 from ...modeling_rope_utils import rope_config_validation
 
 

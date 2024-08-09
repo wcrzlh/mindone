@@ -106,12 +106,12 @@ class MiniCPMV(MiniCPMVPreTrainedModel):
                     # FIXME how to replace torch.nn.utils.rnn.pad_sequence
                     # all_pixel_values = torch.nn.utils.rnn.pad_sequence(all_pixel_values, batch_first=True,
                     #                                                    padding_value=0.0)
-                    all_pixel_values = all_pixel_values
+                    all_pixel_values = ms.Tensor(all_pixel_values)
 
                     B, L, _ = all_pixel_values.shape
                     all_pixel_values = all_pixel_values.permute(0, 2, 1).reshape(B, 3, -1, L)
 
-                    patch_attn_mask = ops.zeros((B, 1, max_patches), dtype=ms.bool)
+                    patch_attn_mask = ops.zeros((B, 1, max_patches), dtype=ms.bool_)
                     for i in range(B):
                         patch_attn_mask[i, :tgt_sizes[i][0] * tgt_sizes[i][1]] = True
 

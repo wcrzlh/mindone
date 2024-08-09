@@ -48,38 +48,38 @@ class Idefics2BaseModelOutputWithPast(ModelOutput):
     """
     Base class for Idefics2 model's outputs that may also contain a past key/values (to speed up sequential decoding).
     Args:
-        last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
+        last_hidden_state (`torch.float32` of shape `(batch_size, sequence_length, hidden_size)`):
             Sequence of hidden-states at the output of the last layer of the model.
             If `past_key_values` is used only the last hidden-state of the sequences of shape `(batch_size, 1,
             hidden_size)` is output.
-        past_key_values (`tuple(tuple(torch.FloatTensor))`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
-            Tuple of `tuple(torch.FloatTensor)` of length `config.n_layers`, with each tuple having 2 tensors of shape
+        past_key_values (`tuple(tuple(torch.float32))`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
+            Tuple of `tuple(torch.float32)` of length `config.n_layers`, with each tuple having 2 tensors of shape
             `(batch_size, num_heads, sequence_length, embed_size_per_head)`) and optionally if
             `config.is_encoder_decoder=True` 2 additional tensors of shape `(batch_size, num_heads,
             encoder_sequence_length, embed_size_per_head)`.
             Contains pre-computed hidden-states (key and values in the self-attention blocks and optionally if
             `config.is_encoder_decoder=True` in the cross-attention blocks) that can be used (see `past_key_values`
             input) to speed up sequential decoding.
-        hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
-            Tuple of `torch.FloatTensor` (one for the output of the embeddings, if the model has an embedding layer, +
+        hidden_states (`tuple(torch.float32)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
+            Tuple of `torch.float32` (one for the output of the embeddings, if the model has an embedding layer, +
             one for the output of each layer) of shape `(batch_size, sequence_length, hidden_size)`.
             Hidden-states of the model at the output of each layer plus the optional initial embedding outputs.
-        attentions (`tuple(torch.FloatTensor)`, *optional*, returned when `output_attentions=True` is passed or when `config.output_attentions=True`):
-            Tuple of `torch.FloatTensor` (one for each layer) of shape `(batch_size, num_heads, sequence_length,
+        attentions (`tuple(torch.float32)`, *optional*, returned when `output_attentions=True` is passed or when `config.output_attentions=True`):
+            Tuple of `torch.float32` (one for each layer) of shape `(batch_size, num_heads, sequence_length,
             sequence_length)`.
             Attentions weights after the attention softmax, used to compute the weighted average in the self-attention
             heads.
-        image_hidden_states (`tuple(torch.FloatTensor)`, *optional*):
-            Tuple of `torch.FloatTensor` (one for the output of the image embeddings, `(batch_size, num_images,
+        image_hidden_states (`tuple(torch.float32)`, *optional*):
+            Tuple of `torch.float32` (one for the output of the image embeddings, `(batch_size, num_images,
             sequence_length, hidden_size)`.
             image_hidden_states of the model produced by the vision encoder, and optionally by the perceiver
     """
 
-    last_hidden_state: ms.FloatTensor = None
-    past_key_values: Optional[Tuple[Tuple[ms.FloatTensor]]] = None
-    hidden_states: Optional[Tuple[ms.FloatTensor]] = None
-    attentions: Optional[Tuple[ms.FloatTensor]] = None
-    image_hidden_states: Optional[Tuple[ms.FloatTensor]] = None
+    last_hidden_state: ms.float32 = None
+    past_key_values: Optional[Tuple[Tuple[ms.float32]]] = None
+    hidden_states: Optional[Tuple[ms.float32]] = None
+    attentions: Optional[Tuple[ms.float32]] = None
+    image_hidden_states: Optional[Tuple[ms.float32]] = None
 
 
 @dataclass
@@ -88,36 +88,36 @@ class Idefics2CausalLMOutputWithPast(ModelOutput):
     """
     Base class for Idefics2 causal language model (or autoregressive) outputs.
     Args:
-        loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
+        loss (`torch.float32` of shape `(1,)`, *optional*, returned when `labels` is provided):
             Language modeling loss (for next-token prediction).
-        logits (`torch.FloatTensor` of shape `(batch_size, sequence_length, config.vocab_size)`):
+        logits (`torch.float32` of shape `(batch_size, sequence_length, config.vocab_size)`):
             Prediction scores of the language modeling head (scores for each vocabulary token before SoftMax).
-        past_key_values (`tuple(tuple(torch.FloatTensor))`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
-            Tuple of `tuple(torch.FloatTensor)` of length `config.n_layers`, with each tuple having 2 tensors of shape
+        past_key_values (`tuple(tuple(torch.float32))`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
+            Tuple of `tuple(torch.float32)` of length `config.n_layers`, with each tuple having 2 tensors of shape
             `(batch_size, num_heads, sequence_length, embed_size_per_head)`)
             Contains pre-computed hidden-states (key and values in the self-attention blocks) that can be used (see
             `past_key_values` input) to speed up sequential decoding.
-        hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
-            Tuple of `torch.FloatTensor` (one for the output of the embeddings, if the model has an embedding layer, +
+        hidden_states (`tuple(torch.float32)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
+            Tuple of `torch.float32` (one for the output of the embeddings, if the model has an embedding layer, +
             one for the output of each layer) of shape `(batch_size, sequence_length, hidden_size)`.
             Hidden-states of the model at the output of each layer plus the optional initial embedding outputs.
-        attentions (`tuple(torch.FloatTensor)`, *optional*, returned when `output_attentions=True` is passed or when `config.output_attentions=True`):
-            Tuple of `torch.FloatTensor` (one for each layer) of shape `(batch_size, num_heads, sequence_length,
+        attentions (`tuple(torch.float32)`, *optional*, returned when `output_attentions=True` is passed or when `config.output_attentions=True`):
+            Tuple of `torch.float32` (one for each layer) of shape `(batch_size, num_heads, sequence_length,
             sequence_length)`.
             Attentions weights after the attention softmax, used to compute the weighted average in the self-attention
             heads.
-        image_hidden_states (`tuple(torch.FloatTensor)`, *optional*):
-            Tuple of `torch.FloatTensor` (one for the output of the image embeddings, `(batch_size, num_images,
+        image_hidden_states (`tuple(torch.float32)`, *optional*):
+            Tuple of `torch.float32` (one for the output of the image embeddings, `(batch_size, num_images,
             sequence_length, hidden_size)`.
             image_hidden_states of the model produced by the vision encoder, and optionally by the perceiver
     """
 
-    loss: Optional[ms.FloatTensor] = None
-    logits: ms.FloatTensor = None
-    past_key_values: Optional[List[ms.FloatTensor]] = None
-    hidden_states: Optional[Tuple[ms.FloatTensor]] = None
-    attentions: Optional[Tuple[ms.FloatTensor]] = None
-    image_hidden_states: Optional[Tuple[ms.FloatTensor]] = None
+    loss: Optional[ms.float32] = None
+    logits: ms.float32 = None
+    past_key_values: Optional[List[ms.float32]] = None
+    hidden_states: Optional[Tuple[ms.float32]] = None
+    attentions: Optional[Tuple[ms.float32]] = None
+    image_hidden_states: Optional[Tuple[ms.float32]] = None
 
 
 class Idefics2VisionEmbeddings(nn.Cell):
@@ -150,7 +150,7 @@ class Idefics2VisionEmbeddings(nn.Cell):
         self.num_positions = self.num_patches
         self.position_embedding = nn.Embedding(self.num_positions, self.embed_dim)
 
-    def construct(self, pixel_values: ms.FloatTensor, patch_attention_mask: ms.BoolTensor) -> ms.Tensor:
+    def construct(self, pixel_values: ms.float32, patch_attention_mask: ms.bool_) -> ms.Tensor:
         batch_size, _, max_im_h, max_im_w = pixel_values.shape
 
         patch_embeds = self.patch_embedding(pixel_values)
@@ -277,8 +277,8 @@ class Idefics2VisionFlashAttention2(Idefics2VisionAttention):
     def construct(
         self,
         hidden_states: ms.Tensor,
-        attention_mask: Optional[ms.LongTensor] = None,
-        position_ids: Optional[ms.LongTensor] = None,
+        attention_mask: Optional[ms.int64] = None,
+        position_ids: Optional[ms.int64] = None,
         past_key_value: Optional = None,
         output_attentions: bool = False,
         use_cache: bool = False,
@@ -434,9 +434,9 @@ class Idefics2EncoderLayer(nn.Cell):
         super().__init__()
         self.embed_dim = config.hidden_size
         self.self_attn = IDEFICS_VISION_ATTENTION_CLASSES[config._attn_implementation](config)
-        self.layer_norm1 = nn.LayerNorm(self.embed_dim, eps=config.layer_norm_eps)
+        self.layer_norm1 = nn.LayerNorm(self.embed_dim, epsilon=config.layer_norm_eps)
         self.mlp = Idefics2VisionMLP(config)
-        self.layer_norm2 = nn.LayerNorm(self.embed_dim, eps=config.layer_norm_eps)
+        self.layer_norm2 = nn.LayerNorm(self.embed_dim, epsilon=config.layer_norm_eps)
 
     # Copied from transformers.models.siglip.modeling_siglip.SiglipEncoderLayer.forward
     def construct(
@@ -444,12 +444,12 @@ class Idefics2EncoderLayer(nn.Cell):
         hidden_states: ms.Tensor,
         attention_mask: ms.Tensor,
         output_attentions: Optional[bool] = False,
-    ) -> Tuple[ms.FloatTensor]:
+    ) -> Tuple[ms.float32]:
         """
         Args:
-            hidden_states (`torch.FloatTensor`):
+            hidden_states (`torch.float32`):
                 Input to the layer of shape `(batch, seq_len, embed_dim)`.
-            attention_mask (`torch.FloatTensor`):
+            attention_mask (`torch.float32`):
                 Attention mask of shape `(batch, 1, q_len, k_v_seq_len)` where padding elements are indicated by very large negative values.
             output_attentions (`bool`, *optional*, defaults to `False`):
                 Whether or not to return the attentions tensors of all attention layers. See `attentions` under
@@ -505,7 +505,7 @@ class Idefics2Encoder(nn.Cell):
     ) -> Union[Tuple, BaseModelOutput]:
         r"""
         Args:
-            inputs_embeds (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
+            inputs_embeds (`torch.float32` of shape `(batch_size, sequence_length, hidden_size)`):
                 Optionally, instead of passing `input_ids` you can choose to directly pass an embedded representation.
                 This is useful if you want more control over how to convert `input_ids` indices into associated vectors
                 than the model's internal embedding lookup matrix.
@@ -587,7 +587,7 @@ class Idefics2VisionTransformer(nn.Cell):
     def construct(
         self,
         pixel_values,
-        patch_attention_mask: Optional[ms.BoolTensor] = None,
+        patch_attention_mask: Optional[ms.bool_] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
@@ -608,7 +608,7 @@ class Idefics2VisionTransformer(nn.Cell):
                     pixel_values.size(3) // patch_size,
                 )
             )
-            patch_attention_mask = patch_attention_mask.to(dtype=ms.bool, device=pixel_values.device)
+            patch_attention_mask = patch_attention_mask.to(dtype=ms.bool_, device=pixel_values.device)
 
         hidden_states = self.embeddings(pixel_values=pixel_values, patch_attention_mask=patch_attention_mask)
 
@@ -698,7 +698,7 @@ class Idefics2PerceiverAttention(nn.Cell):
         latents: ms.Tensor,
         context: ms.Tensor,
         attention_mask: Optional[ms.Tensor] = None,
-        position_ids: Optional[ms.LongTensor] = None,
+        position_ids: Optional[ms.int64] = None,
         past_key_value: Optional[Tuple[ms.Tensor]] = None,
         output_attentions: bool = False,
         use_cache: bool = False,
@@ -796,8 +796,8 @@ class Idefics2PerceiverFlashAttention2(Idefics2PerceiverAttention):
         self,
         latents: ms.Tensor,
         context: ms.Tensor,
-        attention_mask: Optional[ms.LongTensor] = None,
-        position_ids: Optional[ms.LongTensor] = None,
+        attention_mask: Optional[ms.int64] = None,
+        position_ids: Optional[ms.int64] = None,
         past_key_value: Optional = None,
         output_attentions: bool = False,
         use_cache: bool = False,
@@ -809,8 +809,8 @@ class Idefics2PerceiverFlashAttention2(Idefics2PerceiverAttention):
         # Query, Key, Value Projections --> Note that in Flamingo, latents are *concatenated* with context prior to attn!
         #   Note: This results in queries w/ `seq = n_latents`, and keys, values with `seq = len(context) + n_latents`
         query_states = self.q_proj(latents)
-        key_states = self.k_proj(ops.cat([context, latents], dim=-2))
-        value_states = self.v_proj(ops.cat([context, latents], dim=-2))
+        key_states = self.k_proj(ops.cat([context, latents], axis=-2))
+        value_states = self.v_proj(ops.cat([context, latents], axis=-2))
 
         query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim)
         key_states = key_states.view(bsz, kv_seq_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
@@ -933,17 +933,17 @@ class Idefics2PerceiverLayer(nn.Cell):
         latents: ms.Tensor,
         context: ms.Tensor,
         attention_mask: Optional[ms.Tensor] = None,
-        position_ids: Optional[ms.LongTensor] = None,
+        position_ids: Optional[ms.int64] = None,
         past_key_value: Optional[Tuple[ms.Tensor]] = None,
         output_attentions: Optional[bool] = False,
         use_cache: Optional[bool] = False,
         **kwargs,
-    ) -> Tuple[ms.FloatTensor, Optional[Tuple[ms.FloatTensor, ms.FloatTensor]]]:
+    ) -> Tuple[ms.float32, Optional[Tuple[ms.float32, ms.float32]]]:
         """
         Args:
-            latents (`torch.FloatTensor`): input to the layer of shape `(batch, seq_len, embed_dim)`
-            context (`torch.FloatTensor`): input to the layer of shape `(batch, seq_len, embed_dim)`
-            attention_mask (`torch.FloatTensor`, *optional*): attention mask of size
+            latents (`torch.float32`): input to the layer of shape `(batch, seq_len, embed_dim)`
+            context (`torch.float32`): input to the layer of shape `(batch, seq_len, embed_dim)`
+            attention_mask (`torch.float32`, *optional*): attention mask of size
                 `(batch, sequence_length)` where padding elements are indicated by 0.
             output_attentions (`bool`, *optional*):
                 Whether or not to return the attentions tensors of all attention layers. See `attentions` under
@@ -951,7 +951,7 @@ class Idefics2PerceiverLayer(nn.Cell):
             use_cache (`bool`, *optional*):
                 If set to `True`, `past_key_values` key value states are returned and can be used to speed up decoding
                 (see `past_key_values`).
-            past_key_value (`Tuple(torch.FloatTensor)`, *optional*): cached past key and value projection states
+            past_key_value (`Tuple(torch.float32)`, *optional*): cached past key and value projection states
         """
         residual = latents
 
@@ -997,7 +997,7 @@ class Idefics2PerceiverResampler(nn.Cell):
         self.rms_norm_eps = config.text_config.rms_norm_eps
 
         # Create Latents for Perceiver
-        self.latents = nn.Parameter(ops.ones(self.n_latents, self.hidden_size))
+        self.latents = Parameter(ops.ones(self.n_latents, self.hidden_size))
 
         # Create Transformer Blocks
         self.layers = nn.CellList([Idefics2PerceiverLayer(config, idx) for idx in range(self.depth)])
@@ -1161,8 +1161,8 @@ IDEFICS2_INPUTS_DOCSTRING = r"""
         position_ids (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
             Indices of positions of each input sequence tokens in the position embeddings. Selected in the range `[0,
             config.n_positions - 1]`. [What are position IDs?](../glossary#position-ids)
-        past_key_values (`tuple(tuple(torch.FloatTensor))`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
-            Tuple of `tuple(torch.FloatTensor)` of length `config.n_layers`, with each tuple having 2 tensors of shape
+        past_key_values (`tuple(tuple(torch.float32))`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
+            Tuple of `tuple(torch.float32)` of length `config.n_layers`, with each tuple having 2 tensors of shape
             `(batch_size, num_heads, sequence_length, embed_size_per_head)`) and 2 additional tensors of shape
             `(batch_size, num_heads, encoder_sequence_length, embed_size_per_head)`.
 
@@ -1172,17 +1172,17 @@ IDEFICS2_INPUTS_DOCSTRING = r"""
             If `past_key_values` are used, the user can optionally input only the last `decoder_input_ids` (those that
             don't have their past key value states given to this model) of shape `(batch_size, 1)` instead of all
             `decoder_input_ids` of shape `(batch_size, sequence_length)`.
-        inputs_embeds (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*):
+        inputs_embeds (`torch.float32` of shape `(batch_size, sequence_length, hidden_size)`, *optional*):
             Optionally, instead of passing `input_ids` you can choose to directly pass an embedded representation. This
             is useful if you want more control over how to convert `input_ids` indices into associated vectors than the
             model's internal embedding lookup matrix.
-        pixel_values (`torch.FloatTensor` of shape `(batch_size, num_channels, image_size, image_size)):
+        pixel_values (`torch.float32` of shape `(batch_size, num_channels, image_size, image_size)):
             The tensors corresponding to the input images. Pixel values can be obtained using
             [`AutoImageProcessor`]. See [`CLIPImageProcessor.__call__`] for details ([]`LlavaProcessor`] uses
             [`CLIPImageProcessor`] for processing images).
         pixel_attention_mask (`torch.Tensor` of shape `(batch_size, image_size, image_size)`, *optional*):
             Mask to avoid performing attention on padding pixel indices.
-        image_hidden_states (`torch.FloatTensor` of shape `(batch_size, num_channels, image_size, image_size)`):
+        image_hidden_states (`torch.float32` of shape `(batch_size, num_channels, image_size, image_size)`):
             The hidden states of the image encoder after modality projection and perceiver resampling.
         use_cache (`bool`, *optional*):
             If set to `True`, `past_key_values` key value states are returned and can be used to speed up decoding (see

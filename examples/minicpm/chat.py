@@ -4,11 +4,12 @@ import json
 from PIL import Image
 import base64
 import io
+import mindspore as ms
+
 from accelerate import load_checkpoint_and_dispatch, init_empty_weights
 from transformers import AutoTokenizer
 from ...mindone.transformers.models.minicpm.model_minicpmv import MiniCPMV as MiniCPM_model
 
-from omnilmm.utils import disable_torch_init
 from omnilmm.model.omnilmm import OmniLMMForCausalLM
 from omnilmm.model.utils import build_transform
 from omnilmm.train.train_utils import omni_preprocess
@@ -21,7 +22,7 @@ DEFAULT_IM_END_TOKEN = "<im_end>"
 
 def init_omni_lmm(model_path):
     # torch.backends.cuda.matmul.allow_tf32 = True
-    disable_torch_init()
+    # disable_torch_init()
     model_name = os.path.expanduser(model_path)
     print(f'Load omni_lmm model and tokenizer from {model_name}')
     tokenizer = AutoTokenizer.from_pretrained(
@@ -122,7 +123,7 @@ class OmniLMM12B:
         msgs = json.loads(input['question'])
         input_ids = wrap_question_for_omni_lmm(
             msgs, self.image_token_len, self.tokenizer)['input_ids']
-        input_ids = torch.as_tensor(input_ids)
+        input_ids = ms.Tensor(input_ids)
         #print('input_ids', input_ids)
         image = self.image_transform(image)
 

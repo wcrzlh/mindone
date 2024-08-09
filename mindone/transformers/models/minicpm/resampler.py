@@ -1,3 +1,4 @@
+import math
 from functools import partial
 import numpy as np
 import warnings
@@ -7,8 +8,11 @@ from mindspore import nn, Tensor, ops, Parameter
 import mindspore.mint.nn.functional as F
 from mindspore.mint.nn.functional import *
 from mindspore.mint.nn.modules.activation import *
-from mindspore.nn.init import trunc_normal_
-from mindspore.nn.init import constant_, xavier_normal_, xavier_uniform_
+from mindspore.common.initializer import initializer
+from mindspore.common.initializer import TruncatedNormal as trunc_normal_
+from mindspore.common.initializer import XavierNormal as xavier_normal_
+from mindspore.common.initializer import XavierUniform as xavier_uniform_
+from mindspore.common.initializer import Zero, One
 from transformers import PreTrainedModel
 from transformers.integrations import is_deepspeed_zero3_enabled
 
@@ -121,10 +125,10 @@ class Resampler(nn.Cell):
         if isinstance(m, nn.Dense):
             trunc_normal_(m.weight, std=.02)
             if isinstance(m, nn.Dense) and m.bias is not None:
-                nn.init.constant_(m.bias, 0)
+                Zero(m.bias, 0)
         elif isinstance(m, nn.LayerNorm):
-            nn.init.constant_(m.bias, 0)
-            nn.init.constant_(m.weight, 1.0)
+            Zero(m.bias, 0)
+            One(m.weight, 1.0)
 
     def construct(self, x, tgt_sizes=None):
         assert x.shape[0] == tgt_sizes.shape[0]
@@ -246,8 +250,8 @@ class MultiheadAttention(nn.MultiheadAttention):
         elif query.is_nested and (key_padding_mask is not None or attn_mask is not None):
             why_not_fast_path = "supplying both src_key_padding_mask and src_mask at the same time \
                                  is not supported with NestedTensor input"
-        elif torch.is_autocast_enabled():
-            why_not_fast_path = "autocast is enabled"
+        # elif torch.is_autocast_enabled():
+        #     why_not_fast_path = "autocast is enabled"
 
         if not why_not_fast_path:
             tensor_args = (
@@ -502,6 +506,8 @@ class MultiheadAttention(nn.MultiheadAttention):
             assert static_v is None, "bias cannot be added to static value."
             k = ops.cat([k, bias_k.repeat(1, bsz, 1)])
             v = ops.cat([v, bias_v.repeat(1, bsz, 1)])
+
+            # FIXME where is pad?????????
             if attn_mask is not None:
                 attn_mask = pad(attn_mask, (0, 1))
             if key_padding_mask is not None:
@@ -691,7 +697,7 @@ def _canonical_mask(
                 )
         if not _mask_is_float:
             mask = (
-                ms.zeros_like(mask, dtype=target_type)
+                ops.zeros_like(mask, dtype=target_type)
                 .masked_fill_(mask, float("-inf"))
             )
     return mask
