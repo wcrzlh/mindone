@@ -933,7 +933,7 @@ class Idefics2PerceiverLayer(nn.Cell):
         latents: ms.Tensor,
         context: ms.Tensor,
         attention_mask: Optional[ms.Tensor] = None,
-        position_ids: Optional[ms.LongTensor] = None,
+        position_ids: Optional[ms.Tensor] = None,
         past_key_value: Optional[Tuple[ms.Tensor]] = None,
         output_attentions: Optional[bool] = False,
         use_cache: Optional[bool] = False,
