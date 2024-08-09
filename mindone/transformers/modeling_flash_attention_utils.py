@@ -22,14 +22,14 @@ import mindspore.mint.nn.functional as F
 
 from mindspore import ops
 
-from transformers.utils import is_flash_attn_2_available, is_flash_attn_greater_or_equal
-
-
-if is_flash_attn_2_available():
-    from flash_attn.bert_padding import index_first_axis, pad_input, unpad_input  # noqa
-    from flash_attn import flash_attn_func, flash_attn_varlen_func
-
-    _flash_supports_window_size = "window_size" in list(inspect.signature(flash_attn_func).parameters)
+# from transformers.utils import is_flash_attn_2_available, is_flash_attn_greater_or_equal
+#
+#
+# if is_flash_attn_2_available():
+#     from flash_attn.bert_padding import index_first_axis, pad_input, unpad_input  # noqa
+#     from flash_attn import flash_attn_func, flash_attn_varlen_func
+#
+#     _flash_supports_window_size = "window_size" in list(inspect.signature(flash_attn_func).parameters)
 
 
 def _get_unpad_data(attention_mask: ms.Tensor) -> Tuple[ms.Tensor, ms.Tensor, int]:
@@ -234,10 +234,10 @@ def _flash_attention_forward(
     )
     flash_kwargs = {"window_size": (sliding_window, sliding_window)} if use_sliding_windows else {}
 
-    if is_flash_attn_greater_or_equal("2.4.1"):
-        if deterministic is None:
-            deterministic = os.environ.get("FLASH_ATTENTION_DETERMINISTIC", "0") == "1"
-        flash_kwargs["deterministic"] = deterministic
+    # if is_flash_attn_greater_or_equal("2.4.1"):
+    #     if deterministic is None:
+    #         deterministic = os.environ.get("FLASH_ATTENTION_DETERMINISTIC", "0") == "1"
+    #     flash_kwargs["deterministic"] = deterministic
 
     if softcap is not None:
         flash_kwargs["softcap"] = softcap
