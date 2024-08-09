@@ -1,1 +1,2 @@
 from .backbone_utils import BackboneMixin
+from .import_utils import is_flash_attn_greater_or_equal_2_10
