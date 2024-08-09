@@ -444,7 +444,7 @@ class Idefics2EncoderLayer(nn.Cell):
         hidden_states: ms.Tensor,
         attention_mask: ms.Tensor,
         output_attentions: Optional[bool] = False,
-    ) -> Tuple[ms.float32]:
+    ) -> Tuple[ms.Tensor]:
         """
         Args:
             hidden_states (`torch.float32`):
@@ -938,7 +938,7 @@ class Idefics2PerceiverLayer(nn.Cell):
         output_attentions: Optional[bool] = False,
         use_cache: Optional[bool] = False,
         **kwargs,
-    ) -> Tuple[ms.float32, Optional[Tuple[ms.float32, ms.float32]]]:
+    ) -> Tuple[ms.Tensor, Optional[Tuple[ms.Tensor, ms.Tensor]]]:
         """
         Args:
             latents (`torch.float32`): input to the layer of shape `(batch, seq_len, embed_dim)`

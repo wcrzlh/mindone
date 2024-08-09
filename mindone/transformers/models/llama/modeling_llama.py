@@ -646,7 +646,7 @@ class LlamaDecoderLayer(nn.Cell):
         cache_position: Optional = None,
         position_embeddings: Optional[Tuple[ms.Tensor, ms.Tensor]] = None,  # will become mandatory in v4.45
         **kwargs,
-    ) -> Tuple[ms.float32, Optional[Tuple[ms.float32, ms.float32]]]:
+    ) -> Tuple[ms.Tensor, Optional[Tuple[ms.Tensor, ms.Tensor]]]:
         """
         Args:
             hidden_states (`torch.FloatTensor`): input to the layer of shape `(batch, seq_len, embed_dim)`
