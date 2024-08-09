@@ -112,7 +112,7 @@ class Idefics2CausalLMOutputWithPast(ModelOutput):
             image_hidden_states of the model produced by the vision encoder, and optionally by the perceiver
     """
 
-    loss: Optional[ms.float32] = None
+    loss: Optional[ms.Tensor] = None
     logits: ms.float32 = None
     past_key_values: Optional[List[ms.float32]] = None
     hidden_states: Optional[Tuple[ms.float32]] = None
