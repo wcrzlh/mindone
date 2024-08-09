@@ -307,11 +307,11 @@ class LlamaAttention(nn.Cell):
         self,
         hidden_states: ms.Tensor,
         attention_mask: Optional[ms.Tensor] = None,
-        position_ids: Optional[ms.int64] = None,
+        position_ids: Optional[ms.int32] = None,
         past_key_value: Optional = None,
         output_attentions: bool = False,
         use_cache: bool = False,
-        cache_position: Optional[ms.int64] = None,
+        cache_position: Optional[ms.int32] = None,
         position_embeddings: Optional[Tuple[ms.Tensor, ms.Tensor]] = None,  # will become mandatory in v4.45
         **kwargs,
     ) -> Tuple[ms.Tensor, Optional[ms.Tensor], Optional[Tuple[ms.Tensor]]]:
@@ -415,12 +415,12 @@ class LlamaFlashAttention2(LlamaAttention):
     def construct(
         self,
         hidden_states: ms.Tensor,
-        attention_mask: Optional[ms.int64] = None,
-        position_ids: Optional[ms.int64] = None,
+        attention_mask: Optional[ms.int32] = None,
+        position_ids: Optional[ms.int32] = None,
         past_key_value: Optional = None,
         output_attentions: bool = False,
         use_cache: bool = False,
-        cache_position: Optional[ms.int64] = None,
+        cache_position: Optional[ms.int32] = None,
         position_embeddings: Optional[Tuple[ms.Tensor, ms.Tensor]] = None,  # will become mandatory in v4.45
     ) -> Tuple[ms.Tensor, Optional[ms.Tensor], Optional[Tuple[ms.Tensor]]]:
         if isinstance(past_key_value):
@@ -530,11 +530,11 @@ class LlamaSdpaAttention(LlamaAttention):
         self,
         hidden_states: ms.Tensor,
         attention_mask: Optional[ms.Tensor] = None,
-        position_ids: Optional[ms.int64] = None,
+        position_ids: Optional[ms.int32] = None,
         past_key_value: Optional = None,
         output_attentions: bool = False,
         use_cache: bool = False,
-        cache_position: Optional[ms.int64] = None,
+        cache_position: Optional[ms.int32] = None,
         position_embeddings: Optional[Tuple[ms.Tensor, ms.Tensor]] = None,  # will become mandatory in v4.45
         **kwargs,
     ) -> Tuple[ms.Tensor, Optional[ms.Tensor], Optional[Tuple[ms.Tensor]]]:
@@ -639,11 +639,11 @@ class LlamaDecoderLayer(nn.Cell):
         self,
         hidden_states: ms.Tensor,
         attention_mask: Optional[ms.Tensor] = None,
-        position_ids: Optional[ms.int64] = None,
+        position_ids: Optional[ms.int32] = None,
         past_key_value: Optional = None,
         output_attentions: Optional[bool] = False,
         use_cache: Optional[bool] = False,
-        cache_position: Optional[ms.int64] = None,
+        cache_position: Optional[ms.int32] = None,
         position_embeddings: Optional[Tuple[ms.Tensor, ms.Tensor]] = None,  # will become mandatory in v4.45
         **kwargs,
     ) -> Tuple[ms.float32, Optional[Tuple[ms.float32, ms.float32]]]:
@@ -853,14 +853,14 @@ class LlamaModel(LlamaPreTrainedModel):
         self,
         input_ids: ms.int64 = None,
         attention_mask: Optional[ms.Tensor] = None,
-        position_ids: Optional[ms.int64] = None,
+        position_ids: Optional[ms.int32] = None,
         past_key_values: Optional[Union[List[ms.float32]]] = None,
         inputs_embeds: Optional[ms.float32] = None,
         use_cache: Optional[bool] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
-        cache_position: Optional[ms.int64] = None,
+        cache_position: Optional[ms.int32] = None,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -1087,15 +1087,15 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
         self,
         input_ids: ms.int64 = None,
         attention_mask: Optional[ms.Tensor] = None,
-        position_ids: Optional[ms.int64] = None,
+        position_ids: Optional[ms.int32] = None,
         past_key_values: Optional[Union[List[ms.float32]]] = None,
         inputs_embeds: Optional[ms.float32] = None,
-        labels: Optional[ms.int64] = None,
+        labels: Optional[ms.int32] = None,
         use_cache: Optional[bool] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
-        cache_position: Optional[ms.int64] = None,
+        cache_position: Optional[ms.int32] = None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         r"""
         Args:
@@ -1240,12 +1240,12 @@ class LlamaForSequenceClassification(LlamaPreTrainedModel):
 
     def construct(
         self,
-        input_ids: Optional[ms.int64] = None,
+        input_ids: Optional[ms.int32] = None,
         attention_mask: Optional[ms.Tensor] = None,
-        position_ids: Optional[ms.int64] = None,
+        position_ids: Optional[ms.int32] = None,
         past_key_values: Optional[Union[List[ms.float32]]] = None,
         inputs_embeds: Optional[ms.float32] = None,
-        labels: Optional[ms.int64] = None,
+        labels: Optional[ms.int32] = None,
         use_cache: Optional[bool] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
@@ -1351,13 +1351,13 @@ class LlamaForQuestionAnswering(LlamaPreTrainedModel):
 
     def construct(
         self,
-        input_ids: Optional[ms.int64] = None,
+        input_ids: Optional[ms.int32] = None,
         attention_mask: Optional[ms.float32] = None,
-        position_ids: Optional[ms.int64] = None,
+        position_ids: Optional[ms.int32] = None,
         past_key_values: Optional[Union[List[ms.float32]]] = None,
         inputs_embeds: Optional[ms.float32] = None,
-        start_positions: Optional[ms.int64] = None,
-        end_positions: Optional[ms.int64] = None,
+        start_positions: Optional[ms.int32] = None,
+        end_positions: Optional[ms.int32] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
@@ -1448,12 +1448,12 @@ class LlamaForTokenClassification(LlamaPreTrainedModel):
 
     def construct(
         self,
-        input_ids: Optional[ms.int64] = None,
+        input_ids: Optional[ms.int32] = None,
         attention_mask: Optional[ms.Tensor] = None,
-        position_ids: Optional[ms.int64] = None,
+        position_ids: Optional[ms.int32] = None,
         past_key_values: Optional[List[ms.float32]] = None,
         inputs_embeds: Optional[ms.float32] = None,
-        labels: Optional[ms.int64] = None,
+        labels: Optional[ms.int32] = None,
         use_cache: Optional[bool] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
