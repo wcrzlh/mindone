@@ -587,7 +587,7 @@ class Idefics2VisionTransformer(nn.Cell):
     def construct(
         self,
         pixel_values,
-        patch_attention_mask: Optional[ms.bool_] = None,
+        patch_attention_mask: Optional[bool] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
