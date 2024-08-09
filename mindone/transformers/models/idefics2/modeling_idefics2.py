@@ -76,10 +76,10 @@ class Idefics2BaseModelOutputWithPast(ModelOutput):
     """
 
     last_hidden_state: ms.float32 = None
-    past_key_values: Optional[Tuple[Tuple[ms.float32]]] = None
-    hidden_states: Optional[Tuple[ms.float32]] = None
-    attentions: Optional[Tuple[ms.float32]] = None
-    image_hidden_states: Optional[Tuple[ms.float32]] = None
+    past_key_values: Optional[Tuple[Tuple[ms.Tensor]]] = None
+    hidden_states: Optional[Tuple[ms.Tensor]] = None
+    attentions: Optional[Tuple[ms.Tensor]] = None
+    image_hidden_states: Optional[Tuple[ms.Tensor]] = None
 
 
 @dataclass
@@ -114,10 +114,10 @@ class Idefics2CausalLMOutputWithPast(ModelOutput):
 
     loss: Optional[ms.Tensor] = None
     logits: ms.float32 = None
-    past_key_values: Optional[List[ms.float32]] = None
-    hidden_states: Optional[Tuple[ms.float32]] = None
-    attentions: Optional[Tuple[ms.float32]] = None
-    image_hidden_states: Optional[Tuple[ms.float32]] = None
+    past_key_values: Optional[List[ms.Tensor]] = None
+    hidden_states: Optional[Tuple[ms.Tensor]] = None
+    attentions: Optional[Tuple[ms.Tensor]] = None
+    image_hidden_states: Optional[Tuple[ms.Tensor]] = None
 
 
 class Idefics2VisionEmbeddings(nn.Cell):
