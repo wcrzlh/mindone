@@ -1108,7 +1108,7 @@ class Idefics2PreTrainedModel(MSPreTrainedModel):
         cls,
         config,
         use_flash_attention_2: bool = False,
-        torch_dtype: Optional[ms.dtype] = None,
+        torch_dtype: Optional = None,
         device_map: Optional[Union[str, Dict[str, int]]] = None,
         check_device_map: bool = True,
         **kwargs,
