@@ -108,7 +108,7 @@ class CLIPAttention(nn.Cell):
             attn_weights = attn_weights.view(bsz, self.num_heads, tgt_len, src_len) + causal_attention_mask
             attn_weights = attn_weights.view(bsz * self.num_heads, tgt_len, src_len)
 
-        attn_weights = mint.softmax(attn_weights, dim=-1)
+        attn_weights = mint.nn.functional.softmax(attn_weights, dim=-1)
 
         attn_probs = ops.dropout(attn_weights, p=self.dropout, training=self.training)
 

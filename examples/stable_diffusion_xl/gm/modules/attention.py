@@ -72,7 +72,7 @@ class LinearAttention(nn.Cell):
         q, k, v = mint.split(qkv, 1)
         q, k, v = q.squeeze(0), k.squeeze(0), v.squeeze(0)
 
-        k = mint.softmax(k, dim=-1)
+        k = mint.nn.functional.softmax(k, dim=-1)
 
         # context = ops.einsum("bhdn,bhen->bhde", k, v)
         context = ops.BatchMatMul(transpose_b=True)(k, v)  # bhdn  # bhen  # bhde

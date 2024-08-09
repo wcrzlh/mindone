@@ -314,7 +314,7 @@ class QKVAttentionLegacy(nn.Cell):
         # )  # More stable with f16 than dividing afterwards
         weight = ops.bmm((q * scale).transpose(0, 2, 1), (k * scale))  # (b, c, t) -> (b, t, c)  # (b, c, s)
 
-        weight = mint.softmax(weight, dim=-1)
+        weight = mint.nn.functional.softmax(weight, dim=-1)
 
         # a = th.einsum("bts,bcs->bct", weight, v)
         a = ops.bmm(weight, v.transpose(0, 2, 1)).transpose(  # (b, t, s)  # (b, c, s) -> (b, s, c)
@@ -355,7 +355,7 @@ class QKVAttention(nn.Cell):
             (k * scale).view(bs * self.n_heads, ch, length),  # (b, c, s)
         )
 
-        weight = mint.softmax(weight, dim=-1)
+        weight = mint.nn.functional.softmax(weight, dim=-1)
 
         # a = th.einsum("bts,bcs->bct", weight, v.reshape(bs * self.n_heads, ch, length))
         a = ops.bmm(

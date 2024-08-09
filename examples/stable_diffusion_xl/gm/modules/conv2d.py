@@ -48,14 +48,14 @@ class Conv2d(nn.Cell):
 
     def construct(self, x):
         if self.pad_mode == "same" or self.pad_mode == "valid":
-            return ops.extend.conv2d(x, self.weight, self.bias, self.stride, self.pad_mode, self.dilation, self.group)
+            return mint.conv2d(x, self.weight, self.bias, self.stride, self.pad_mode, self.dilation, self.group)
         elif self.pad_mode == "pad":
             if isinstance(self.padding, int):
                 padding = (self.padding, self.padding, self.padding, self.padding)
                 x = ops.pad_ext(x, padding)
-                return ops.extend.conv2d(x, self.weight, self.bias, self.stride, 0, self.dilation, self.group)
+                return mint.conv2d(x, self.weight, self.bias, self.stride, 0, self.dilation, self.group)
             else:
                 x = ops.pad_ext(x, self.padding)
-                return ops.extend.conv2d(x, self.weight, self.bias, self.stride, 0, self.dilation, self.group)
+                return mint.conv2d(x, self.weight, self.bias, self.stride, 0, self.dilation, self.group)
         else:
             raise ValueError(f"Unsupported pad_mode:{self.pad_modes}")

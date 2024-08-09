@@ -152,7 +152,7 @@ class Attention(nn.Cell):
                 attn_mask = new_attn_mask
             attn += attn_mask
 
-        attn = mint.softmax(attn, dim=-1)
+        attn = mint.nn.functional.softmax(attn, dim=-1)
         attn = self.attn_drop(attn)
 
         x = ops.bmm(attn, v)
