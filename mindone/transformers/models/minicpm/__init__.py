@@ -1,1 +1,1 @@
-from model_minicpmv import MiniCPMV
+from .modeling_minicpmv import MiniCPMV
