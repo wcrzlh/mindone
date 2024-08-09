@@ -72,10 +72,10 @@ class AttentionPool2d(nn.Cell):
         self.positional_embedding = Parameter(
             Tensor(np.random.randn(spacial_dim**2 + 1, embed_dim) / embed_dim**0.5, ms.float32)
         )
-        self.k_proj = mint.nn.Linear(embed_dim, embed_dim)
-        self.q_proj = mint.nn.Linear(embed_dim, embed_dim)
-        self.v_proj = mint.nn.Linear(embed_dim, embed_dim)
-        self.c_proj = mint.nn.Linear(embed_dim, output_dim or embed_dim)
+        self.k_proj = nn.Dense(embed_dim, embed_dim)
+        self.q_proj = nn.Dense(embed_dim, embed_dim)
+        self.v_proj = nn.Dense(embed_dim, embed_dim)
+        self.c_proj = nn.Dense(embed_dim, output_dim or embed_dim)
         self.num_heads = num_heads
 
     def construct(self, x):
