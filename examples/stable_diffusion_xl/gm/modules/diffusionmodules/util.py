@@ -108,7 +108,7 @@ def linear(*args, **kwargs):
     """
     Create a linear module.
     """
-    return nn.Dense(*args, **kwargs)
+    return mint.nn.Linear(*args, **kwargs)
 
 
 def avg_pool_nd(dims, *args, **kwargs):

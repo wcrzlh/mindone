@@ -524,7 +524,7 @@ class UNetModel(nn.Cell):
                 self.label_emb = nn.Embedding(num_classes, time_embed_dim)
             elif self.num_classes == "continuous":
                 print("setting up linear c_adm embedding layer")
-                self.label_emb = nn.Dense(1, time_embed_dim)
+                self.label_emb = mint.nn.Linear(1, time_embed_dim)
             elif self.num_classes == "timestep":
                 self.label_emb = nn.SequentialCell(
                     [
@@ -1029,7 +1029,7 @@ class UNetModelStage1(nn.Cell):
                 self.label_emb = nn.Embedding(num_classes, time_embed_dim)
             elif self.num_classes == "continuous":
                 print("setting up linear c_adm embedding layer")
-                self.label_emb = nn.Dense(1, time_embed_dim)
+                self.label_emb = mint.nn.Linear(1, time_embed_dim)
             elif self.num_classes == "timestep":
                 self.label_emb = nn.SequentialCell(
                     [

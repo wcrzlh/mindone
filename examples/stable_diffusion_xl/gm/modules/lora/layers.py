@@ -33,7 +33,7 @@ class LoRALayer:
         self.merge_weights = merge_weights
 
 
-class Dense(nn.Dense, LoRALayer):
+class Dense(mint.nn.Linear, LoRALayer):
     # LoRA implemented in a dense layer
     def __init__(
         self,
@@ -48,14 +48,14 @@ class Dense(nn.Dense, LoRALayer):
         assert r > 0, f"expected lora rank greater than 0, but got {r}"
         lora_alpha = lora_alpha if lora_alpha is not None else r
 
-        nn.Dense.__init__(self, in_features, out_features, **kwargs)
+        mint.nn.Linear.__init__(self, in_features, out_features, **kwargs)
         LoRALayer.__init__(self, r=r, lora_alpha=lora_alpha, lora_dropout=lora_dropout, merge_weights=merge_weights)
 
         # Actual trainable parameters
         # self.lora_A = Parameter(Tensor(np.zeros((r, in_features)), self.weight.dtype))
         # self.lora_B = Parameter(Tensor(np.zeros((out_features, r)), self.weight.dtype))
-        self.lora_A = nn.Dense(in_features, r, has_bias=False)
-        self.lora_B = nn.Dense(r, out_features, has_bias=False)
+        self.lora_A = mint.nn.Linear(in_features, r, bias=False)
+        self.lora_B = mint.nn.Linear(r, out_features, bias=False)
 
         self.scaling = self.lora_alpha / self.r
         # Freezing the pre-trained weight matrix
@@ -74,7 +74,7 @@ class Dense(nn.Dense, LoRALayer):
             self.lora_B.weight.set_data(init.initializer(0.0, self.lora_B.weight.shape, self.lora_B.weight.dtype))
 
     def set_train(self, mode: bool = True):
-        nn.Dense.set_train(self, mode)
+        mint.nn.Linear.set_train(self, mode)
         if mode:
             if self.merge_weights and self.merged:
                 # Make sure that the weights are not merged

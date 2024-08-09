@@ -47,13 +47,13 @@ class MultiheadAttention(nn.Cell):
         self.num_heads = n_head
         self.head_dim = self.embed_dim // self.num_heads
 
-        # self.in_proj = nn.Dense(self.embed_dim, 3 * self.embed_dim)
+        # self.in_proj = mint.nn.Linear(self.embed_dim, 3 * self.embed_dim)
         self.in_proj_weight = Parameter(
             init.initializer(init.XavierUniform(), (3 * self.embed_dim, self.embed_dim), ms.float32), "in_proj_weight"
         )
         self.in_proj_bias = Parameter(init.initializer("zeros", (3 * self.embed_dim), ms.float32), "in_proj_bias")
 
-        self.out_proj = nn.Dense(self.embed_dim, self.embed_dim)
+        self.out_proj = mint.nn.Linear(self.embed_dim, self.embed_dim)
         self.split = ops.Split(-1, 3)
         self.expand_dims = ops.ExpandDims()
         self.softmax = nn.Softmax(-1)
@@ -110,7 +110,7 @@ class Attention(nn.Cell):
         self.scale = self.head_dim**-0.5
         self.logit_scale_max = logit_scale_max
 
-        # keeping in_proj in this form (instead of nn.Dense) to match weight scheme of original
+        # keeping in_proj in this form (instead of mint.nn.Linear) to match weight scheme of original
         self.in_proj_weight = Parameter(Tensor(np.random.randn((dim * 3, dim)) * self.scale, ms.float32))
         if qkv_bias:
             self.in_proj_bias = Parameter(Tensor(np.random.zeros(dim * 3), ms.float32))
@@ -126,7 +126,7 @@ class Attention(nn.Cell):
             self.head_scale = Parameter(Tensor(np.ones((num_heads, 1, 1)), ms.float32))
         else:
             self.head_scale = None
-        self.out_proj = nn.Dense(dim, dim)
+        self.out_proj = mint.nn.Linear(dim, dim)
         self.out_drop = nn.Dropout(p=proj_drop)
 
     def construct(self, x, attn_mask: Optional[Tensor] = None):
@@ -190,9 +190,9 @@ class ResidualAttentionBlock(nn.Cell):
         self.mlp = nn.SequentialCell(
             OrderedDict(
                 [
-                    ("c_fc", nn.Dense(d_model, mlp_width)),
+                    ("c_fc", mint.nn.Linear(d_model, mlp_width)),
                     ("gelu", act_layer()),
-                    ("c_proj", nn.Dense(mlp_width, d_model)),
+                    ("c_proj", mint.nn.Linear(mlp_width, d_model)),
                 ]
             )
         )
@@ -294,7 +294,7 @@ class VisionTransformer(nn.Cell):
         if input_patchnorm:
             patch_input_dim = patch_height * patch_width * 3
             self.patchnorm_pre_ln = nn.extend.LayerNorm([patch_input_dim], epsilon=1e-5)
-            self.conv1 = nn.Dense(patch_input_dim, width)
+            self.conv1 = mint.nn.Linear(patch_input_dim, width)
         else:
             self.patchnorm_pre_ln = nn.Identity()
             self.conv1 = Conv2d(
