@@ -47,11 +47,13 @@ from transformers.utils import (
     is_safetensors_available,
     logging,
 )
+from transformers.generation import GenerationConfig
 from transformers.utils.hub import convert_file_size_to_int, get_checkpoint_shard_files
 
 import mindspore as ms
 from mindspore import Tensor, nn, ops
 
+from .generation import GenerationMixin
 from .integrations import PeftAdapterMixin
 from .modeling_attn_mask_utils import dtype_to_min
 
@@ -71,15 +73,15 @@ def _get_pt2ms_mappings(m):
     for name, cell in m.cells_and_names():
         if isinstance(cell, nn.Conv1d):
             mappings[f"{name}.weight"] = f"{name}.weight", lambda x: ops.expand_dims(x, axis=-2)
-        elif isinstance(cell, nn.Embedding):
-            mappings[f"{name}.weight"] = f"{name}.embedding_table", lambda x: x
-        elif isinstance(cell, (nn.BatchNorm2d, nn.LayerNorm, nn.GroupNorm)):
-            mappings[f"{name}.weight"] = f"{name}.gamma", lambda x: x
-            mappings[f"{name}.bias"] = f"{name}.beta", lambda x: x
-            if isinstance(cell, (nn.BatchNorm2d,)):
-                mappings[f"{name}.running_mean"] = f"{name}.moving_mean", lambda x: x
-                mappings[f"{name}.running_var"] = f"{name}.moving_variance", lambda x: x
-                mappings[f"{name}.num_batches_tracked"] = None, lambda x: x
+        # elif isinstance(cell, nn.Embedding):
+        #     mappings[f"{name}.weight"] = f"{name}.embedding_table", lambda x: x
+        # elif isinstance(cell, (nn.BatchNorm2d, nn.LayerNorm, nn.GroupNorm)):
+        #     mappings[f"{name}.weight"] = f"{name}.gamma", lambda x: x
+        #     mappings[f"{name}.bias"] = f"{name}.beta", lambda x: x
+        #     if isinstance(cell, (nn.BatchNorm2d,)):
+        #         mappings[f"{name}.running_mean"] = f"{name}.moving_mean", lambda x: x
+        #         mappings[f"{name}.running_var"] = f"{name}.moving_variance", lambda x: x
+        #         mappings[f"{name}.num_batches_tracked"] = None, lambda x: x
     return mappings
 
 
@@ -496,7 +498,7 @@ class ModuleUtilsMixin:
         return sum(total_numel)
 
 
-class MSPreTrainedModel(nn.Cell, ModuleUtilsMixin, PushToHubMixin, PeftAdapterMixin):
+class MSPreTrainedModel(nn.Cell, ModuleUtilsMixin, PushToHubMixin, PeftAdapterMixin, GenerationMixin):
     r"""
     Base class for all models.
 
@@ -585,7 +587,7 @@ class MSPreTrainedModel(nn.Cell, ModuleUtilsMixin, PushToHubMixin, PeftAdapterMi
         self.config = config
         self.name_or_path = config.name_or_path
         self.warnings_issued = {}
-        self.generation_config = None
+        self.generation_config = GenerationConfig.from_model_config(config)
         # Overwrite the class attribute to make it an instance attribute, so models like
         # `InstructBlipForConditionalGeneration` can dynamically update it without modifying the class attribute
         # when a different component (e.g. language_model) is used.
