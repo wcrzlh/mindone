@@ -767,12 +767,12 @@ class LoraLoaderMixin:
         Example:
 
         ```py
-        from diffusers import DiffusionPipeline
-        import torch
+        from mindone.diffusers import DiffusionPipeline
+        import mindspore as ms
 
         pipeline = DiffusionPipeline.from_pretrained(
-            "stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16
-        ).to("cuda")
+            "stabilityai/stable-diffusion-xl-base-1.0", mindspore_dtype=ms.float16
+        )
         pipeline.load_lora_weights("nerijs/pixel-art-xl", weight_name="pixel-art-xl.safetensors", adapter_name="pixel")
         pipeline.fuse_lora(lora_scale=0.7)
         ```
@@ -985,11 +985,11 @@ class LoraLoaderMixin:
         Example:
 
         ```python
-        from diffusers import DiffusionPipeline
+        from mindone.diffusers import DiffusionPipeline
 
         pipeline = DiffusionPipeline.from_pretrained(
             "stabilityai/stable-diffusion-xl-base-1.0",
-        ).to("cuda")
+        )
         pipeline.load_lora_weights("CiroN2022/toy-face", weight_name="toy_face_sdxl.safetensors", adapter_name="toy")
         pipeline.get_active_adapters()
         ```
