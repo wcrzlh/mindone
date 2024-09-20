@@ -16,10 +16,8 @@ Textual Inversion is a training method for personalizing models by learning new 
 
 [`TextualInversionLoaderMixin`] provides a function for loading Textual Inversion embeddings from Diffusers and Automatic1111 into the text encoder and loading a special token to activate the embeddings.
 
-<Tip>
+!!! tip
 
-To learn more about how to load Textual Inversion embeddings, see the [Textual Inversion](../../using-diffusers/loading_adapters#textual-inversion) loading guide.
-
-</Tip>
+    To learn more about how to load Textual Inversion embeddings, see the [Textual Inversion](../../using-diffusers/loading_adapters.md#textual-inversion) loading guide.
 
 ::: mindone.diffusers.loaders.textual_inversion.TextualInversionLoaderMixin

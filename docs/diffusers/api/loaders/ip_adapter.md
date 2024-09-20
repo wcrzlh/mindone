@@ -14,11 +14,9 @@ specific language governing permissions and limitations under the License.
 
 [IP-Adapter](https://arxiv.org/abs/2308.06721) is a lightweight adapter that enables prompting a diffusion model with an image. This method decouples the cross-attention layers of the image and text features. The image features are generated from an image encoder.
 
-<Tip>
+!!! tip
 
-Learn how to load an IP-Adapter checkpoint and image in the IP-Adapter [loading](../../using-diffusers/loading_adapters.md#ip-adapter) guide, and you can see how to use it in the [usage](../../using-diffusers/ip_adapter.md) guide.
-
-</Tip>
+    Learn how to load an IP-Adapter checkpoint and image in the IP-Adapter [loading](../../using-diffusers/loading_adapters.md#ip-adapter) guide, and you can see how to use it in the [usage](../../using-diffusers/ip_adapter.md) guide.
 
 ::: mindone.diffusers.loaders.ip_adapter.IPAdapterMixin
 

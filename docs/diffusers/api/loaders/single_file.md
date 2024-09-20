@@ -17,8 +17,9 @@ The [`~loaders.FromSingleFileMixin.from_single_file`] method allows you to load:
 * a model stored in a single file, which is useful if you're working with models from the diffusion ecosystem, like Automatic1111, and commonly rely on a single-file layout to store and share models
 * a model stored in their originally distributed layout, which is useful if you're working with models finetuned with other services, and want to load it directly into Diffusers model objects and pipelines
 
-> [!TIP]
-> Read the [Model files and layouts](../../using-diffusers/other-formats) guide to learn more about the Diffusers-multifolder layout versus the single-file layout, and how to load models stored in these different layouts.
+!!! tip
+
+    Read the [Model files and layouts](../../using-diffusers/other-formats.md) guide to learn more about the Diffusers-multifolder layout versus the single-file layout, and how to load models stored in these different layouts.
 
 ## Supported pipelines
 
