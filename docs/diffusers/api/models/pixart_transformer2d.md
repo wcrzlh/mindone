@@ -12,6 +12,6 @@ specific language governing permissions and limitations under the License.
 
 # PixArtTransformer2DModel
 
-A Transformer model for image-like data from [PixArt-Alpha](https://huggingface.co/papers/2310.00426) and [PixArt-Sigma](https://huggingface.co/papers/2403.04692). 
+A Transformer model for image-like data from [PixArt-Alpha](https://arxiv.org/abs/2310.00426) and [PixArt-Sigma](https://arxiv.org/abs/2403.04692). 
 
 [//]: # (::: mindone.diffusers.PixArtTransformer2DModel)

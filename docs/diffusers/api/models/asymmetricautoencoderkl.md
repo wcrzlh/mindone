@@ -20,11 +20,6 @@ The abstract from the paper is:
 
 Evaluation results can be found in section 4.1 of the original paper.
 
-## Available checkpoints
-
-* [https://huggingface.co/cross-attention/asymmetric-autoencoder-kl-x-1-5](https://huggingface.co/cross-attention/asymmetric-autoencoder-kl-x-1-5)
-* [https://huggingface.co/cross-attention/asymmetric-autoencoder-kl-x-2](https://huggingface.co/cross-attention/asymmetric-autoencoder-kl-x-2)
-
 ## Example Usage
 
 ```python

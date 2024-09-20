@@ -12,6 +12,6 @@ specific language governing permissions and limitations under the License.
 
 # SD3 Transformer Model
 
-The Transformer model introduced in [Stable Diffusion 3](https://hf.co/papers/2403.03206). Its novelty lies in the MMDiT transformer block. 
+The Transformer model introduced in [Stable Diffusion 3](https://arxiv.org/abs/2403.03206). Its novelty lies in the MMDiT transformer block. 
 
 ::: mindone.diffusers.SD3Transformer2DModel

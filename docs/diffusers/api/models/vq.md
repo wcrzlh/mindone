@@ -12,7 +12,7 @@ specific language governing permissions and limitations under the License.
 
 # VQModel
 
-The VQ-VAE model was introduced in [Neural Discrete Representation Learning](https://huggingface.co/papers/1711.00937) by Aaron van den Oord, Oriol Vinyals and Koray Kavukcuoglu. The model is used in 🤗 Diffusers to decode latent representations into images. Unlike [`AutoencoderKL`], the [`VQModel`] works in a quantized latent space.
+The VQ-VAE model was introduced in [Neural Discrete Representation Learning](https://arxiv.org/abs/1711.00937) by Aaron van den Oord, Oriol Vinyals and Koray Kavukcuoglu. The model is used in 🤗 Diffusers to decode latent representations into images. Unlike [`AutoencoderKL`], the [`VQModel`] works in a quantized latent space.
 
 The abstract from the paper is:
 
