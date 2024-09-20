@@ -16,7 +16,7 @@ specific language governing permissions and limitations under the License.
 
 <Tip>
 
-Learn how to load an IP-Adapter checkpoint and image in the IP-Adapter [loading](../../using-diffusers/loading_adapters#ip-adapter) guide, and you can see how to use it in the [usage](../../using-diffusers/ip_adapter) guide.
+Learn how to load an IP-Adapter checkpoint and image in the IP-Adapter [loading](../../using-diffusers/loading_adapters.md#ip-adapter) guide, and you can see how to use it in the [usage](../../using-diffusers/ip_adapter.md) guide.
 
 </Tip>
 
