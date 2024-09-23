@@ -12,11 +12,12 @@ specific language governing permissions and limitations under the License.
 
 # PEFT
 
-Diffusers supports loading adapters such as [LoRA](../../using-diffusers/loading_adapters.md) with the [PEFT](https://huggingface.co/docs/peft/index) library with the [`~loaders.peft.PeftAdapterMixin`] class. This allows modeling classes in Diffusers like [`UNet2DConditionModel`] to load an adapter.
+Diffusers supports loading adapters such as [LoRA](../../using-diffusers/loading_adapters.md) with the [PEFT](https://huggingface.co/docs/peft/index) library with the [`loaders.peft.PeftAdapterMixin`](peft.md#peftadaptermixin) class. This allows modeling classes in Diffusers like [`UNet2DConditionModel`](../models/unet2d-cond.md#unet2dconditionmodel) to load an adapter.
 
 !!! tip
 
     Refer to the [Inference with PEFT](../../tutorials/using_peft_for_inference.md) tutorial for an overview of how to use PEFT in Diffusers for inference.
 
+# PeftAdapterMixin
 
 ::: mindone.diffusers.loaders.peft.PeftAdapterMixin
