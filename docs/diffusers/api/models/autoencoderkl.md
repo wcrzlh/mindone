@@ -20,7 +20,7 @@ The abstract from the paper is:
 
 ## Loading from the original format
 
-By default the [`AutoencoderKL`] should be loaded with [`~ModelMixin.from_pretrained`], but it can also be loaded
+By default the [`AutoencoderKL`](autoencoderkl.md#api-autoencoderkl) should be loaded with [`from_pretrained`](overview.md#modelmixin), but it can also be loaded
 from the original format using [`FromOriginalVAEMixin.from_single_file`] as follows:
 
 ```py
@@ -29,6 +29,8 @@ from mindone.diffusers import AutoencoderKL
 url = "https://huggingface.co/stabilityai/sd-vae-ft-mse-original/blob/main/vae-ft-mse-840000-ema-pruned.safetensors"  # can also be a local file
 model = AutoencoderKL.from_single_file(url)
 ```
+
+# API-AutoencoderKL
 
 ::: mindone.diffusers.AutoencoderKL
     members:

@@ -12,7 +12,7 @@ specific language governing permissions and limitations under the License.
 
 # Transformer2DModel
 
-A Transformer model for image-like data from [CompVis](https://huggingface.co/CompVis) that is based on the [Vision Transformer](https://arxiv.org/abs/2010.11929) introduced by Dosovitskiy et al. The [`Transformer2DModel`] accepts discrete (classes of vector embeddings) or continuous (actual embeddings) inputs.
+A Transformer model for image-like data from [CompVis](https://huggingface.co/CompVis) that is based on the [Vision Transformer](https://arxiv.org/abs/2010.11929) introduced by Dosovitskiy et al. The [`Transformer2DModel`](transformer2d.md#api-transformer2dmodel) accepts discrete (classes of vector embeddings) or continuous (actual embeddings) inputs.
 
 When the input is **continuous**:
 
@@ -32,6 +32,7 @@ It is assumed one of the input classes is the masked latent pixel. The predicted
 2. Apply the Transformer blocks in the standard way.
 3. Predict classes of unnoised image.
 
+# API-Transformer2DModel
 ::: mindone.diffusers.Transformer2DModel
 
 ::: mindone.diffusers.models.transformers.transformer_2d.Transformer2DModelOutput

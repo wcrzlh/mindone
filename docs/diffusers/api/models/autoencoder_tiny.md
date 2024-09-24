@@ -12,7 +12,7 @@ specific language governing permissions and limitations under the License.
 
 # Tiny AutoEncoder
 
-Tiny AutoEncoder for Stable Diffusion (TAESD) was introduced in [madebyollin/taesd](https://github.com/madebyollin/taesd) by Ollin Boer Bohan. It is a tiny distilled version of Stable Diffusion's VAE that can quickly decode the latents in a [`StableDiffusionPipeline`] or [`StableDiffusionXLPipeline`] almost instantly.
+Tiny AutoEncoder for Stable Diffusion (TAESD) was introduced in [madebyollin/taesd](https://github.com/madebyollin/taesd) by Ollin Boer Bohan. It is a tiny distilled version of Stable Diffusion's VAE that can quickly decode the latents in a [`StableDiffusionPipeline`](../pipelines/stable_diffusion/text2img.md) or [`StableDiffusionXLPipeline`](../pipelines/stable_diffusion/stable_diffusion_xl.md) almost instantly.
 
 To use with Stable Diffusion v-2.1:
 

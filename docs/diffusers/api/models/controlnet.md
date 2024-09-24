@@ -20,7 +20,7 @@ The abstract from the paper is:
 
 ## Loading from the original format
 
-By default the [`ControlNetModel`] should be loaded with [`~ModelMixin.from_pretrained`], but it can also be loaded
+By default the [`ControlNetModel`](controlnet.md#api-controlnetmodel) should be loaded with [`from_pretrained`](overview.md#modelmixin), but it can also be loaded
 from the original format using [`FromOriginalControlnetMixin.from_single_file`] as follows:
 
 ```py
@@ -32,6 +32,8 @@ controlnet = ControlNetModel.from_single_file(url)
 url = "https://huggingface.co/runwayml/stable-diffusion-v1-5/blob/main/v1-5-pruned.safetensors"  # can also be a local path
 pipe = StableDiffusionControlNetPipeline.from_single_file(url, controlnet=controlnet)
 ```
+
+# API-ControlNetModel
 
 ::: mindone.diffusers.ControlNetModel
 
