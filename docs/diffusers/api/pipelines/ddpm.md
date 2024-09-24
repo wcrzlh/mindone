@@ -20,11 +20,9 @@ The abstract from the paper is:
 
 The original codebase can be found at [hohonathanho/diffusion](https://github.com/hojonathanho/diffusion).
 
-<Tip>
+!!! tip
 
-Make sure to check out the Schedulers [guide](../../using-diffusers/schedulers) to learn how to explore the tradeoff between scheduler speed and quality, and see the [reuse components across pipelines](../../using-diffusers/loading#reuse-components-across-pipelines) section to learn how to efficiently load the same components into multiple pipelines.
-
-</Tip>
+    Make sure to check out the Schedulers [guide](../../using-diffusers/schedulers.md) to learn how to explore the tradeoff between scheduler speed and quality, and see the [reuse components across pipelines](../../using-diffusers/loading.md) section to learn how to efficiently load the same components into multiple pipelines.
 
 ::: mindone.diffusers.DDPMPipeline
 

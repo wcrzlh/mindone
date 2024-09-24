@@ -31,11 +31,9 @@ Some notes about this pipeline:
 * It shows the ability of generating super high resolution images, such as 2048px or even 4K.
 * It shows that text-to-image models can grow from a weak model to a stronger one through several improvements (VAEs, datasets, and so on.)
 
-<Tip>
+!!! tip
 
-Make sure to check out the Schedulers [guide](../../using-diffusers/schedulers.md) to learn how to explore the tradeoff between scheduler speed and quality, and see the [reuse components across pipelines](../../using-diffusers/loading.md#reuse-a-pipeline) section to learn how to efficiently load the same components into multiple pipelines.
-
-</Tip>
+    Make sure to check out the Schedulers [guide](../../using-diffusers/schedulers.md) to learn how to explore the tradeoff between scheduler speed and quality, and see the [reuse components across pipelines](../../using-diffusers/loading.md) section to learn how to efficiently load the same components into multiple pipelines.
 
 <Tip>
 

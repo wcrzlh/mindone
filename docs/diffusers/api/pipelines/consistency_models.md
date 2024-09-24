@@ -24,7 +24,7 @@ The pipeline was contributed by [dg845](https://github.com/dg845) and [ayushtues
 
 ## Tips
 
-For an additional speed-up, use `MindSpore Graph Mode` to generate multiple images in <1 second:
+For an additional speed-up, please use `MindSpore Graph Mode` to generate multiple images:
 
 ```diff
   import mindspore as ms

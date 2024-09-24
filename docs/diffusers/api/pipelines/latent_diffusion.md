@@ -20,11 +20,10 @@ The abstract from the paper is:
 
 The original codebase can be found at [CompVis/latent-diffusion](https://github.com/CompVis/latent-diffusion).
 
-<Tip>
+!!! tip
 
-Make sure to check out the Schedulers [guide](../../using-diffusers/schedulers.md) to learn how to explore the tradeoff between scheduler speed and quality, and see the [reuse components across pipelines](../../using-diffusers/loading.md#reuse-components-across-pipelines) section to learn how to efficiently load the same components into multiple pipelines.
+	Make sure to check out the Schedulers [guide](../../using-diffusers/schedulers.md) to learn how to explore the tradeoff between scheduler speed and quality, and see the [reuse components across pipelines](../../using-diffusers/loading.md) section to learn how to efficiently load the same components into multiple pipelines.
 
-</Tip>
 
 The follow commands could be used to call the interface.
 

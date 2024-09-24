@@ -29,15 +29,14 @@ Some notes about this pipeline:
 * It is good at producing high-resolution images at different aspect ratios. To get the best results, the authors recommend some size brackets which can be found [here](https://github.com/PixArt-alpha/PixArt-alpha/blob/08fbbd281ec96866109bdd2cdb75f2f58fb17610/diffusion/data/datasets/utils.py).
 * It rivals the quality of state-of-the-art text-to-image generation systems (as of this writing) such as Stable Diffusion XL, Imagen, and DALL-E 2, while being more efficient than them.
 
-<Tip>
+!!! tip
 
-Make sure to check out the Schedulers [guide](../../using-diffusers/schedulers.md) to learn how to explore the tradeoff between scheduler speed and quality, and see the [reuse components across pipelines](../../using-diffusers/loading.md#reuse-a-pipeline) section to learn how to efficiently load the same components into multiple pipelines.
+    Make sure to check out the Schedulers [guide](../../using-diffusers/schedulers.md) to learn how to explore the tradeoff between scheduler speed and quality, and see the [reuse components across pipelines](../../using-diffusers/loading.md) section to learn how to efficiently load the same components into multiple pipelines.
 
-</Tip>
 
 ## Inference Pipeline
 
-Let's walk through a full-fledged example to run the [`PixArtAlphaPipeline`].
+Let's walk through a full-fledged example to run the [`PixArtAlphaPipeline`](pixart.md#api-pixartalphapipeline).
 
 ```python
 import mindspore as ms
@@ -53,5 +52,6 @@ image = pipe(prompt)[0][0]
 image.save("image.png")
 ```
 
+## API-PixArtAlphaPipeline
 
 ::: mindone.diffusers.PixArtAlphaPipeline
