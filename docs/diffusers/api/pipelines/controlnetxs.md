@@ -24,11 +24,9 @@ Here's the overview from the [project page](https://vislearn.github.io/ControlNe
 
 This model was contributed by [UmerHA](https://twitter.com/UmerHAdil). ❤️
 
-<Tip>
+!!! tip
 
-Make sure to check out the Schedulers [guide](../../using-diffusers/schedulers.md) to learn how to explore the tradeoff between scheduler speed and quality, and see the [reuse components across pipelines](../../using-diffusers/loading.md#reuse-components-across-pipelines) section to learn how to efficiently load the same components into multiple pipelines.
-
-</Tip>
+    Make sure to check out the Schedulers [guide](../../using-diffusers/schedulers.md) to learn how to explore the tradeoff between scheduler speed and quality, and see the [reuse components across pipelines](../../using-diffusers/loading.md) section to learn how to efficiently load the same components into multiple pipelines.
 
 [//]: # (::: mindone.diffusers.StableDiffusionControlNetXSPipeline)
 

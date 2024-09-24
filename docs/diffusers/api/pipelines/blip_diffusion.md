@@ -25,11 +25,13 @@ The original codebase can be found at [salesforce/LAVIS](https://github.com/sale
 
 !!! tip
 
-    Make sure to check out the Schedulers [guide](../../using-diffusers/schedulers) to learn how to explore the tradeoff between scheduler speed and quality, and see the [reuse components across pipelines](../../using-diffusers/loading#reuse-components-across-pipelines) section to learn how to efficiently load the same components into multiple pipelines.
+    Make sure to check out the Schedulers [guide](../../using-diffusers/schedulers.md) to learn how to explore the tradeoff between scheduler speed and quality, and see the [reuse components across pipelines](../../using-diffusers/loading.md) section to learn how to efficiently load the same components into multiple pipelines.
 
 ## Usage Examples
 
-!!! notation: mindone.diffusers only support safetensors checkpoint format. if ".pth" or ".bin" are used, please using huggingface transformation tool to transform into safetensors format.
+!!! notation
+    
+    mindone diffusers only support safetensors checkpoint format. if ".pth" or ".bin" are used, please using huggingface transformation tool to transform into safetensors format.
 
 ```python
 import mindspore as ms
