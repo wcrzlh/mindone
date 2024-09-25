@@ -14,17 +14,15 @@ specific language governing permissions and limitations under the License.
 
 Pipelines provide a simple way to run state-of-the-art diffusion models in inference by bundling all of the necessary components (multiple independently-trained models, schedulers, and processors) into a single end-to-end class. Pipelines are flexible and they can be adapted to use different schedulers or even model components.
 
-All pipelines are built from the base [`DiffusionPipeline`](overview.md#api-diffusionpipeline) class which provides basic functionality for loading, downloading, and saving all the components. Specific pipeline types (for example [`StableDiffusionPipeline`](stable_diffusion/text2img.md)) loaded with [`DiffusionPipeline.from_pretrained`](overview.md#api-diffusionpipeline) are automatically detected and the pipeline components are loaded and passed to the `__init__` function of the pipeline.
+All pipelines are built from the base [`DiffusionPipeline`](overview.md#mindone.diffusers.DiffusionPipeline) class which provides basic functionality for loading, downloading, and saving all the components. Specific pipeline types (for example [`StableDiffusionPipeline`](stable_diffusion/text2img.md)) loaded with [`DiffusionPipeline.from_pretrained`](overview.md#mindone.diffusers.DiffusionPipeline) are automatically detected and the pipeline components are loaded and passed to the `__init__` function of the pipeline.
 
-<Tip warning={true}>
+!!! warning
 
-You shouldn't use the [`DiffusionPipeline`](overview.md#api-diffusionpipeline) class for training. Individual components (for example, [`UNet2DModel`](../models/unet2d.md) and [`UNet2DConditionModel`](../models/unet2d-cond.md)) of diffusion pipelines are usually trained individually, so we suggest directly working with them instead.
+	You shouldn't use the [`DiffusionPipeline`](overview.md#mindone.diffusers.DiffusionPipeline) class for training. Individual components (for example, [`UNet2DModel`](../models/unet2d.md) and [`UNet2DConditionModel`](../models/unet2d-cond.md)) of diffusion pipelines are usually trained individually, so we suggest directly working with them instead.
 
-<br>
-
-Pipelines do not offer any training functionality. You'll notice MindSpore's autograd is disabled by decorating the [`DiffusionPipeline.__call__`](overview.md#api-diffusionpipeline) method with a [`mindspore._no_grad`] decorator because pipelines should not be used for training. If you're interested in training, please take a look at the [Training](../../training/overview.md) guides instead!
-
-</Tip>
+!!! warning
+	
+	Pipelines do not offer any training functionality. You'll notice MindSpore's autograd is disabled by decorating the [`DiffusionPipeline.__call__`](overview.md#mindone.diffusers.DiffusionPipeline) method with a [`mindspore._no_grad`] decorator because pipelines should not be used for training. If you're interested in training, please take a look at the [Training](../../training/overview.md) guides instead!
 
 The table below lists all the pipelines currently available in 🤗 Diffusers and the tasks they support. Click on a pipeline to view its abstract and published paper.
 
@@ -59,8 +57,6 @@ The table below lists all the pipelines currently available in 🤗 Diffusers an
 | [Stable Cascade](stable_cascade.md)                            | text2image |
 | [unCLIP](unclip.md)                                            | text2image, image variation |
 | [Wuerstchen](wuerstchen.md)                                    | text2image |
-
-# API-DiffusionPipeline
 
 ::: mindone.diffusers.DiffusionPipeline
 	members:

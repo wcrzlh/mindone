@@ -36,7 +36,7 @@ Some notes about this pipeline:
 
 ## Inference Pipeline
 
-Let's walk through a full-fledged example to run the [`PixArtAlphaPipeline`](pixart.md#api-pixartalphapipeline).
+Let's walk through a full-fledged example to run the [`PixArtAlphaPipeline`](pixart.md#mindone.diffusers.PixArtAlphaPipeline).
 
 ```python
 import mindspore as ms
@@ -51,7 +51,5 @@ prompt = "cute cat"
 image = pipe(prompt)[0][0]
 image.save("image.png")
 ```
-
-## API-PixArtAlphaPipeline
 
 ::: mindone.diffusers.PixArtAlphaPipeline

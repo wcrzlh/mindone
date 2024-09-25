@@ -124,10 +124,10 @@ make_image_grid([pt_to_pil(stage_1_output)[0], pt_to_pil(stage_2_output)[0], sta
 ### Text Guided Image-to-Image Generation
 
 The same IF model weights can be used for text-guided image-to-image translation or image variation.
-In this case just make sure to load the weights using the [`IFImg2ImgPipeline`](deepfloyd_if.md#api-ifimg2imgpipeline) and [`IFImg2ImgSuperResolutionPipeline`](deepfloyd_if.md#api-ifimg2imgsuperresolutionpipeline) pipelines.
+In this case just make sure to load the weights using the [`IFImg2ImgPipeline`](deepfloyd_if.md#mindone.diffusers.IFImg2ImgPipeline) and [`IFImg2ImgSuperResolutionPipeline`](deepfloyd_if.md#mindone.diffusers.IFImg2ImgSuperResolutionPipeline) pipelines.
 
 **Note**: You can also directly move the weights of the text-to-image pipelines to the image-to-image pipelines
-without loading them twice by making use of the [`diffusionpipeline.components`](overview.md#api-diffusionpipeline) argument as explained [here](#converting-between-different-pipelines).
+without loading them twice by making use of the [`diffusionpipeline.components`](overview.md#mindone.diffusers.DiffusionPipeline) argument as explained [here](#converting-between-different-pipelines).
 
 ```python
 from mindone.diffusers import IFImg2ImgPipeline, IFImg2ImgSuperResolutionPipeline, DiffusionPipeline
@@ -194,10 +194,10 @@ make_image_grid([original_image, pt_to_pil(stage_1_output)[0], pt_to_pil(stage_2
 ### Text Guided Inpainting Generation
 
 The same IF model weights can be used for text-guided image-to-image translation or image variation.
-In this case just make sure to load the weights using the [`IFInpaintingPipeline`](deepfloyd_if.md#api-ifinpaintingpipeline) and [`IFInpaintingSuperResolutionPipeline`](deepfloyd_if.md#api-ifinpaintingsuperresolutionpipeline) pipelines.
+In this case just make sure to load the weights using the [`IFInpaintingPipeline`](deepfloyd_if.md#mindone.diffusers.IFInpaintingPipeline) and [`IFInpaintingSuperResolutionPipeline`](deepfloyd_if.md#mindone.diffusers.IFInpaintingSuperResolutionPipeline) pipelines.
 
 **Note**: You can also directly move the weights of the text-to-image pipelines to the image-to-image pipelines
-without loading them twice by making use of the [`DiffusionPipeline.components()`](overview.md#api-diffusionpipeline) function as explained [here](#converting-between-different-pipelines).
+without loading them twice by making use of the [`DiffusionPipeline.components()`](overview.md#mindone.diffusers.DiffusionPipeline) function as explained [here](#converting-between-different-pipelines).
 
 ```python
 from mindone.diffusers import IFInpaintingPipeline, IFInpaintingSuperResolutionPipeline, DiffusionPipeline
@@ -337,26 +337,14 @@ image = pipe(image=image, prompt="<prompt>", strength=0.3).images
 | [pipeline_if_inpainting.py](https://github.com/mindspore-lab/mindone/tree/master/mindone/diffusers/pipelines/deepfloyd_if/pipeline_if_inpainting.py) | *Image-to-Image Generation* | - |
 | [pipeline_if_inpainting_superresolution.py](https://github.com/mindspore-lab/mindone/tree/master/mindone/diffusers/pipelines/deepfloyd_if/pipeline_if_inpainting_superresolution.py) | *Image-to-Image Generation* | - |
 
-## API-IFPipeline
-
 ::: mindone.diffusers.IFPipeline
-
-## API-IFSuperResolutionPipeline
 
 ::: mindone.diffusers.IFSuperResolutionPipeline
 
-## API-IFImg2ImgPipeline
-
 ::: mindone.diffusers.IFImg2ImgPipeline
-
-## API-IFImg2ImgSuperResolutionPipeline
 
 ::: mindone.diffusers.IFImg2ImgSuperResolutionPipeline
 
-## API-IFInpaintingPipeline
-
 ::: mindone.diffusers.IFInpaintingPipeline
-
-## API-IFInpaintingSuperResolutionPipeline
 
 ::: mindone.diffusers.IFInpaintingSuperResolutionPipeline

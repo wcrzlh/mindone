@@ -12,7 +12,7 @@ specific language governing permissions and limitations under the License.
 
 # Single files
 
-The [`from_single_file`](single_file.md#fromsinglefilemixin) method allows you to load:
+The [`from_single_file`](single_file.md#mindone.diffusers.loaders.single_file.FromSingleFileMixin) method allows you to load:
 
 * a model stored in a single file, which is useful if you're working with models from the diffusion ecosystem, like Automatic1111, and commonly rely on a single-file layout to store and share models
 * a model stored in their originally distributed layout, which is useful if you're working with models finetuned with other services, and want to load it directly into Diffusers model objects and pipelines
@@ -23,9 +23,9 @@ The [`from_single_file`](single_file.md#fromsinglefilemixin) method allows you t
 
 ## Supported pipelines
 
-- [`StableDiffusionPipeline`]()
-- [`StableDiffusionImg2ImgPipeline`]()
-- [`StableDiffusionInpaintPipeline`]()
+- [`StableDiffusionPipeline`](../pipelines/stable_diffusion/text2img.md)
+- [`StableDiffusionImg2ImgPipeline`](../pipelines/stable_diffusion/text2img.md)
+- [`StableDiffusionInpaintPipeline`](../pipelines/stable_diffusion/text2img.md)
 - [`StableDiffusionControlNetPipeline`](../pipelines/controlnet.md)
 - [`StableDiffusionControlNetImg2ImgPipeline`](../pipelines/controlnet.md)
 - [`StableDiffusionControlNetInpaintPipeline`](../pipelines/controlnet.md)
@@ -35,15 +35,11 @@ The [`from_single_file`](single_file.md#fromsinglefilemixin) method allows you t
 - [`StableDiffusionXLInpaintPipeline`](../pipelines/stable_diffusion/stable_diffusion_xl.md#stable-diffusion-xl)
 - [`StableDiffusionXLInstructPix2PixPipeline`](../pipelines/pix2pix.md#instructpix2pix)
 - [`StableDiffusionXLControlNetPipeline`](../pipelines/controlnet_sdxl.md)
-- [`StableDiffusionXLKDiffusionPipeline`]()
 - [`StableDiffusion3Pipeline`](../pipelines/stable_diffusion/stable_diffusion_3.md)
 - [`LatentConsistencyModelPipeline`](../pipelines/latent_consistency_models.md)
 - [`LatentConsistencyModelImg2ImgPipeline`](../pipelines/latent_consistency_models.md)
 - [`StableDiffusionControlNetXSPipeline`](../pipelines/controlnetxs.md)
 - [`StableDiffusionXLControlNetXSPipeline`](../pipelines/controlnetxs_sdxl.md)
-- [`LEditsPPPipelineStableDiffusion`]()
-- [`LEditsPPPipelineStableDiffusionXL`]()
-- [`PIAPipeline`]()
 
 ## Supported models
 
@@ -53,6 +49,4 @@ The [`from_single_file`](single_file.md#fromsinglefilemixin) method allows you t
 - [`ControlNetModel`](../models/controlnet.md)
 - [`SD3Transformer2DModel`](../models/sd3_transformer2d.md)
 
-
-## FromSingleFileMixin
 ::: mindone.diffusers.loaders.single_file.FromSingleFileMixin

@@ -46,15 +46,13 @@ The original checkpoints can be found under the [PRS-ETH](https://huggingface.co
     Make sure to check out the Schedulers [guide](../../using-diffusers/schedulers.md) to learn how to explore the tradeoff between scheduler speed and quality, and see the [reuse components across pipelines](../../using-diffusers/loading.md) section to learn how to efficiently load the same components into multiple pipelines. Also, to know more about reducing the memory usage of this pipeline, refer to the ["Reduce memory usage"] section [here](../../using-diffusers/svd.md).
 
 
-<Tip warning={true}>
+!!! warning
 
-Marigold pipelines were designed and tested only with `DDIMScheduler` and `LCMScheduler`.
-Depending on the scheduler, the number of inference steps required to get reliable predictions varies, and there is no universal value that works best across schedulers.
-Because of that, the default value of `num_inference_steps` in the `__call__` method of the pipeline is set to `None` (see the API reference).
-Unless set explicitly, its value will be taken from the checkpoint configuration `model_index.json`.
-This is done to ensure high-quality predictions when calling the pipeline with just the `image` argument.
-
-</Tip>
+    Marigold pipelines were designed and tested only with `DDIMScheduler` and `LCMScheduler`.
+    Depending on the scheduler, the number of inference steps required to get reliable predictions varies, and there is no universal value that works best across schedulers.
+    Because of that, the default value of `num_inference_steps` in the `__call__` method of the pipeline is set to `None` (see the API reference).
+    Unless set explicitly, its value will be taken from the checkpoint configuration `model_index.json`.
+    This is done to ensure high-quality predictions when calling the pipeline with just the `image` argument.
 
 Marigold pipeline could be called conveniently by the following commands:
 
