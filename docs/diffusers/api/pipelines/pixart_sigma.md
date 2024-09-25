@@ -37,7 +37,7 @@ Some notes about this pipeline:
 
 !!! tip
     
-You can further improve generation quality by passing the generated image from [`PixArtSigmaPipeline`](pixart_sigma.md) to the [SDXL refiner](../../using-diffusers/sdxl.md#base-to-refiner-model) model.
+    You can further improve generation quality by passing the generated image from [`PixArtSigmaPipeline`](pixart_sigma.md) to the [SDXL refiner](../../using-diffusers/sdxl.md#base-to-refiner-model) model.
 
 
 ## Inference Pipelines Examples

@@ -16,9 +16,11 @@ specific language governing permissions and limitations under the License.
 
 DeepFloyd IF is a novel state-of-the-art open-source text-to-image model with a high degree of photorealism and language understanding.
 The model is a modular composed of a frozen text encoder and three cascaded pixel diffusion modules:
+
 - Stage 1: a base model that generates 64x64 px image based on text prompt,
 - Stage 2: a 64x64 px => 256x256 px super-resolution model, and
 - Stage 3: a 256x256 px => 1024x1024 px super-resolution model
+
 Stage 1 and Stage 2 utilize a frozen text encoder based on the T5 transformer to extract text embeddings, which are then fed into a UNet architecture enhanced with cross-attention and attention pooling.
 Stage 3 is [Stability AI's x4 Upscaling model](https://huggingface.co/stabilityai/stable-diffusion-x4-upscaler).
 The result is a highly efficient model that outperforms current state-of-the-art models, achieving a zero-shot FID score of 6.66 on the COCO dataset.
@@ -328,14 +330,14 @@ image = pipe(image=image, prompt="<prompt>", strength=0.3).images
 
 ## Available Pipelines:
 
-| Pipeline | Tasks | Colab
-|---|---|:---:|
+| Pipeline | Tasks |
+|---|---|
 | [pipeline_if.py](https://github.com/mindspore-lab/mindone/tree/master/mindone/diffusers/pipelines/deepfloyd_if/pipeline_if.py) | *Text-to-Image Generation* | - |
-| [pipeline_if_superresolution.py](https://github.com/mindspore-lab/mindone/tree/master/mindone/diffusers/pipelines/deepfloyd_if/pipeline_if_superresolution.py) | *Text-to-Image Generation* | - |
-| [pipeline_if_img2img.py](https://github.com/mindspore-lab/mindone/tree/master/mindone/diffusers/pipelines/deepfloyd_if/pipeline_if_img2img.py) | *Image-to-Image Generation* | - |
-| [pipeline_if_img2img_superresolution.py](https://github.com/mindspore-lab/mindone/tree/master/mindone/diffusers/pipelines/deepfloyd_if/pipeline_if_img2img_superresolution.py) | *Image-to-Image Generation* | - |
-| [pipeline_if_inpainting.py](https://github.com/mindspore-lab/mindone/tree/master/mindone/diffusers/pipelines/deepfloyd_if/pipeline_if_inpainting.py) | *Image-to-Image Generation* | - |
-| [pipeline_if_inpainting_superresolution.py](https://github.com/mindspore-lab/mindone/tree/master/mindone/diffusers/pipelines/deepfloyd_if/pipeline_if_inpainting_superresolution.py) | *Image-to-Image Generation* | - |
+| [pipeline_if_superresolution.py](https://github.com/mindspore-lab/mindone/tree/master/mindone/diffusers/pipelines/deepfloyd_if/pipeline_if_superresolution.py) | *Text-to-Image Generation* |
+| [pipeline_if_img2img.py](https://github.com/mindspore-lab/mindone/tree/master/mindone/diffusers/pipelines/deepfloyd_if/pipeline_if_img2img.py) | *Image-to-Image Generation* |
+| [pipeline_if_img2img_superresolution.py](https://github.com/mindspore-lab/mindone/tree/master/mindone/diffusers/pipelines/deepfloyd_if/pipeline_if_img2img_superresolution.py) | *Image-to-Image Generation* |
+| [pipeline_if_inpainting.py](https://github.com/mindspore-lab/mindone/tree/master/mindone/diffusers/pipelines/deepfloyd_if/pipeline_if_inpainting.py) | *Image-to-Image Generation* |
+| [pipeline_if_inpainting_superresolution.py](https://github.com/mindspore-lab/mindone/tree/master/mindone/diffusers/pipelines/deepfloyd_if/pipeline_if_inpainting_superresolution.py) | *Image-to-Image Generation* |
 
 ::: mindone.diffusers.IFPipeline
 
