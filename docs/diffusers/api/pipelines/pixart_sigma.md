@@ -35,15 +35,14 @@ Some notes about this pipeline:
 
     Make sure to check out the Schedulers [guide](../../using-diffusers/schedulers.md) to learn how to explore the tradeoff between scheduler speed and quality, and see the [reuse components across pipelines](../../using-diffusers/loading.md) section to learn how to efficiently load the same components into multiple pipelines.
 
-<Tip>
+!!! tip
+    
+You can further improve generation quality by passing the generated image from [`PixArtSigmaPipeline`](pixart_sigma.md) to the [SDXL refiner](../../using-diffusers/sdxl.md#base-to-refiner-model) model.
 
-You can further improve generation quality by passing the generated image from [`PixArtSigmaPipeline`] to the [SDXL refiner](../../using-diffusers/sdxl#base-to-refiner-model) model.
-
-</Tip>
 
 ## Inference Pipelines Examples
 
-Let's walk through a full-fledged example of [`PixArtSigmaPipeline`].
+Let's walk through a full-fledged example of [`PixArtSigmaPipeline`](pixart_sigma.md).
 
 ```python
 import mindspore as ms
