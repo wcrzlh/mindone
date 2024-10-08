@@ -29,6 +29,9 @@ def nested_detach(tensors):
 
 
 class CPMTrainer(Trainer):
+    def __init__(self, reducer=None):
+        super(CPMTrainer, self).__init__(reducer)
+        self.reducer = reducer
     def compute_loss(self, model, inputs, return_outputs=False):
         if "labels" in inputs:
             labels = inputs["labels"]
@@ -233,6 +236,9 @@ class CPMTrainer(Trainer):
         self.grad_fn = ops.value_and_grad(forward, None, self.optimizer.parameters)
 
         loss, grads = self.grad_fn(inputs)
+
+        if self.args.distributed:
+            grads = self.reducer(grads)
 
         del inputs
 
