@@ -52,7 +52,7 @@ class DataArguments:
 @dataclass
 class TrainingArguments(engine.train_args.base.TrainingArguments):
     cache_dir: Optional[str] = field(default=None)
-    optim: str = field(default="adamw_mint")
+    optim: str = field(default="adamw")
     model_max_length: int = field(
         default=2048,
         metadata={
