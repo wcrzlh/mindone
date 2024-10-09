@@ -257,6 +257,7 @@ def train():
         grad_reducer = nn.DistributedGradReducer(training_args.optim.parameters, mean, degree)
     else:
         data_args.rank, data_args.rank_size, parallel_mode = 0, 1, None
+        grad_reducer = None
 
     local_rank = training_args.local_rank
     world_size = int(os.environ.get("WORLD_SIZE", 1))
