@@ -30,8 +30,9 @@ def nested_detach(tensors):
 
 class CPMTrainer(Trainer):
     def __init__(self, reducer=None):
-        super(CPMTrainer, self).__init__(reducer)
+        super().__init__()
         self.reducer = reducer
+
     def compute_loss(self, model, inputs, return_outputs=False):
         if "labels" in inputs:
             labels = inputs["labels"]
