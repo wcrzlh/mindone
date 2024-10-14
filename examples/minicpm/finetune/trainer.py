@@ -30,7 +30,7 @@ def nested_detach(tensors):
 
 class CPMTrainer(Trainer):
     def __init__(self, reducer=None):
-        super().__init__()
+        super().__init__(reducer)
         self.reducer = reducer
 
     def compute_loss(self, model, inputs, return_outputs=False):
