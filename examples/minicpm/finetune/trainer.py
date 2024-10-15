@@ -29,8 +29,8 @@ def nested_detach(tensors):
 
 
 class CPMTrainer(Trainer):
-    def __init__(self, reducer=None):
-        super().__init__(reducer)
+    def __init__(self, model, args, map_fn, train_dataset, eval_dataset, tokenizer, model_init, compute_metrics, callbacks, optimizers, preprocess_logits_for_metrics, reducer=None):
+        super().__init__(model, args, map_fn, train_dataset, eval_dataset, tokenizer, model_init, compute_metrics, callbacks, optimizers, preprocess_logits_for_metrics)
         self.reducer = reducer
 
     def compute_loss(self, model, inputs, return_outputs=False):
