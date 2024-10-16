@@ -244,21 +244,6 @@ def train():
         else (ms.bfloat16 if training_args.bf16 else ms.float32)
     )
 
-    if training_args.distributed:
-        init()
-        data_args.rank, data_args.rank_size, parallel_mode = get_rank(), get_group_size(), context.ParallelMode.DATA_PARALLEL
-        context.set_auto_parallel_context(
-            device_num=data_args.rank_size, parallel_mode=parallel_mode, gradients_mean=True
-        )
-
-        # set grad reducer
-        mean = ms.context.get_auto_parallel_context("gradients_mean")
-        degree = ms.context.get_auto_parallel_context("device_num")
-        grad_reducer = nn.DistributedGradReducer(training_args.optim.parameters, mean, degree)
-    else:
-        data_args.rank, data_args.rank_size, parallel_mode = 0, 1, None
-        grad_reducer = None
-
     local_rank = training_args.local_rank
     world_size = int(os.environ.get("WORLD_SIZE", 1))
     ddp = world_size != 1
@@ -275,6 +260,21 @@ def train():
         trust_remote_code=True,
         mindspore_dtype=compute_dtype,
     )
+
+    if training_args.distributed:
+        init()
+        data_args.rank, data_args.rank_size, parallel_mode = get_rank(), get_group_size(), context.ParallelMode.DATA_PARALLEL
+        context.set_auto_parallel_context(
+            device_num=data_args.rank_size, parallel_mode=parallel_mode, gradients_mean=True
+        )
+
+        # set grad reducer
+        mean = ms.context.get_auto_parallel_context("gradients_mean")
+        degree = ms.context.get_auto_parallel_context("device_num")
+        grad_reducer = nn.DistributedGradReducer(model.trainable_params, mean, degree)
+    else:
+        data_args.rank, data_args.rank_size, parallel_mode = 0, 1, None
+        grad_reducer = None
 
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.model_name_or_path, trust_remote_code=True
