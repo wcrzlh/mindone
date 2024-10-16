@@ -140,8 +140,8 @@ def make_supervised_data_module(
         num_parallel_workers=2,
         shuffle=True,
         python_multiprocessing=False,
-        num_shards=data_args.rank_size,
-        shard_id=data_args.rank
+        num_shards=rank_size,
+        shard_id=rank
     )
 
     if data_args.eval_data_path:
