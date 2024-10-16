@@ -248,7 +248,7 @@ def train():
         init()
         data_args.rank, data_args.rank_size, parallel_mode = get_rank(), get_group_size(), context.ParallelMode.DATA_PARALLEL
         context.set_auto_parallel_context(
-            device_num=training_args.rank_size, parallel_mode=parallel_mode, gradients_mean=True
+            device_num=data_args.rank_size, parallel_mode=parallel_mode, gradients_mean=True
         )
 
         # set grad reducer
