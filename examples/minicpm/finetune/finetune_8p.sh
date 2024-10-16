@@ -9,7 +9,9 @@ DATA="/data3/wcr/mindone/examples/minicpm/finetune.json"
 LLM_TYPE="qwen2" # if use openbmb/MiniCPM-V-2, please set LLM_TYPE=minicpm, if use openbmb/MiniCPM-Llama3-V-2_5, please set LLM_TYPE="llama3"
 MODEL_MAX_Length=2048 # if conduct multi-images sft, please set MODEL_MAX_Length=4096
 
-msrun --worker_num=8 --local_worker_num=8 --master_port=8118 --log_dir=pynative_logs --join=True --cluster_time_out=300 finetune.py  \
+export ASCEND_RT_VISIBLE_DEVICES=3,4,5,6
+
+msrun --worker_num=4 --local_worker_num=4 --master_port=8118 --log_dir=pynative_logs --join=True --cluster_time_out=300 finetune.py  \
     --model_name_or_path $MODEL \
     --llm_type $LLM_TYPE \
     --data_path $DATA \
