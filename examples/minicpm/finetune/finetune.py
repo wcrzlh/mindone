@@ -274,7 +274,7 @@ def train():
         # set grad reducer
         mean = ms.context.get_auto_parallel_context("gradients_mean")
         degree = ms.context.get_auto_parallel_context("device_num")
-        grad_reducer = nn.DistributedGradReducer(model.trainable_params, mean, degree)
+        grad_reducer = nn.DistributedGradReducer(model.trainable_params(), mean, degree)
     else:
         grad_reducer = None
 
