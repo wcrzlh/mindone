@@ -14,6 +14,12 @@ import numpy as np
 from mindspore import nn, ops, Parameter, Tensor, dataset, context
 from mindspore.communication.management import get_group_size, get_rank, init
 
+init()
+rank, rank_size, parallel_mode = get_rank(), get_group_size(), context.ParallelMode.DATA_PARALLEL
+context.set_auto_parallel_context(
+    device_num=rank_size, parallel_mode=parallel_mode, gradients_mean=True
+)
+
 from mindspore.dataset import transforms, vision
 from mindnlp import engine, transformers
 from transformers import HfArgumentParser
@@ -244,14 +250,14 @@ def train():
         else (ms.bfloat16 if training_args.bf16 else ms.float32)
     )
 
-    if training_args.distributed:
-        init()
-        data_args.rank, data_args.rank_size, parallel_mode = get_rank(), get_group_size(), context.ParallelMode.DATA_PARALLEL
-        context.set_auto_parallel_context(
-            device_num=data_args.rank_size, parallel_mode=parallel_mode, gradients_mean=True
-        )
-    else:
-        data_args.rank, data_args.rank_size, parallel_mode = 0, 1, None
+    # if training_args.distributed:
+    #     init()
+    #     data_args.rank, data_args.rank_size, parallel_mode = get_rank(), get_group_size(), context.ParallelMode.DATA_PARALLEL
+    #     context.set_auto_parallel_context(
+    #         device_num=data_args.rank_size, parallel_mode=parallel_mode, gradients_mean=True
+    #     )
+    # else:
+    #     data_args.rank, data_args.rank_size, parallel_mode = 0, 1, None
 
     local_rank = training_args.local_rank
     world_size = int(os.environ.get("WORLD_SIZE", 1))
