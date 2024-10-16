@@ -40,4 +40,5 @@ msrun --worker_num=8 --local_worker_num=8 --master_port=8118 --log_dir=pynative_
     --warmup_ratio 0.01 \
     --lr_scheduler_type "cosine" \
     --logging_steps 1 \
+    --distributed true \
     > pynative_logs/train_vision.log 2>&1 &
