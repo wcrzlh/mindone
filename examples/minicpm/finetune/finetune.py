@@ -11,7 +11,15 @@ from types import MethodType
 import mindspore as ms
 import numpy as np
 
-from mindspore import nn, ops, Parameter, Tensor, dataset
+from mindspore import nn, ops, Parameter, Tensor, dataset, context
+from mindspore.communication.management import get_group_size, get_rank, init
+
+init()
+rank, rank_size, parallel_mode = get_rank(), get_group_size(), context.ParallelMode.DATA_PARALLEL
+context.set_auto_parallel_context(
+    device_num=rank_size, parallel_mode=parallel_mode, gradients_mean=True
+)
+
 from mindspore.dataset import transforms, vision
 from mindnlp import engine, transformers
 from transformers import HfArgumentParser
@@ -50,7 +58,7 @@ class DataArguments:
 @dataclass
 class TrainingArguments(engine.train_args.base.TrainingArguments):
     cache_dir: Optional[str] = field(default=None)
-    optim: str = field(default="adamw_mint")
+    optim: str = field(default="adamw")
     model_max_length: int = field(
         default=2048,
         metadata={
@@ -62,6 +70,7 @@ class TrainingArguments(engine.train_args.base.TrainingArguments):
     llm_type: str = field(default="minicpm")
     use_lora: Optional[bool] = field(default=False)
     max_slice_nums: Optional[int] = field(default=9)
+    distributed: Optional[bool] = field(default=False)
 
 
 @dataclass
@@ -131,6 +140,8 @@ def make_supervised_data_module(
         num_parallel_workers=2,
         shuffle=True,
         python_multiprocessing=False,
+        num_shards=rank_size,
+        shard_id=rank
     )
 
     if data_args.eval_data_path:
@@ -239,6 +250,15 @@ def train():
         else (ms.bfloat16 if training_args.bf16 else ms.float32)
     )
 
+    # if training_args.distributed:
+    #     init()
+    #     data_args.rank, data_args.rank_size, parallel_mode = get_rank(), get_group_size(), context.ParallelMode.DATA_PARALLEL
+    #     context.set_auto_parallel_context(
+    #         device_num=data_args.rank_size, parallel_mode=parallel_mode, gradients_mean=True
+    #     )
+    # else:
+    #     data_args.rank, data_args.rank_size, parallel_mode = 0, 1, None
+
     local_rank = training_args.local_rank
     world_size = int(os.environ.get("WORLD_SIZE", 1))
     ddp = world_size != 1
@@ -255,6 +275,14 @@ def train():
         trust_remote_code=True,
         mindspore_dtype=compute_dtype,
     )
+
+    # if training_args.distributed:
+    #     # set grad reducer
+    #     mean = ms.context.get_auto_parallel_context("gradients_mean")
+    #     degree = ms.context.get_auto_parallel_context("device_num")
+    #     grad_reducer = nn.DistributedGradReducer(model.trainable_params(), mean, degree)
+    # else:
+    #     grad_reducer = None
 
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.model_name_or_path, trust_remote_code=True
