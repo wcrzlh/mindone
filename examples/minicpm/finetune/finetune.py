@@ -367,7 +367,6 @@ def train():
         model=model,
         tokenizer=tokenizer,
         args=training_args,
-        reducer=grad_reducer,
         **data_module,
     )
 
