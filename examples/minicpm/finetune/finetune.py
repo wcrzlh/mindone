@@ -276,13 +276,13 @@ def train():
         mindspore_dtype=compute_dtype,
     )
 
-    if training_args.distributed:
-        # set grad reducer
-        mean = ms.context.get_auto_parallel_context("gradients_mean")
-        degree = ms.context.get_auto_parallel_context("device_num")
-        grad_reducer = nn.DistributedGradReducer(model.trainable_params(), mean, degree)
-    else:
-        grad_reducer = None
+    # if training_args.distributed:
+    #     # set grad reducer
+    #     mean = ms.context.get_auto_parallel_context("gradients_mean")
+    #     degree = ms.context.get_auto_parallel_context("device_num")
+    #     grad_reducer = nn.DistributedGradReducer(model.trainable_params(), mean, degree)
+    # else:
+    #     grad_reducer = None
 
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.model_name_or_path, trust_remote_code=True
