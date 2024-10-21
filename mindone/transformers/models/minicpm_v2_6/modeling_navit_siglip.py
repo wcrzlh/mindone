@@ -651,7 +651,7 @@ class SiglipFlashAttention(SiglipAttention):
         self.flash_attention = FlashAttention(
             scale_value=self.head_dim**-0.5,
             head_num=self.head_dim,
-            input_layout="BNSD",
+            input_layout="BSH",
             keep_prob=1-dropout_rate
         )
 
@@ -676,9 +676,9 @@ class SiglipFlashAttention(SiglipAttention):
         # Flash attention requires the input to have the shape
         # batch_size x seq_length x head_dim x hidden_dim
         # therefore we just need to keep the original shape
-        query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).swapaxes(1, 2)
-        key_states = key_states.view(bsz, q_len, self.num_heads, self.head_dim).swapaxes(1, 2)
-        value_states = value_states.view(bsz, q_len, self.num_heads, self.head_dim).swapaxes(1, 2)
+        # query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).swapaxes(1, 2)
+        # key_states = key_states.view(bsz, q_len, self.num_heads, self.head_dim).swapaxes(1, 2)
+        # value_states = value_states.view(bsz, q_len, self.num_heads, self.head_dim).swapaxes(1, 2)
 
         kv_seq_len = key_states.shape[-2]
         if past_key_value is not None:
@@ -692,11 +692,11 @@ class SiglipFlashAttention(SiglipAttention):
 
         # TODO: These transpose are quite inefficient but Flash Attention requires the layout [batch_size, sequence_length, num_heads, head_dim]. We would need to refactor the KV cache
         # to be able to avoid many of these transpose/reshape/view.
-        query_states = query_states.swapaxes(1, 2)
-        key_states = key_states.swapaxes(1, 2)
-        value_states = value_states.swapaxes(1, 2)
+        # query_states = query_states.swapaxes(1, 2)
+        # key_states = key_states.swapaxes(1, 2)
+        # value_states = value_states.swapaxes(1, 2)
 
-        dropout_rate = self.dropout if self.training else 0.0
+        # dropout_rate = self.dropout if self.training else 0.0
 
         # In PEFT, usually we cast the layer norms in float32 for training stability reasons
         # therefore the input hidden states gets silently casted in float32. Hence, we need
@@ -706,13 +706,14 @@ class SiglipFlashAttention(SiglipAttention):
 
         input_dtype = query_states.dtype
         if input_dtype == ms.float32:
-            if ms.is_autocast_enabled():
-                target_dtype = ms.get_autocast_gpu_dtype()
-            # Handle the case where the model is quantized
-            elif hasattr(self.config, "_pre_quantization_dtype"):
-                target_dtype = self.config._pre_quantization_dtype
-            else:
-                target_dtype = self.q_proj.weight.dtype
+            # if ms.is_autocast_enabled():
+            #     target_dtype = ms.get_autocast_gpu_dtype()
+            # # Handle the case where the model is quantized
+            # elif hasattr(self.config, "_pre_quantization_dtype"):
+            #     target_dtype = self.config._pre_quantization_dtype
+            # else:
+            #     target_dtype = self.q_proj.weight.dtype
+            target_dtype = ms.float16
 
             logger.warning_once(
                 "The input hidden states seems to be silently casted in float32, this might be related to the fact"
@@ -729,7 +730,7 @@ class SiglipFlashAttention(SiglipAttention):
             query_states, key_states, value_states, None, None, None, attention_mask
         )[3]
 
-        attn_output = attn_output.reshape(bsz, q_len, self.embed_dim)
+        # attn_output = attn_output.reshape(bsz, q_len, self.embed_dim)
         attn_output = self.out_proj(attn_output)
 
         if not output_attentions:
