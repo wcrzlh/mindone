@@ -799,6 +799,10 @@ class SiglipEncoder(nn.Cell):
         self.layers = nn.CellList([SiglipEncoderLayer(config) for _ in range(config.num_hidden_layers)])
         self.gradient_checkpointing = False
 
+        # recompute
+        for layer in self.layers:
+            layer.recompute()
+
     # Ignore copy
     def construct(
         self,
@@ -888,7 +892,7 @@ class SiglipVisionTransformer(SiglipPreTrainedModel):
         self.post_init()
 
         # recompute
-        self.encoder.recompute()
+        # self.encoder.recompute()
 
 
     def get_input_embeddings(self) -> nn.Cell:
