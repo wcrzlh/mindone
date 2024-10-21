@@ -763,7 +763,7 @@ class SiglipEncoderLayer(nn.Cell):
         self.self_attn = (
             SiglipAttention(config)
             if not self._use_flash_attention
-            else SiglipFlashAttention2(config)
+            else SiglipFlashAttention(config)
         )
         self.layer_norm1 = nn.LayerNorm(self.embed_dim, epsilon=config.layer_norm_eps)
         self.mlp = SiglipMLP(config)

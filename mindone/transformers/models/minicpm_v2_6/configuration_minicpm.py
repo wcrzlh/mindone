@@ -57,6 +57,7 @@ class MiniCPMVConfig(Qwen2Config):
         "num_attention_heads": 16,
         "num_hidden_layers": 27,
         "patch_size": 14,
+        "attn_implementation": "flash_attention"
     }
 
     def __init__(

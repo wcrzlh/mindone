@@ -18,8 +18,8 @@ python finetune.py  \
     --prediction_loss_only false \
     --bf16 false \
     --bf16_full_eval false \
-    --fp16 true \
-    --fp16_full_eval true \
+    --fp16 false \
+    --fp16_full_eval false \
     --do_train \
     --tune_vision true \
     --tune_llm false \
