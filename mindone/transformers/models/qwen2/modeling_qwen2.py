@@ -639,10 +639,12 @@ class Qwen2FlashAttention(Qwen2Attention):
             # if torch.is_autocast_enabled():
             #     target_dtype = torch.get_autocast_gpu_dtype()
             # Handle the case where the model is quantized
-            if hasattr(self.config, "_pre_quantization_dtype"):
-                target_dtype = self.config._pre_quantization_dtype
-            else:
-                target_dtype = self.q_proj.weight.dtype
+
+            # if hasattr(self.config, "_pre_quantization_dtype"):
+            #     target_dtype = self.config._pre_quantization_dtype
+            # else:
+            #     target_dtype = self.q_proj.weight.dtype
+            target_dtype = ms.float16
 
             logger.warning_once(
                 f"The input hidden states seems to be silently casted in float32, this might be related to"
