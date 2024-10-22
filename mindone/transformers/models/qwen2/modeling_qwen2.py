@@ -789,6 +789,7 @@ class Qwen2SdpaAttention(Qwen2Attention):
 QWEN2_ATTENTION_CLASSES = {
     "eager": Qwen2Attention,
     "flash_attention_2": Qwen2FlashAttention2,
+    "flash_attention": Qwen2FlashAttention,
     "sdpa": Qwen2SdpaAttention,
 }
 
@@ -803,6 +804,7 @@ class Qwen2DecoderLayer(nn.Cell):
                 f"Sliding Window Attention is enabled but not implemented for `{config._attn_implementation}`; "
                 "unexpected results may be encountered."
             )
+        config._attn_implementation = "flash_attention"
         self.self_attn = QWEN2_ATTENTION_CLASSES[config._attn_implementation](config, layer_idx)
 
         self.mlp = Qwen2MLP(config)
