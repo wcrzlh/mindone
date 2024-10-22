@@ -14,11 +14,13 @@ import numpy as np
 from mindspore import nn, ops, Parameter, Tensor, dataset, context
 from mindspore.communication.management import get_group_size, get_rank, init
 
-init()
-rank, rank_size, parallel_mode = get_rank(), get_group_size(), context.ParallelMode.DATA_PARALLEL
-context.set_auto_parallel_context(
-    device_num=rank_size, parallel_mode=parallel_mode, gradients_mean=True
-)
+# init()
+# rank, rank_size, parallel_mode = get_rank(), get_group_size(), context.ParallelMode.DATA_PARALLEL
+# context.set_auto_parallel_context(
+#     device_num=rank_size, parallel_mode=parallel_mode, gradients_mean=True
+# )
+
+rank, rank_size = 0, 1
 
 from mindspore.dataset import transforms, vision
 from mindnlp import engine, transformers
@@ -39,7 +41,8 @@ from mindnlp.dataset.map_fn import BaseMapFuction
 
 # from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
-ms.set_context(mode=ms.context.PYNATIVE_MODE, pynative_synchronize=True)
+# ms.set_context(mode=ms.context.PYNATIVE_MODE, pynative_synchronize=True)
+ms.set_context(mode=ms.context.PYNATIVE_MODE)
 
 @dataclass
 class ModelArguments:

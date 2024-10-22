@@ -27,6 +27,7 @@ import numpy as np
 import mindspore as ms
 # import torch.utils.checkpoint
 from mindspore import nn, ops, Tensor, Parameter
+from mindspore.ops.operations.nn_ops import FlashAttentionScore as FlashAttention
 from mindspore.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
 from ...activations import ACT2FN
@@ -531,6 +532,169 @@ class Qwen2FlashAttention2(Qwen2Attention):
         return attn_output, attn_weights, past_key_value
 
 
+class Qwen2FlashAttention(Qwen2Attention):
+    """
+    Qwen2 flash attention module, following Qwen2 attention module. This module inherits from `Qwen2Attention`
+    as the weights of the module stays untouched. The only required change would be on the forward pass
+    where it needs to correctly call the public API of flash attention and deal with padding tokens
+    in case the input contains any of them. Additionally, for sliding window attention, we apply SWA only to the bottom
+    config.max_window_layers layers.
+    """
+
+    # Copied from transformers.models.llama.modeling_llama.LlamaFlashAttention2.__init__
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # TODO: Should be removed once Flash Attention for RoCm is bumped to 2.1.
+        # flash_attn<2.1 generates top-left aligned causal mask, while what is needed here is bottom-right alignement, that was made default for flash_attn>=2.1. This attribute is used to handle this difference. Reference: https://github.com/Dao-AILab/flash-attention/releases/tag/v2.1.0.
+        # Beware that with flash_attn<2.1, using q_seqlen != k_seqlen (except for the case q_seqlen == 1) produces a wrong mask (top-left).
+        self._flash_attn_uses_top_left_mask = False
+
+        dropout_rate = self.dropout if self.training else 0.0
+        self.flash_attention = FlashAttention(
+            scale_value=self.head_dim ** -0.5,
+            head_num=self.head_dim,
+            input_layout="BSH",
+            keep_prob=1 - dropout_rate
+        )
+
+    def construct(
+        self,
+        hidden_states: ms.Tensor,
+        attention_mask: Optional[ms.Tensor] = None,
+        position_ids: Optional[ms.Tensor] = None,
+        past_key_value: Optional[Cache] = None,
+        output_attentions: bool = False,
+        use_cache: bool = False,
+        cache_position: Optional[ms.Tensor] = None,
+    ):
+        bsz, q_len, _ = hidden_states.shape
+
+        query_states = self.q_proj(hidden_states)
+        key_states = self.k_proj(hidden_states)
+        value_states = self.v_proj(hidden_states)
+
+        query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).swapaxes(1, 2)
+        key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).swapaxes(1, 2)
+        value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).swapaxes(1, 2)
+
+        kv_seq_len = key_states.shape[-2]
+        if past_key_value is not None:
+            if self.layer_idx is None:
+                raise ValueError(
+                    f"The cache structure has changed since version v4.36. If you are using {self.__class__.__name__} "
+                    "for auto-regressive decoding with k/v caching, please make sure to initialize the attention class "
+                    "with a layer index."
+                )
+            kv_seq_len += past_key_value.get_usable_length(kv_seq_len, self.layer_idx)
+
+        # Because the input can be padded, the absolute sequence length depends on the max position id.
+        rotary_seq_len = (
+            max(kv_seq_len, position_ids[:, -1].max().item() + 1) if position_ids is not None else kv_seq_len
+        )
+
+        cos, sin = self.rotary_emb(value_states, seq_len=rotary_seq_len)
+
+        query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)
+
+        if past_key_value is not None:
+            # Activate slicing cache only if the config has a value `sliding_windows` attribute
+            cache_has_contents = past_key_value.get_seq_length(self.layer_idx) > 0
+            if (
+                getattr(self.config, "sliding_window", None) is not None
+                and kv_seq_len > self.config.sliding_window
+                and cache_has_contents
+            ):
+                slicing_tokens = 1 - self.config.sliding_window
+
+                past_key = past_key_value[self.layer_idx][0]
+                past_value = past_key_value[self.layer_idx][1]
+
+                past_key = past_key[:, :, slicing_tokens:, :]
+                past_value = past_value[:, :, slicing_tokens:, :]
+
+                if past_key.shape[-2] != self.config.sliding_window - 1:
+                    raise ValueError(
+                        f"past key must have a shape of (`batch_size, num_heads, self.config.sliding_window-1, head_dim`), got"
+                        f" {past_key.shape}"
+                    )
+
+                if attention_mask is not None:
+                    attention_mask = attention_mask[:, slicing_tokens:]
+                    attention_mask = ops.cat([attention_mask, ops.ones_like(attention_mask[:, -1:])], axis=-1)
+
+            cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}  # Specific to RoPE models
+            key_states, value_states = past_key_value.update(key_states, value_states, self.layer_idx, cache_kwargs)
+
+        # repeat k/v heads if n_kv_heads < n_heads
+        key_states = repeat_kv(key_states, self.num_key_value_groups)
+        value_states = repeat_kv(value_states, self.num_key_value_groups)
+        dropout_rate = 0.0 if not self.training else self.attention_dropout
+
+        # In PEFT, usually we cast the layer norms in float32 for training stability reasons
+        # therefore the input hidden states gets silently casted in float32. Hence, we need
+        # cast them back in float16 just to be sure everything works as expected.
+        input_dtype = query_states.dtype
+        if input_dtype == ms.float32:
+            # if torch.is_autocast_enabled():
+            #     target_dtype = torch.get_autocast_gpu_dtype()
+            # Handle the case where the model is quantized
+            if hasattr(self.config, "_pre_quantization_dtype"):
+                target_dtype = self.config._pre_quantization_dtype
+            else:
+                target_dtype = self.q_proj.weight.dtype
+
+            logger.warning_once(
+                f"The input hidden states seems to be silently casted in float32, this might be related to"
+                f" the fact you have upcasted embedding or layer norm layers in float32. We will cast back the input in"
+                f" {target_dtype}."
+            )
+
+            query_states = query_states.to(target_dtype)
+            key_states = key_states.to(target_dtype)
+            value_states = value_states.to(target_dtype)
+
+        # Reashape to the expected shape for Flash Attention
+        query_states = query_states.swapaxes(1, 2)
+        key_states = key_states.swapaxes(1, 2)
+        value_states = value_states.swapaxes(1, 2)
+
+        query_states = query_states.reshape(bsz, q_len, self.hidden_size)
+        key_states = key_states.reshape(bsz, q_len, self.hidden_size)
+        value_states = value_states.reshape(bsz, q_len, self.hidden_size)
+
+        if (
+            self.config.use_sliding_window
+            and getattr(self.config, "sliding_window", None) is not None
+            and self.layer_idx >= self.config.max_window_layers
+        ):
+            sliding_window = self.config.sliding_window
+        else:
+            sliding_window = None
+
+        # attn_output = _flash_attention_forward(
+        #     query_states,
+        #     key_states,
+        #     value_states,
+        #     attention_mask,
+        #     q_len,
+        #     position_ids=position_ids,
+        #     dropout=dropout_rate,
+        #     sliding_window=sliding_window,
+        #     is_causal=self.is_causal,
+        #     use_top_left_mask=self._flash_attn_uses_top_left_mask,
+        # )
+
+        attn_output = self.flash_attention(query_states, key_states, value_states, None, None, None, attention_mask)[3]
+
+        # attn_output = attn_output.reshape(bsz, q_len, self.hidden_size)
+        attn_output = self.o_proj(attn_output)
+
+        if not output_attentions:
+            attn_weights = None
+
+        return attn_output, attn_weights, past_key_value
+
 # Copied from transformers.models.mixtral.modeling_mixtral.MixtralSdpaAttention with Mixtral->Qwen2
 class Qwen2SdpaAttention(Qwen2Attention):
     """
@@ -853,7 +1017,8 @@ class Qwen2Model(Qwen2PreTrainedModel):
         self.post_init()
 
         # recompute
-        # self.layers.recompute()
+        for layer in self.layers:
+            layer.recompute()
 
     def get_input_embeddings(self):
         return self.embed_tokens
