@@ -74,7 +74,7 @@ class TrainingArguments(engine.train_args.base.TrainingArguments):
     use_lora: Optional[bool] = field(default=False)
     max_slice_nums: Optional[int] = field(default=9)
     distributed: Optional[bool] = field(default=False)
-    amp_level: Optional[bool] = field(default="O0")
+    amp_level: Optional[str] = field(default="O0")
 
 
 @dataclass
