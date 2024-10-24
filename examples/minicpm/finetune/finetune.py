@@ -284,7 +284,7 @@ def train():
     if training_args.amp_level == "O2":
         _auto_black_list(
             model,
-            AMP_BLACK_LIST + [nn.GroupNorm, nn.SiLU, ops.bucketize],
+            AMP_BLACK_LIST + [nn.GroupNorm, nn.SiLU],
             ms.float16,
         )
     elif training_args.amp_level == "O3":
