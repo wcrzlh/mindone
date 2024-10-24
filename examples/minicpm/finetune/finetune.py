@@ -74,6 +74,7 @@ class TrainingArguments(engine.train_args.base.TrainingArguments):
     use_lora: Optional[bool] = field(default=False)
     max_slice_nums: Optional[int] = field(default=9)
     distributed: Optional[bool] = field(default=False)
+    amp_level: Optional[bool] = field(default="O0")
 
 
 @dataclass
@@ -278,6 +279,9 @@ def train():
         trust_remote_code=True,
         mindspore_dtype=compute_dtype,
     )
+
+    if training_args.amp_level == "O3":
+        model.to_float(ms.float16)
 
     # if training_args.distributed:
     #     # set grad reducer
