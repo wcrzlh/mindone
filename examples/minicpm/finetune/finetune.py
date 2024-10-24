@@ -12,6 +12,7 @@ import mindspore as ms
 import numpy as np
 
 from mindspore import nn, ops, Parameter, Tensor, dataset, context
+from mindspore.train.amp import _auto_black_list, AMP_BLACK_LIST
 from mindspore.communication.management import get_group_size, get_rank, init
 
 # init()
@@ -280,7 +281,13 @@ def train():
         mindspore_dtype=compute_dtype,
     )
 
-    if training_args.amp_level == "O3":
+    if training_args.amp_level == "O2":
+        _auto_black_list(
+            model,
+            AMP_BLACK_LIST + [nn.GroupNorm, nn.SiLU, ops.bucketize],
+            ms.float16,
+        )
+    elif training_args.amp_level == "O3":
         model.to_float(ms.float16)
 
     # if training_args.distributed:
