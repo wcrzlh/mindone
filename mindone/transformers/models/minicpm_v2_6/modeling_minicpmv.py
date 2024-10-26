@@ -186,7 +186,7 @@ class MiniCPMV_v2_6(MiniCPMVPreTrainedModel):
         if position_ids.dtype != ms.int64:
             position_ids = position_ids.long()
 
-        with _no_grad:
+        with _no_grad():
             return self.llm(
                 input_ids=None,
                 position_ids=position_ids,
