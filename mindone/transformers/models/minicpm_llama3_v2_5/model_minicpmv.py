@@ -1,22 +1,21 @@
-import math
 import json
-import mindspore as ms
-from threading import Thread
+import math
 from copy import deepcopy
-from PIL import Image
+from threading import Thread
 
-from mindspore.dataset import transforms
-from mindspore.dataset import vision
-from ..llama import LlamaPreTrainedModel, LlamaForCausalLM
-from ..idefics2.modeling_idefics2 import Idefics2VisionTransformer
-from transformers import TextIteratorStreamer
 from mindnlp.transformers import AutoProcessor
-from .processing_minicpmv import MiniCPMVProcessor
+from PIL import Image
+from transformers import TextIteratorStreamer
 
+import mindspore as ms
+from mindspore import Tensor, ops
+from mindspore.dataset import transforms, vision
+
+from ..idefics2.modeling_idefics2 import Idefics2VisionTransformer
+from ..llama import LlamaForCausalLM, LlamaPreTrainedModel
 from .configuration_minicpm import MiniCPMVConfig
+from .processing_minicpmv import MiniCPMVProcessor
 from .resampler import Resampler
-
-from mindspore import ops, Tensor
 
 IMAGENET_INCEPTION_MEAN = (0.5, 0.5, 0.5)  # timm.data.IMAGENET_INCEPTION_MEAN
 IMAGENET_INCEPTION_STD = (0.5, 0.5, 0.5)  # timm.data.IMAGENET_INCEPTION_STD

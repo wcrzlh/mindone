@@ -1,27 +1,27 @@
-from typing import Optional, Union, Dict, Any
-
-import mindspore as ms
-from mindspore import nn, ops, Tensor, Parameter
 import math
-import PIL.Image
-import PIL.ImageSequence
+from typing import Any, Dict, Optional, Union
+
 import numpy as np
 import PIL
-from PIL import Image
-
-from transformers.utils import TensorType, requires_backends, is_torch_dtype, is_torch_device
-from mindnlp.transformers.image_processing_utils import BaseImageProcessor, BatchFeature
+import PIL.Image
+import PIL.ImageSequence
 from mindnlp.transformers import AutoImageProcessor
+from mindnlp.transformers.image_processing_utils import BaseImageProcessor, BatchFeature
+from PIL import Image
 from transformers.image_transforms import to_channel_dimension_format
 from transformers.image_utils import (
+    ChannelDimension,
     ImageInput,
-    make_list_of_images,
-    valid_images,
-    is_torch_tensor,
-    to_numpy_array,
     infer_channel_dimension_format,
-    ChannelDimension
+    is_torch_tensor,
+    make_list_of_images,
+    to_numpy_array,
+    valid_images,
 )
+from transformers.utils import TensorType, is_torch_device, is_torch_dtype, requires_backends
+
+import mindspore as ms
+from mindspore import Parameter, Tensor, nn, ops
 
 
 def recursive_converter(converter, value):

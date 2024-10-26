@@ -1,20 +1,23 @@
 import math
-from functools import partial
-import numpy as np
 import warnings
-from typing import Optional, Tuple, List
+from functools import partial
+from typing import List, Optional, Tuple
+
+import numpy as np
+from transformers import PreTrainedModel
+from transformers.integrations import is_deepspeed_zero3_enabled
+
 import mindspore as ms
-from mindspore import nn, Tensor, ops, Parameter
 import mindspore.mint.nn.functional as F
-from mindspore.mint.nn.functional import *
-from mindspore.nn.layer.activation import *
-from mindspore.common.initializer import initializer
+from mindspore import Parameter, Tensor, nn, ops
+from mindspore.common.initializer import One
 from mindspore.common.initializer import TruncatedNormal as trunc_normal_
 from mindspore.common.initializer import XavierNormal as xavier_normal_
 from mindspore.common.initializer import XavierUniform as xavier_uniform_
-from mindspore.common.initializer import Zero, One
-from transformers import PreTrainedModel
-from transformers.integrations import is_deepspeed_zero3_enabled
+from mindspore.common.initializer import Zero, initializer
+from mindspore.mint.nn.functional import *
+from mindspore.nn.layer.activation import *
+
 
 def get_2d_sincos_pos_embed(embed_dim, image_size):
     """
@@ -66,7 +69,7 @@ def get_1d_sincos_pos_embed_from_grid_new(embed_dim, pos):
     emb = np.concatenate([emb_sin, emb_cos], axis=-1)  # (H, W, D)
     return emb
 
-    
+
 class Resampler(nn.Cell):
     """
     A 2D perceiver-resampler network with one cross attention layers by
@@ -184,7 +187,7 @@ class Resampler(nn.Cell):
 
 
 class MultiheadAttention(nn.MultiheadAttention):
-    def __init__(self, embed_dim, num_heads, dropout=0., bias=True, add_bias_kv=False, 
+    def __init__(self, embed_dim, num_heads, dropout=0., bias=True, add_bias_kv=False,
                  add_zero_attn=False, kdim=None, vdim=None, batch_first=False, dtype=None):
         super().__init__(embed_dim, num_heads, dropout, bias, add_bias_kv, add_zero_attn, kdim, vdim, batch_first, dtype)
 
@@ -316,7 +319,7 @@ class MultiheadAttention(nn.MultiheadAttention):
                     value = key
             else:
                 query, key, value = (x.transpose(1, 0) for x in (query, key, value))
-        
+
         if not self._qkv_same_embed_dim:
             attn_output, attn_output_weights = self.multi_head_attention_forward(
                 query, key, value, self.embed_dim, self.num_heads,
@@ -347,7 +350,7 @@ class MultiheadAttention(nn.MultiheadAttention):
             return attn_output.transpose(1, 0), attn_output_weights
         else:
             return attn_output, attn_output_weights
-            
+
     def multi_head_attention_forward(
         self,
         query: Tensor,
@@ -408,9 +411,9 @@ class MultiheadAttention(nn.MultiheadAttention):
         #         static_v=static_v,
         #         average_attn_weights=average_attn_weights,
         #     )
-    
+
         is_batched = _mha_shape_check(query, key, value, key_padding_mask, attn_mask, num_heads)
-    
+
         # For unbatched input, we unsqueeze at the expected batch-dim to pretend that the input
         # is batched, run the computation and before returning squeeze the
         # batch dimension so that the output doesn't carry this temporary batch dimension.
@@ -421,11 +424,11 @@ class MultiheadAttention(nn.MultiheadAttention):
             value = value.unsqueeze(1)
             if key_padding_mask is not None:
                 key_padding_mask = key_padding_mask.unsqueeze(0)
-    
+
         # set up shape vars
         tgt_len, bsz, embed_dim = query.shape
         src_len, _, _ = key.shape
-    
+
         key_padding_mask = _canonical_mask(
             mask=key_padding_mask,
             mask_name="key_padding_mask",
@@ -433,14 +436,14 @@ class MultiheadAttention(nn.MultiheadAttention):
             other_name="attn_mask",
             target_type=query.dtype
         )
-    
+
         if is_causal and attn_mask is None:
             raise RuntimeError(
                 "Need attn_mask if specifying the is_causal hint. "
                 "You may use the Transformer module method "
                 "`generate_square_subsequent_mask` to create this mask."
             )
-    
+
         if is_causal and key_padding_mask is None and not need_weights:
             # when we have a kpm or need weights, we need attn_mask
             # Otherwise, we use the is_causal hint go as is_causal
@@ -455,13 +458,13 @@ class MultiheadAttention(nn.MultiheadAttention):
                 target_type=query.dtype,
                 check_other=False,
             )
-    
+
             if key_padding_mask is not None:
                 # We have the attn_mask, and use that to merge kpm into it.
                 # Turn off use of is_causal hint, as the merged mask is no
                 # longer causal.
                 is_causal = False
-    
+
         assert embed_dim == embed_dim_to_check, \
             f"was expecting embedding dimension of {embed_dim_to_check}, but got {embed_dim}"
         if isinstance(embed_dim, ms.Tensor):
@@ -476,7 +479,7 @@ class MultiheadAttention(nn.MultiheadAttention):
                 f"key's sequence and batch dims {key.shape[:2]} do not match value's {value.shape[:2]}"
         else:
             assert key.shape == value.shape, f"key shape {key.shape} does not match value shape {value.shape}"
-    
+
         #
         # compute in-projection
         #
@@ -492,9 +495,9 @@ class MultiheadAttention(nn.MultiheadAttention):
             else:
                 b_q, b_k, b_v = in_proj_bias.chunk(3)
             q, k, v = _in_projection(query, key, value, q_proj_weight, k_proj_weight, v_proj_weight, b_q, b_k, b_v)
-    
+
         # prep attention mask
-    
+
         if attn_mask is not None:
             # ensure attn_mask's dim is 3
             if attn_mask.dim() == 2:
@@ -508,7 +511,7 @@ class MultiheadAttention(nn.MultiheadAttention):
                     raise RuntimeError(f"The shape of the 3D attn_mask is {attn_mask.shape}, but should be {correct_3d_size}.")
             else:
                 raise RuntimeError(f"attn_mask's dimension {attn_mask.dim()} is not supported")
-    
+
         # add bias along batch dimension (currently second)
         if bias_k is not None and bias_v is not None:
             assert static_k is None, "bias cannot be added to static key."
@@ -524,7 +527,7 @@ class MultiheadAttention(nn.MultiheadAttention):
         else:
             assert bias_k is None
             assert bias_v is None
-    
+
         #
         # reshape q, k, v for multihead attention and make em batch first
         #
@@ -547,7 +550,7 @@ class MultiheadAttention(nn.MultiheadAttention):
             assert static_v.shape[2] == head_dim, \
                 f"expecting static_v.shape[2] of {head_dim}, but got {static_v.shape[2]}"
             v = static_v
-    
+
         # add zero attention along batch dimension (now first)
         if add_zero_attn:
             zero_attn_shape = (bsz * num_heads, 1, head_dim)
@@ -557,10 +560,10 @@ class MultiheadAttention(nn.MultiheadAttention):
                 attn_mask = ops.pad(attn_mask, (0, 1))
             if key_padding_mask is not None:
                 key_padding_mask = ops.pad(key_padding_mask, (0, 1))
-    
+
         # update source sequence length after adjustments
         src_len = k.shape[1]
-    
+
         # merge key padding and attention masks
         if key_padding_mask is not None:
             assert key_padding_mask.shape == (bsz, src_len), \
@@ -571,21 +574,21 @@ class MultiheadAttention(nn.MultiheadAttention):
                 attn_mask = key_padding_mask
             else:
                 attn_mask = attn_mask + key_padding_mask
-    
+
         # adjust dropout probability
         if not training:
             dropout_p = 0.0
-    
+
         #
         # (deep breath) calculate attention and out projection
         #
-    
+
         if need_weights:
             B, Nt, E = q.shape
             q_scaled = q / math.sqrt(E)
-    
+
             assert not (is_causal and attn_mask is None), "FIXME: is_causal not implemented for need_weights"
-    
+
             if attn_mask is not None:
                 attn_output_weights = ops.baddbmm(attn_mask, q_scaled, k.permute(0, 2, 1))
             else:
@@ -593,18 +596,18 @@ class MultiheadAttention(nn.MultiheadAttention):
             attn_output_weights = ops.softmax(attn_output_weights, axis=-1)
             if dropout_p > 0.0:
                 attn_output_weights = ops.dropout(attn_output_weights, p=dropout_p)
-    
+
             attn_output = ops.bmm(attn_output_weights, v)
-    
+
             attn_output = attn_output.permute(1, 0, 2).view(tgt_len * bsz, embed_dim)
             attn_output = self.out_proj(attn_output)
             attn_output = attn_output.view(tgt_len, bsz, attn_output.shape[1])
-    
+
             # optionally average attention weights over heads
             attn_output_weights = attn_output_weights.view(bsz, num_heads, tgt_len, src_len)
             if average_attn_weights:
                 attn_output_weights = attn_output_weights.mean(axis=1)
-    
+
             if not is_batched:
                 # squeeze the output if input was unbatched
                 attn_output = attn_output.squeeze(1)
@@ -619,14 +622,14 @@ class MultiheadAttention(nn.MultiheadAttention):
                     attn_mask = attn_mask.unsqueeze(0)
                 else:
                     attn_mask = attn_mask.view(bsz, num_heads, -1, src_len)
-    
+
             q = q.view(bsz, num_heads, tgt_len, head_dim)
             k = k.view(bsz, num_heads, src_len, head_dim)
             v = v.view(bsz, num_heads, src_len, head_dim)
-    
+
             attn_output = F.scaled_dot_product_attention(q, k, v, attn_mask, dropout_p, is_causal)
             attn_output = attn_output.permute(2, 0, 1, 3).view(bsz * tgt_len, embed_dim)
-    
+
             attn_output = self.out_proj(attn_output)
             attn_output = attn_output.view(tgt_len, bsz, attn_output.shape[1])
             if not is_batched:

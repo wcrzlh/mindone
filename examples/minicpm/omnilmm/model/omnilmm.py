@@ -1,19 +1,17 @@
 
 import gc
 import math
-import timm
-import torch
-from torch import Tensor
-import torch.nn as nn
-from torch.nn import CrossEntropyLoss
 from typing import List, Optional, Tuple, Union
 
-from transformers import AutoConfig, AutoModelForCausalLM
-from transformers import MistralForCausalLM, MistralModel, MistralConfig
-from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutputWithPast
-
-from omnilmm.model.utils import build_transform
+import timm
+import torch
+import torch.nn as nn
 from omnilmm.model.resampler import Resampler
+from omnilmm.model.utils import build_transform
+from torch import Tensor
+from torch.nn import CrossEntropyLoss
+from transformers import AutoConfig, AutoModelForCausalLM, MistralConfig, MistralForCausalLM, MistralModel
+from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutputWithPast
 
 DEFAULT_IMAGE_PATCH_TOKEN = "<im_patch>"
 DEFAULT_IM_START_TOKEN = "<im_start>"
@@ -135,7 +133,7 @@ class OmniLMMModel(MistralModel):
 
         #vllm_embedding = self.llm.model.embed_tokens(data['input_ids']) * self.llm.config.scale_emb
         inputs_embeds = self.embed_tokens(data['input_ids'])
-        vision_hidden_states = [i.type(inputs_embeds.dtype) 
+        vision_hidden_states = [i.type(inputs_embeds.dtype)
             if isinstance(i, torch.Tensor) else i for i in vision_hidden_states
         ]
 

@@ -16,21 +16,27 @@
 Processor class for MiniCPMV.
 """
 
-from typing import List, Optional, Union, Dict, Any
-import mindspore as ms
-from mindspore import nn, ops, Tensor, Parameter
 import re
-import numpy as np
+from typing import Any, Dict, List, Optional, Union
 
+import numpy as np
+from mindnlp.transformers import AutoImageProcessor
 from mindnlp.transformers.image_processing_utils import BatchFeature
 from mindnlp.transformers.image_utils import ImageInput
-from ...processing_utils import ProcessorMixin
-from mindnlp.transformers.tokenization_utils_base import PaddingStrategy, PreTokenizedInput, TextInput, TruncationStrategy
-from transformers.utils import TensorType, requires_backends, is_torch_dtype, is_torch_device
+from mindnlp.transformers.tokenization_utils_base import (
+    PaddingStrategy,
+    PreTokenizedInput,
+    TextInput,
+    TruncationStrategy,
+)
+from transformers.utils import TensorType, is_torch_device, is_torch_dtype, requires_backends
 
+import mindspore as ms
+from mindspore import Parameter, Tensor, nn, ops
+
+from ...processing_utils import ProcessorMixin
 from .image_processing_minicpmv import MiniCPMVBatchFeature, MiniCPMVImageProcessor
 
-from mindnlp.transformers import AutoImageProcessor
 
 class MiniCPMVProcessor(ProcessorMixin):
     r"""

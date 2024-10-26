@@ -1,18 +1,20 @@
 import math
-from functools import partial
-import numpy as np
 import warnings
-from typing import Optional, Tuple, List
+from functools import partial
+from typing import List, Optional, Tuple
+
+import numpy as np
+
 import mindspore as ms
-from mindspore import nn, Tensor, ops, Parameter
 import mindspore.mint.nn.functional as F
-from mindspore.mint.nn.functional import *
-from mindspore.nn.layer.activation import *
-from mindspore.common.initializer import initializer
+from mindspore import Parameter, Tensor, nn, ops
+from mindspore.common.initializer import One
 from mindspore.common.initializer import TruncatedNormal as trunc_normal_
 from mindspore.common.initializer import XavierNormal as xavier_normal_
 from mindspore.common.initializer import XavierUniform as xavier_uniform_
-from mindspore.common.initializer import Zero, One
+from mindspore.common.initializer import Zero, initializer
+from mindspore.mint.nn.functional import *
+from mindspore.nn.layer.activation import *
 
 
 def get_2d_sincos_pos_embed(embed_dim, image_size):

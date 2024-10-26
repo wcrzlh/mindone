@@ -15,12 +15,11 @@
 import math
 from typing import Optional, Tuple
 
-import mindspore as ms
-from mindspore import ops, nn, Tensor, Parameter
-
-from transformers.configuration_utils import PretrainedConfig
 from transformers import is_torch_available, logging
+from transformers.configuration_utils import PretrainedConfig
 
+import mindspore as ms
+from mindspore import Parameter, Tensor, nn, ops
 
 logger = logging.get_logger(__name__)
 

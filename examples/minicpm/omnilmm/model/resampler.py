@@ -3,16 +3,16 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-from collections import OrderedDict
 import math
-import requests
-from io import BytesIO
+from collections import OrderedDict
 from functools import partial
-from PIL import Image
-from typing import Callable, Optional, Sequence, Tuple, List, Union
-import numpy as np
+from io import BytesIO
+from typing import Callable, List, Optional, Sequence, Tuple, Union
 
+import numpy as np
+import requests
 import torch
+from PIL import Image
 from torch import nn
 from torch.nn import functional as F
 from torch.nn.init import trunc_normal_

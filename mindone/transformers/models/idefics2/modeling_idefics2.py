@@ -18,21 +18,17 @@ import math
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple, Union
 
+from transformers.utils import is_flash_attn_2_available, is_flash_attn_greater_or_equal_2_10, logging
+
 import mindspore as ms
-from mindspore import nn, ops, Parameter
+from mindspore import Parameter, nn, ops
 from mindspore.nn import CrossEntropyLoss
 
 from ... import MSPreTrainedModel
 from ...activations import ACT2FN
 from ...modeling_attn_mask_utils import _prepare_4d_attention_mask
 from ...modeling_outputs import BaseModelOutput, ModelOutput
-from transformers.utils import (
-    is_flash_attn_2_available,
-    is_flash_attn_greater_or_equal_2_10,
-    logging,
-)
 from .configuration_idefics2 import Idefics2Config, Idefics2VisionConfig
-
 
 if is_flash_attn_2_available():
     from ...modeling_flash_attention_utils import _flash_attention_forward

@@ -5,15 +5,15 @@ import os
 import sys
 from dataclasses import dataclass, field
 from functools import partial
-from typing import Dict, List, Optional, Union, Literal, Tuple
 from types import MethodType
+from typing import Dict, List, Literal, Optional, Tuple, Union
 
-import mindspore as ms
 import numpy as np
 
-from mindspore import nn, ops, Parameter, Tensor, dataset, context
-from mindspore.train.amp import _auto_black_list, AMP_BLACK_LIST
+import mindspore as ms
+from mindspore import Parameter, Tensor, context, dataset, nn, ops
 from mindspore.communication.management import get_group_size, get_rank, init
+from mindspore.train.amp import AMP_BLACK_LIST, _auto_black_list
 
 # init()
 # rank, rank_size, parallel_mode = get_rank(), get_group_size(), context.ParallelMode.DATA_PARALLEL
@@ -23,22 +23,25 @@ from mindspore.communication.management import get_group_size, get_rank, init
 
 rank, rank_size = 0, 1
 
-from mindspore.dataset import transforms, vision
 from mindnlp import engine, transformers
 from transformers import HfArgumentParser
+
+from mindspore.dataset import transforms, vision
+
 # from accelerate.utils import DistributedType
 
 mindone_lib_path = os.path.abspath(os.path.abspath("../../../"))
 sys.path.insert(0, mindone_lib_path)
 
+from dataset import SupervisedDataset
+from mindnlp.dataset.map_fn import BaseMapFuction
+from trainer import CPMTrainer
 from transformers import AutoTokenizer
+
 from mindone.transformers.models.minicpm_v2_6 import MiniCPMV_v2_6
 
 # from transformers.integrations import deepspeed
 
-from dataset import SupervisedDataset
-from trainer import CPMTrainer
-from mindnlp.dataset.map_fn import BaseMapFuction
 
 # from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
@@ -226,7 +229,7 @@ def get_parameter_number(model):
     for param in model.trainable_params():
         num_params = np.prod(param.shape)
         trainable_params += num_params
-        
+
     return {'Trainable params': trainable_params}
 
 
@@ -274,7 +277,7 @@ def train():
             logging.warning(
                 "FSDP or ZeRO3 are not incompatible with QLoRA."
             )
-    
+
     model = MiniCPMV_v2_6.from_pretrained(
         model_args.model_name_or_path,
         trust_remote_code=True,
@@ -310,11 +313,11 @@ def train():
         # model.llm.set_train(False)
         for param in model.llm.trainable_params():
             param.requires_grad = False
-        
+
     if training_args.use_lora:
         if training_args.use_lora and training_args.tune_llm:
             raise ValueError("The model cannot simultaneously adjust LLM parameters and apply LoRA.")
-            
+
         rank0_print("Currently using LoRA for fine-tuning the MiniCPM-V model.")
         for name, param in model.llm.named_parameters():
             param.requires_grad = False
@@ -344,11 +347,11 @@ def train():
 
     rank0_print(get_parameter_number(model))
 
-    llm_type = training_args.llm_type    
-    
+    llm_type = training_args.llm_type
+
     rank0_print(f'llm_type={llm_type}')
 
-    
+
     # Load data
     if hasattr(model.config, "slice_config"):
         model.config.slice_config.max_slice_nums = training_args.max_slice_nums
@@ -375,7 +378,7 @@ def train():
         batch_vision=batch_vision,
         max_length=training_args.model_max_length,
     )
-    
+
     training_args.gradient_checkpointing_kwargs={"use_reentrant":False}
     trainer = CPMTrainer(
         model=model,

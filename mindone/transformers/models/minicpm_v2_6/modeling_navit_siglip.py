@@ -16,26 +16,29 @@
 # Copied from  HuggingFaceM4/siglip-so400m-14-980-flash-attn2-navit and add tgt_sizes
 
 
-import os
 import math
+import os
 import warnings
 from dataclasses import dataclass
 from typing import Any, Optional, Tuple, Union
 
 import numpy as np
+from transformers.configuration_utils import PretrainedConfig
+from transformers.utils import logging
+
 import mindspore as ms
+
 # import torch.utils.checkpoint
-from mindspore import nn, ops, Tensor, Parameter
+from mindspore import Parameter, Tensor, nn, ops
 from mindspore.ops.operations.nn_ops import FlashAttentionScore as FlashAttention
-# from torch.nn.init import _calculate_fan_in_and_fan_out
 
 from ...activations import ACT2FN
 from ...modeling_attn_mask_utils import _prepare_4d_attention_mask
-from ...modeling_outputs import BaseModelOutput, BaseModelOutputWithPooling
+from ...modeling_outputs import BaseModelOutput, BaseModelOutputWithPooling, ModelOutput
 from ...modeling_utils import MSPreTrainedModel
-from transformers.configuration_utils import PretrainedConfig
-from ...modeling_outputs import ModelOutput
-from transformers.utils import logging
+
+# from torch.nn.init import _calculate_fan_in_and_fan_out
+
 
 logger = logging.get_logger(__name__)
 
@@ -126,7 +129,7 @@ class SiglipVisionConfig(PretrainedConfig):
             )
 
         return cls.from_dict(config_dict, **kwargs)
-        
+
 
 _CHECKPOINT_FOR_DOC = "google/siglip-base-patch16-224"
 

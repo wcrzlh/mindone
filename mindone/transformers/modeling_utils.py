@@ -24,6 +24,7 @@ from typing import Callable, Dict, Optional, Tuple, Union
 
 from transformers.configuration_utils import PretrainedConfig
 from transformers.dynamic_module_utils import custom_object_save
+from transformers.generation import GenerationConfig
 from transformers.safetensors_conversion import auto_conversion
 from transformers.utils import (
     ADAPTER_SAFE_WEIGHTS_NAME,
@@ -47,7 +48,6 @@ from transformers.utils import (
     is_safetensors_available,
     logging,
 )
-from transformers.generation import GenerationConfig
 from transformers.utils.hub import convert_file_size_to_int, get_checkpoint_shard_files
 
 import mindspore as ms

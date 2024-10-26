@@ -1,21 +1,23 @@
-import math
-from typing import List, Optional
 import json
-import mindspore as ms
-from mindspore import nn, ops, Tensor, Parameter
-
-from threading import Thread
+import math
 from copy import deepcopy
-from PIL import Image
-from ..qwen2 import Qwen2PreTrainedModel, Qwen2ForCausalLM
-from mindnlp.transformers import TextIteratorStreamer
-from .processing_minicpmv import MiniCPMVProcessor
+from threading import Thread
+from typing import List, Optional
 
+from mindnlp.transformers import TextIteratorStreamer
+from PIL import Image
+
+import mindspore as ms
+from mindspore import Parameter, Tensor, nn, ops
+
+from ..qwen2 import Qwen2ForCausalLM, Qwen2PreTrainedModel
 from .configuration_minicpm import MiniCPMVConfig
 from .modeling_navit_siglip import SiglipVisionTransformer
+from .processing_minicpmv import MiniCPMVProcessor
 from .resampler import Resampler
 from .tokenization_minicpmv_fast import MiniCPMVTokenizerFast
 
+from mindspore import _no_grad
 
 class MiniCPMVPreTrainedModel(Qwen2PreTrainedModel):
     config_class = MiniCPMVConfig
@@ -184,13 +186,14 @@ class MiniCPMV_v2_6(MiniCPMVPreTrainedModel):
         if position_ids.dtype != ms.int64:
             position_ids = position_ids.long()
 
-        return self.llm(
-            input_ids=None,
-            position_ids=position_ids,
-            inputs_embeds=vllm_embedding,
-            **kwargs
-        )
-    
+        with _no_grad:
+            return self.llm(
+                input_ids=None,
+                position_ids=position_ids,
+                inputs_embeds=vllm_embedding,
+                **kwargs
+            )
+
     def _decode(self, inputs_embeds, tokenizer, attention_mask, decode_text=False, **kwargs):
         terminators = [tokenizer.convert_tokens_to_ids(i) for i in self.terminators]
         output = self.llm.generate(
@@ -217,7 +220,7 @@ class MiniCPMV_v2_6(MiniCPMVPreTrainedModel):
 
         thread = Thread(target=self.llm.generate, kwargs=generation_kwargs)
         thread.start()
-    
+
         return streamer
 
     def _decode_text(self, result_ids, tokenizer):
@@ -273,7 +276,7 @@ class MiniCPMV_v2_6(MiniCPMVPreTrainedModel):
 
         if return_vision_hidden_states:
             return result, vision_hidden_states
-        
+
         return result
 
     def chat(
@@ -299,7 +302,7 @@ class MiniCPMV_v2_6(MiniCPMVPreTrainedModel):
             batched = False
         msgs_list = msgs
         images_list = image
-        
+
         if batched is False:
             images_list, msgs_list = [images_list], [msgs_list]
         else:
@@ -311,7 +314,7 @@ class MiniCPMV_v2_6(MiniCPMVPreTrainedModel):
             if self.processor is None:
                 self.processor = MiniCPMVProcessor.from_pretrained(self.config._name_or_path, trust_remote_code=True)
             processor = self.processor
-        
+
         assert self.config.query_num == processor.image_processor.image_feature_size, "These two values should be the same. Check `config.json` and `preprocessor_config.json`."
         assert self.config.patch_size == processor.image_processor.patch_size, "These two values should be the same. Check `config.json` and `preprocessor_config.json`."
         assert self.config.use_image_id == processor.image_processor.use_image_id, "These two values should be the same. Check `config.json` and `preprocessor_config.json`."
@@ -351,14 +354,14 @@ class MiniCPMV_v2_6(MiniCPMVPreTrainedModel):
 
             if system_prompt:
                 sys_msg = {'role': 'system', 'content': system_prompt}
-                copy_msgs = [sys_msg] + copy_msgs        
+                copy_msgs = [sys_msg] + copy_msgs
 
             prompts_lists.append(processor.tokenizer.apply_chat_template(copy_msgs, tokenize=False, add_generation_prompt=True))
             input_images_lists.append(images)
 
         inputs = processor(
-            prompts_lists, 
-            input_images_lists, 
+            prompts_lists,
+            input_images_lists,
             max_slice_nums=max_slice_nums,
             use_image_id=use_image_id,
             return_tensors="ms",
@@ -378,7 +381,7 @@ class MiniCPMV_v2_6(MiniCPMVPreTrainedModel):
                 "num_beams": 3,
                 "repetition_penalty": 1.2,
             }
-            
+
         if min_new_tokens > 0:
             generation_config['min_new_tokens'] = min_new_tokens
 
@@ -397,7 +400,7 @@ class MiniCPMV_v2_6(MiniCPMVPreTrainedModel):
             decode_text=True,
             **generation_config
         )
-        
+
         if stream:
             def stream_gen():
                 for text in res:

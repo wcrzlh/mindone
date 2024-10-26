@@ -1,18 +1,18 @@
-import os
-import mindspore as ms
-import json
-from PIL import Image
 import base64
 import io
-import mindspore as ms
+import json
+import os
 
-from accelerate import load_checkpoint_and_dispatch, init_empty_weights
-from transformers import AutoTokenizer
-from ...mindone.transformers.models.minicpm_llama3_v2_5.model_minicpmv import MiniCPMV as MiniCPM_model
-
+from accelerate import init_empty_weights, load_checkpoint_and_dispatch
 from omnilmm.model.omnilmm import OmniLMMForCausalLM
 from omnilmm.model.utils import build_transform
 from omnilmm.train.train_utils import omni_preprocess
+from PIL import Image
+from transformers import AutoTokenizer
+
+import mindspore as ms
+
+from ...mindone.transformers.models.minicpm_llama3_v2_5.model_minicpmv import MiniCPMV as MiniCPM_model
 
 DEFAULT_IMAGE_TOKEN = "<image>"
 DEFAULT_IMAGE_PATCH_TOKEN = "<im_patch>"
@@ -130,7 +130,7 @@ class OmniLMM12B:
         out = self.decode(image, input_ids)
 
         return out
-        
+
 
 def img2base64(file_name):
     with open(file_name, 'rb') as f:
@@ -150,7 +150,7 @@ class MiniCPMV:
             return "Image decode error"
 
         msgs = json.loads(input['question'])
-        
+
         answer, context, _ = self.model.chat(
             image=image,
             msgs=msgs,
@@ -174,7 +174,7 @@ class MiniCPMV2_5:
             return "Image decode error"
 
         msgs = json.loads(input['question'])
-        
+
         answer = self.model.chat(
             image=image,
             msgs=msgs,
@@ -199,22 +199,21 @@ class MiniCPMVChat:
 
 
 if __name__ == '__main__':
-    
+
     model_path = 'openbmb/OmniLMM-12B'
     chat_model = MiniCPMVChat(model_path)
 
     im_64 = img2base64('./assets/worldmap_ck.jpg')
 
-    # first round chat 
+    # first round chat
     msgs = [{"role": "user", "content": "What is interesting about this image?"}]
     input = {"image": im_64, "question": json.dumps(msgs, ensure_ascii=True)}
     answer = chat_model.chat(input)
     print(msgs[-1]["content"]+'\n', answer)
 
-    # second round chat 
+    # second round chat
     msgs.append({"role": "assistant", "content": answer})
     msgs.append({"role": "user", "content": "Where is China in the image"})
     input = {"image": im_64,"question": json.dumps(msgs, ensure_ascii=True)}
     answer = chat_model.chat(input)
     print(msgs[-1]["content"]+'\n', answer)
-

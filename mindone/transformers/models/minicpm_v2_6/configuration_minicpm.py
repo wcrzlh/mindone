@@ -4,8 +4,9 @@
 import os
 from typing import Union
 
+from transformers import PretrainedConfig, Qwen2Config
 from transformers.utils import logging
-from transformers import Qwen2Config, PretrainedConfig
+
 from .modeling_navit_siglip import SiglipVisionConfig
 
 logger = logging.get_logger(__name__)

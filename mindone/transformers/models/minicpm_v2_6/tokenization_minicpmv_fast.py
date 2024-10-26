@@ -1,6 +1,7 @@
+from mindnlp.transformers import AutoTokenizer
+
 from ..qwen2 import Qwen2TokenizerFast
 
-from mindnlp.transformers import AutoTokenizer
 
 class MiniCPMVTokenizerFast(Qwen2TokenizerFast):
     def __init__(self, **kwargs):

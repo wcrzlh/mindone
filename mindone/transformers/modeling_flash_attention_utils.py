@@ -19,7 +19,6 @@ from typing import Optional, Tuple
 
 import mindspore as ms
 import mindspore.mint.nn.functional as F
-
 from mindspore import ops
 
 # from transformers.utils import is_flash_attn_2_available, is_flash_attn_greater_or_equal

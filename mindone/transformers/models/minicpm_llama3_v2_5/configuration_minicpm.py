@@ -21,10 +21,11 @@
 import os
 from typing import Union
 
-from transformers.utils import logging
 from transformers import PretrainedConfig
-from ..llama.configuration_llama import LlamaConfig
+from transformers.utils import logging
+
 from ..idefics2.configuration_idefics2 import Idefics2VisionConfig
+from ..llama.configuration_llama import LlamaConfig
 
 logger = logging.get_logger(__name__)
 

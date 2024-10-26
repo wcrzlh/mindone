@@ -61,4 +61,4 @@ python finetune.py  \
     --logging_steps 1 \
     --gradient_checkpointing true \
     --deepspeed ds_config_zero2.json \
-    --report_to "tensorboard" 
+    --report_to "tensorboard"

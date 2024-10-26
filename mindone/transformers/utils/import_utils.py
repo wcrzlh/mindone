@@ -13,7 +13,6 @@ from types import ModuleType
 from typing import Any, Tuple, Union
 
 from packaging import version
-
 from transformers import logging
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name

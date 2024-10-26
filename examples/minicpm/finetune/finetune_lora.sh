@@ -11,7 +11,7 @@ MODEL="openbmb/MiniCPM-V-2_6" # or openbmb/MiniCPM-V-2, openbmb/MiniCPM-Llama3-V
 # See the section for finetuning in README for more information.
 DATA="path/to/trainging_data"
 EVAL_DATA="path/to/test_data"
-LLM_TYPE="qwen2" 
+LLM_TYPE="qwen2"
 # if use openbmb/MiniCPM-V-2, please set LLM_TYPE=minicpm
 #if use openbmb/MiniCPM-Llama3-V-2_5, please set LLM_TYPE=llama3
 

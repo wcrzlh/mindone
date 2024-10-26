@@ -1,6 +1,8 @@
-import mindspore
 from PIL import Image
 from transformers import AutoTokenizer
+
+import mindspore
+
 from mindone.transformers.models.minicpm_v2_6 import MiniCPMV_v2_6
 
 model = MiniCPMV_v2_6.from_pretrained('openbmb/MiniCPM-V-2_6', trust_remote_code=True,

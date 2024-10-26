@@ -21,13 +21,16 @@ import math
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
+from transformers import logging
 
 import mindspore as ms
 import mindspore.mint.nn.functional as F
-from mindspore import nn, ops, Parameter
+from mindspore import Parameter, nn, ops
 from mindspore.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
 from ...activations import ACT2FN
+from ...cache_utils import Cache, StaticCache
+from ...mindspore_utils import ALL_LAYERNORM_LAYERS
 from ...modeling_attn_mask_utils import AttentionMaskConverter
 from ...modeling_flash_attention_utils import _flash_attention_forward
 from ...modeling_outputs import (
@@ -39,14 +42,8 @@ from ...modeling_outputs import (
 )
 from ...modeling_rope_utils import ROPE_INIT_FUNCTIONS
 from ...modeling_utils import MSPreTrainedModel
-from ...mindspore_utils import ALL_LAYERNORM_LAYERS
-from ...utils import (
-    is_flash_attn_greater_or_equal_2_10,
-)
-from transformers import logging
+from ...utils import is_flash_attn_greater_or_equal_2_10
 from .configuration_llama import LlamaConfig
-
-from ...cache_utils import Cache, StaticCache
 
 logger = logging.get_logger(__name__)
 
@@ -230,7 +227,7 @@ class LlamaRotaryEmbedding(nn.Cell):
         device_type = None
         # device_type = device_type if isinstance(device_type, str) and device_type != "mps" else "cpu"
         # with torch.autocast(device_type=device_type, enabled=False):
-        
+
         freqs = (inv_freq_expanded.float() @ position_ids_expanded.float()).permute(0, 2, 1)
         emb = ops.cat((freqs, freqs), axis=-1)
         cos = emb.cos()

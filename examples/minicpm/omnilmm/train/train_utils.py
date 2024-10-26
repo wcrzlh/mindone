@@ -1,15 +1,13 @@
-import os
-import gc
 import copy
+import gc
+import os
 import time
-
-import torch
 import warnings
-import transformers
+from typing import Dict, Optional, Sequence
 
 import numpy as np
-
-from typing import Dict, Optional, Sequence
+import torch
+import transformers
 from omnilmm import conversation as conversation_lib
 
 IGNORE_INDEX = -100
@@ -149,5 +147,3 @@ def omni_preprocess(sources,
         batch_labels.append(res_labels)
 
     return dict(input_ids=batch_input_ids, labels=batch_labels)
-
-

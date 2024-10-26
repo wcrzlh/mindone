@@ -35,11 +35,6 @@ _import_structure["modeling_qwen2"] = [
 
 if TYPE_CHECKING:
     from .configuration_qwen2 import Qwen2Config
-    from .tokenization_qwen2 import Qwen2Tokenizer
-
-
-    from .tokenization_qwen2_fast import Qwen2TokenizerFast
-
     from .modeling_qwen2 import (
         Qwen2ForCausalLM,
         Qwen2ForSequenceClassification,
@@ -47,6 +42,8 @@ if TYPE_CHECKING:
         Qwen2Model,
         Qwen2PreTrainedModel,
     )
+    from .tokenization_qwen2 import Qwen2Tokenizer
+    from .tokenization_qwen2_fast import Qwen2TokenizerFast
 
 
 else:

@@ -3,28 +3,31 @@ import json
 import logging
 import math
 import os
-import re
 import random
+import re
 import sys
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 import numpy as np
+from datasets import load_dataset
+from PIL import Image
+from transformers import AutoTokenizer
+
 import mindspore as ms
 from mindspore import ops
-from PIL import Image
+
 # from torch.nn.utils.rnn import pad_sequence
 from mindspore.dataset import Dataset
-from datasets import load_dataset
-from transformers import AutoTokenizer
 
 mindone_lib_path = os.path.abspath(os.path.abspath("../../../"))
 sys.path.insert(0, mindone_lib_path)
 
-from mindone.transformers.models.minicpm_v2_6.processing_minicpmv import MiniCPMVProcessor
+import logging
+
 from mindnlp.dataset.map_fn import BaseMapFuction
 
-import logging
+from mindone.transformers.models.minicpm_v2_6.processing_minicpmv import MiniCPMVProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +101,7 @@ class SupervisedDataset:
         #     # return self.__getitem__(random.randint(0, len(self)))
         return (ret["input_ids"], ret["position_ids"], ret["labels"], np.ones_like(ret["input_ids"], dtype=np.bool_), ret["pixel_values"], ret["tgt_sizes"], ret["image_bound"])
 
-        
+
 def data_collator(examples, padding_value=0, max_length=2048):
     def trim_and_pad(seq, batch_first, padding_value):
         # return pad_sequence([s[:max_length] for s in seq], batch_first=True, padding_value=padding_value)
@@ -175,14 +178,14 @@ def conversation_to_ids(conversation, tokenizer, llm_type=None, new_schema=False
         ids = ids[:max_length]
         context = context[:max_length]
         logger.warning(f"The input length ({input_ids.shape[-1]}) exceeds the model's maximum length ({max_length}), so it has been truncated")
-    
+
     if np.all(context):
         logger.error("No tokens available to compute loss.")
         raise Exception("No tokens available to compute loss.")
 
     # build target
     target = np.full_like(ids, -100, dtype=np.int32)
-    
+
     for i in range(1, len(ids)):
         if context[i] == 0:
             target[i - 1] = ids[i]
@@ -191,7 +194,7 @@ def conversation_to_ids(conversation, tokenizer, llm_type=None, new_schema=False
                 target[i - 1] = tokenizer.eot_id
             else:
                 target[i - 1] = tokenizer.eos_id
-    
+
     # build image bound
     if new_schema:
         start_cond = (ids == tokenizer.im_start_id) | (ids == tokenizer.slice_start_id)
@@ -206,7 +209,7 @@ def conversation_to_ids(conversation, tokenizer, llm_type=None, new_schema=False
     if len(image_start_tokens) != len(image_end_tokens):
         logger.error("image start token != image end tokens")
         raise Exception("image start token != image end tokens")
-    
+
     if len(image_start_tokens) > 0:
         image_bound = np.hstack(
             [np.expand_dims(image_start_tokens, axis=-1), np.expand_dims(image_end_tokens, axis=-1)]
@@ -329,7 +332,7 @@ def conversation_to_ids_qwen2(conversation, tokenizer):
                 if end_idx > st:
                     context[st: end_idx + 1] = 0
                     break
-                    
+
     input_ids = np.hstack(input_ids)
     context = np.hstack(context)
     return input_ids, context, raw_msg
@@ -372,7 +375,7 @@ def preprocess(
         use_image_id = True
     image_placeholder_dict = {}
     images = []
-    image_id_cnt = 0 
+    image_id_cnt = 0
     for img_name, image in images_dict.items():
         if slice_config:
             source_image, patches, best_grid = slice_image(
@@ -403,8 +406,8 @@ def preprocess(
             image_placeholder_dict[img_name] = image_placeholder
 
     images = [trans_fn(i) for i in images]
-    
-    if len(images_dict) == 1 and "<image>" in images_dict:       
+
+    if len(images_dict) == 1 and "<image>" in images_dict:
         if "<image>" in conversations[0]["content"]:
             conversations[0]["content"] = conversations[0]["content"].replace(
                 "<image>", image_placeholder
@@ -423,15 +426,15 @@ def preprocess(
             for i, part in enumerate(parts):
                 if not part.strip():
                     continue
-                if re.match(pattern, part):  
+                if re.match(pattern, part):
                     if part in image_placeholder_dict:
-                        parts[i] = image_placeholder_dict[part] 
+                        parts[i] = image_placeholder_dict[part]
                     else:
                         raise Exception(f"not found {part} in image dict")
             conversation['content'] = '\n'.join(parts)
             new_conversations.append(conversation)
         conversations = new_conversations
-        
+
         input_dict = conversation_to_ids(conversations, tokenizer, llm_type, new_schema, max_length)
 
     if batch_vision:

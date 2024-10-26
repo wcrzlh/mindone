@@ -2,10 +2,10 @@ import copy
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 import mindspore as ms
-
 from mindspore import ops
 
 from .logits_process import LogitsProcessorList, MinLengthLogitsProcessor
+
 
 class CandidateGenerator:
     """Abstract base class for all candidate generators that can be applied during assisted generation."""

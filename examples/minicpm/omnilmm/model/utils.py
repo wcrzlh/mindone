@@ -1,16 +1,16 @@
-from torchvision import transforms
-from timm.data.transforms import RandomResizedCropAndInterpolation
-from timm.data.constants import IMAGENET_INCEPTION_MEAN, IMAGENET_INCEPTION_STD
-from transformers import AutoConfig
-from PIL import Image
-from io import BytesIO
-import torch.distributed as dist
-import numpy as np
-import pickle
 import base64
-import cv2
 import os
+import pickle
+from io import BytesIO
+
+import cv2
+import numpy as np
 import torch
+import torch.distributed as dist
+from PIL import Image
+from timm.data.constants import IMAGENET_INCEPTION_MEAN, IMAGENET_INCEPTION_STD
+from timm.data.transforms import RandomResizedCropAndInterpolation
+from torchvision import transforms
 from transformers import AutoConfig, StoppingCriteria
 
 try:

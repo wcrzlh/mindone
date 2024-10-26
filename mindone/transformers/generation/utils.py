@@ -6,21 +6,36 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+from transformers.generation.beam_constraints import DisjunctiveConstraint, PhrasalConstraint
+from transformers.generation.configuration_utils import GenerationConfig, GenerationMode
+from transformers.tokenization_utils import ExtensionsTrie
+from transformers.utils import ModelOutput, logging
+
 import mindspore as ms
+
 # import torch.distributed as dist
-from mindspore import nn, ops, Tensor, Parameter
+from mindspore import Parameter, Tensor, nn, ops
 from mindspore.mint.nn import functional as F
 
-from .candidate_generator import CandidateGenerator, AssistedCandidateGenerator, PromptLookupCandidateGenerator, _crop_past_key_values, _prepare_attention_mask, _prepare_token_type_ids
-from .logits_process import LogitsProcessorList
-from .stopping_criteria import StoppingCriteriaList
+from ..cache_utils import (
+    Cache,
+    DynamicCache,
+    EncoderDecoderCache,
+    HybridCache,
+    MambaCache,
+    QuantizedCacheConfig,
+    SlidingWindowCache,
+    StaticCache,
+)
 from ..modeling_outputs import CausalLMOutputWithPast, Seq2SeqLMOutput
-
-from transformers.tokenization_utils import ExtensionsTrie
-from transformers.generation.configuration_utils import GenerationConfig, GenerationMode
-from transformers.utils import logging, ModelOutput
-from transformers.generation.beam_constraints import DisjunctiveConstraint, PhrasalConstraint
-
+from .candidate_generator import (
+    AssistedCandidateGenerator,
+    CandidateGenerator,
+    PromptLookupCandidateGenerator,
+    _crop_past_key_values,
+    _prepare_attention_mask,
+    _prepare_token_type_ids,
+)
 from .logits_process import (
     EncoderNoRepeatNGramLogitsProcessor,
     EncoderRepetitionPenaltyLogitsProcessor,
@@ -51,7 +66,6 @@ from .logits_process import (
     UnbatchedClassifierFreeGuidanceLogitsProcessor,
     WatermarkLogitsProcessor,
 )
-
 from .stopping_criteria import (
     EosTokenCriteria,
     MaxLengthCriteria,
@@ -59,17 +73,6 @@ from .stopping_criteria import (
     StoppingCriteria,
     StoppingCriteriaList,
     StopStringCriteria,
-)
-
-from ..cache_utils import (
-    Cache,
-    DynamicCache,
-    EncoderDecoderCache,
-    HybridCache,
-    MambaCache,
-    QuantizedCacheConfig,
-    SlidingWindowCache,
-    StaticCache,
 )
 
 NEED_SETUP_CACHE_CLASSES_MAPPING = {

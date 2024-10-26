@@ -23,26 +23,26 @@ If your input consists of a single image, you can use a single placeholder **\<i
       "image": 'path/to/image_0.jpg',
       "conversations": [
             {
-              'role': 'user', 
+              'role': 'user',
               'content': '<image>\nHow many desserts are on the white plate?'
-            }, 
+            },
             {
-                'role': 'assistant', 
+                'role': 'assistant',
                 'content': 'There are three desserts on the white plate.'
-            },   
+            },  
             {
-                'role': 'user', 
+                'role': 'user',
                 'content': 'What type of desserts are they?'
             },
             {
-                'role': 'assistant', 
+                'role': 'assistant',
                 'content': 'The desserts are cakes with bananas and pecans on top. They share similarities with donuts, but the presence of bananas and pecans differentiates them.'
-            }, 
+            },
             {
-                'role': 'user', 
-                'content': 'What is the setting of the image?'}, 
+                'role': 'user',
+                'content': 'What is the setting of the image?'},
             {
-                'role': 'assistant', 
+                'role': 'assistant',
                 'content': 'The image is set on a table top with a plate containing the three desserts.'
             },
         ]
@@ -78,11 +78,11 @@ If the total token count exceeds `max_length`, truncation will be applied. For m
       },
       "conversations": [
         {
-          "role": "user", 
+          "role": "user",
           "content": "How to create such text-only videos using CapCut?\n<image_00>\n<image_01>\n<image_02>\n<image_03>\n"
-        }, 
+        },
         {
-          "role": "assistant", 
+          "role": "assistant",
           "content": "To create a text-only video as shown in the images, follow these steps in CapCut..."
         }
       ]
@@ -172,7 +172,7 @@ A：When you face Out of Memory (OOM) issues during training large models, the f
  ```
 - **Reduce the number of slices (`slice`)**: When handling large datasets such as large images files, reducing the number of slices processed each time can lower memory requirements.
 ```
---max_slice_nums 9 
+--max_slice_nums 9
 ```
 
 #### Reduce Training Model Parameters
@@ -211,7 +211,7 @@ You can visit [huggingface deepspeed](https://huggingface.co/docs/transformers/d
 <details>
 <summary>Q: Encounter an error while using the AutoPeftModelForCausalLM to load a checkpoint that has undergone lora fine-tuning</summary>
 
-A: The error as described in [issues 168](https://github.com/OpenBMB/MiniCPM-V/issues/168) occurs because the model lacks `get_input_embeddings` and `set_input_embeddings` methods. Follow these steps to resolve this issue: 
+A: The error as described in [issues 168](https://github.com/OpenBMB/MiniCPM-V/issues/168) occurs because the model lacks `get_input_embeddings` and `set_input_embeddings` methods. Follow these steps to resolve this issue:
 
 1.**Reload the Fine-Tuned Model:** Make sure you correctly load the checkpoint that has been fine-tuned using lora techniques. Use the following code example to guide you:
    ```python

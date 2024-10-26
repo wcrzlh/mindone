@@ -23,16 +23,19 @@ import math
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
+from transformers import logging
 
 import mindspore as ms
+
 # import torch.utils.checkpoint
-from mindspore import nn, ops, Tensor, Parameter
-from mindspore.ops.operations.nn_ops import FlashAttentionScore as FlashAttention
+from mindspore import Parameter, Tensor, nn, ops
 from mindspore.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
+from mindspore.ops.operations.nn_ops import FlashAttentionScore as FlashAttention
 
 from ...activations import ACT2FN
 from ...cache_utils import Cache, DynamicCache, StaticCache
 from ...modeling_attn_mask_utils import AttentionMaskConverter
+from ...modeling_flash_attention_utils import _flash_attention_forward
 from ...modeling_outputs import (
     BaseModelOutputWithPast,
     CausalLMOutputWithPast,
@@ -41,12 +44,6 @@ from ...modeling_outputs import (
 )
 from ...modeling_utils import MSPreTrainedModel
 from .configuration_qwen2 import Qwen2Config
-
-from transformers import logging
-
-
-from ...modeling_flash_attention_utils import _flash_attention_forward
-
 
 logger = logging.get_logger(__name__)
 

@@ -6,11 +6,11 @@ from copy import deepcopy
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
-import mindspore as ms
-from mindspore import ops, Tensor
-from mindspore.mint.nn import functional as F
-
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
+
+import mindspore as ms
+from mindspore import Tensor, ops
+from mindspore.mint.nn import functional as F
 
 # We maintain a module-level cache of the embedding vectors for the stop string criterion
 # because they are slow to compute
@@ -111,7 +111,7 @@ class EosTokenCriteria(StoppingCriteria):
             eos_token_id = ms.Tensor(eos_token_id)
         self.eos_token_id = eos_token_id
 
-    
+
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor, **kwargs) -> ms.Tensor:
         self.eos_token_id = self.eos_token_id
         # if input_ids.device.type == "mps":
@@ -147,7 +147,7 @@ class MaxTimeCriteria(StoppingCriteria):
         self.max_time = max_time
         self.initial_timestamp = time.time() if initial_timestamp is None else initial_timestamp
 
-    
+
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor, **kwargs) -> ms.Tensor:
         is_done = time.time() - self.initial_timestamp > self.max_time
         return ops.full((input_ids.shape[0],), is_done, dtype=ms.bool_)
@@ -416,7 +416,7 @@ class StopStringCriteria(StoppingCriteria):
 
         return gather_vec, max_valid_positions, max_valid_end_lens
 
-    
+
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor, **kwargs) -> ms.Tensor:
         self.embedding_vec = self.embedding_vec
         self.target_lens = self.target_lens

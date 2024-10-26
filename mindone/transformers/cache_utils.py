@@ -21,12 +21,11 @@ import os
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import mindspore
-
-from mindspore import nn, ops, Tensor
 from mindnlp.transformers.configuration_utils import PretrainedConfig
 from transformers.utils import logging
 
+import mindspore
+from mindspore import Tensor, nn, ops
 
 logger = logging.get_logger(__name__)
 

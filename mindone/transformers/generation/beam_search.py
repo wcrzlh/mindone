@@ -3,10 +3,11 @@ from collections import UserDict
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
-import mindspore as ms
-from mindspore import nn, ops, Tensor, Parameter
-
 from transformers.generation.beam_constraints import Constraint, ConstraintListState
+
+import mindspore as ms
+from mindspore import Parameter, Tensor, nn, ops
+
 
 class BeamScorer(ABC):
     """
@@ -26,7 +27,7 @@ class BeamScorer(ABC):
         raise NotImplementedError("This is an abstract method.")
 
     @abstractmethod
-    
+
     def finalize(
         self,
         input_ids: ms.Tensor,
@@ -844,7 +845,7 @@ class ConstrainedBeamSearchScorer(BeamScorer):
                 "beam_indices": indices,
             }
         )
-    
+
 class BeamHypotheses:
     def __init__(self, num_beams: int, length_penalty: float, early_stopping: bool, max_length: Optional[int] = None):
         """

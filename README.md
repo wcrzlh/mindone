@@ -1,6 +1,15 @@
 # MindONE
 
+This repository contains SoTA algorithms, model# MindONE
+
 This repository contains SoTA algorithms, models, and interesting projects in the area of content generation, including ChatGPT detection and Stable Diffusion, and will be continously updated.
+
+ONE is short for "ONE for all" and "Optimal generators with No Exception" (credits to GPT-4).
+## News
+
+**Hello MindSpore** from **Stable Diffusion 3**!
+
+s, and interesting projects in the area of content generation, including ChatGPT detection and Stable Diffusion, and will be continously updated.
 
 ONE is short for "ONE for all" and "Optimal generators with No Exception" (credits to GPT-4).
 ## News

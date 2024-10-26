@@ -1,21 +1,24 @@
 import os
 import sys
-import mindspore as ms
-from mindspore import nn, ops, Parameter, Tensor
-# import deepspeed
-from mindnlp.engine import Trainer
 from collections.abc import Mapping
-from transformers.trainer_pt_utils import nested_detach
+
 # from mindnlp.transformers.utils import is_sagemaker_mp_enabled
 # from transformers.integrations import is_deepspeed_zero3_enabled
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
+# import deepspeed
+from mindnlp.engine import Trainer
+from transformers.trainer_pt_utils import nested_detach
+
+import mindspore as ms
+from mindspore import Parameter, Tensor, nn, ops
+
 mindone_lib_path = os.path.abspath(os.path.abspath("../../../"))
 sys.path.insert(0, mindone_lib_path)
 
-from mindone.transformers.modeling_utils import MSPreTrainedModel
-
 from transformers.utils import logging
+
+from mindone.transformers.modeling_utils import MSPreTrainedModel
 
 logger = logging.get_logger(__name__)
 
@@ -38,13 +41,13 @@ class CPMTrainer(Trainer):
             labels = inputs["labels"]
         else:
             labels = None
-        
+
         if not self.args.use_lora:
             outputs = self.model(data = inputs, use_cache=False)
         else:
             with self.model._enable_peft_forward_hooks(**inputs):
                 outputs = self.model.base_model(data = inputs, use_cache=False)
-                
+
         if labels is not None:
             # Flatten the tokens
             loss_fct = nn.CrossEntropyLoss()
@@ -190,7 +193,7 @@ class CPMTrainer(Trainer):
             logits = logits[0]
 
         return (loss, logits, labels)
-        
+
     def training_step(self, model: nn.Cell, inputs: Dict[str, Union[ms.Tensor, Any]]) -> ms.Tensor:
         """
         Perform a training step on a batch of inputs.
@@ -244,7 +247,7 @@ class CPMTrainer(Trainer):
         del inputs
 
         return loss / self.args.gradient_accumulation_steps, grads
-    
+
     def _save(self, output_dir: Optional[str] = None, state_dict=None):
         # If we are executing this function, we are the process zero, so we don't check for that.
         output_dir = output_dir if output_dir is not None else self.args.output_dir
@@ -270,7 +273,7 @@ class CPMTrainer(Trainer):
             #     else:
             ms.save_checkpoint(state_dict, os.path.join(output_dir, "minicpm.ckpt"))
         else:
-            
+
             self.model.save_pretrained(
                 output_dir, state_dict=state_dict, safe_serialization=self.args.save_safetensors
             )
