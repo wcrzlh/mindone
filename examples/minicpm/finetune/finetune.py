@@ -23,6 +23,8 @@ from mindspore.train.amp import AMP_BLACK_LIST, _auto_black_list
 
 rank, rank_size = 0, 1
 
+ms.set_context(mode=ms.context.PYNATIVE_MODE, pynative_synchronize=True, mempool_block_size="59GB", max_device_memory="59GB")
+
 from mindnlp import engine, transformers
 from transformers import HfArgumentParser
 
@@ -46,7 +48,7 @@ from mindone.transformers.models.minicpm_v2_6 import MiniCPMV_v2_6
 # from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
 # ms.set_context(mode=ms.context.PYNATIVE_MODE, pynative_synchronize=True)
-ms.set_context(mode=ms.context.PYNATIVE_MODE)
+# ms.set_context(mode=ms.context.PYNATIVE_MODE)
 
 @dataclass
 class ModelArguments:
