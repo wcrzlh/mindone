@@ -94,7 +94,7 @@ class MiniCPMV_v2_6(MiniCPMVPreTrainedModel):
             # exist image
             if all_pixel_values:
                 tgt_sizes = [tgt_size for tgt_size in tgt_sizes if isinstance(tgt_size, ms.Tensor)]
-                tgt_sizes = ops.vstack(tgt_sizes).type(ms.int32)
+                tgt_sizes = ops.vstack(tgt_sizes).astype(ms.int32)
 
                 max_patches = ops.max(tgt_sizes[:, 0] * tgt_sizes[:, 1])[0].asnumpy()
 
@@ -117,7 +117,7 @@ class MiniCPMV_v2_6(MiniCPMVPreTrainedModel):
                     patch_attn_mask[i, 0, :tgt_sizes[i][0] * tgt_sizes[i][1]] = True
 
                 vision_batch_size = self.config.vision_batch_size
-                all_pixel_values = all_pixel_values.type(dtype)
+                all_pixel_values = all_pixel_values.astype(dtype)
                 if B > vision_batch_size:
                     hs = []
                     for i in range(0, B, vision_batch_size):
@@ -144,7 +144,7 @@ class MiniCPMV_v2_6(MiniCPMVPreTrainedModel):
                         (1, 3, 224, 224),
                         dtype=dtype
                     )
-                    tgt_sizes = ms.Tensor([[(224 // self.config.patch_size), math.ceil(224 / self.config.patch_size)]]).type(ms.int32)
+                    tgt_sizes = ms.Tensor([[(224 // self.config.patch_size), math.ceil(224 / self.config.patch_size)]]).astype(ms.int32)
                     dummy_feature = self.resampler(self.vpm(dummy_image).last_hidden_state, tgt_sizes)
                 else:
                     dummy_feature = []
@@ -159,7 +159,7 @@ class MiniCPMV_v2_6(MiniCPMVPreTrainedModel):
         else:
             vllm_embedding = self.llm.model.embed_tokens(data['input_ids'])
 
-        vision_hidden_states = [i.type(vllm_embedding.dtype) if isinstance(
+        vision_hidden_states = [i.astype(vllm_embedding.dtype) if isinstance(
             i, ms.Tensor) else i for i in vision_hidden_states]
 
         # bs = len(data['input_ids'])
