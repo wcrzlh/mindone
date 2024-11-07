@@ -188,7 +188,7 @@ class Qwen2RotaryEmbedding(nn.Cell):
 
         dtype = ms.float32
 
-        t = ops.arange(self.max_seq_len_cached, dtype=ms.int64).type_as(self.inv_freq)
+        t = ops.arange(seq_len, dtype=ms.int64).type_as(self.inv_freq)
 
         freqs = ops.outer(t, self.inv_freq)
         # Different from paper, but it uses a different permutation in order to obtain the same calculation
