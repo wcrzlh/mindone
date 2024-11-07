@@ -167,9 +167,9 @@ class Qwen2RotaryEmbedding(nn.Cell):
         self.inv_freq = inv_freq
 
         # Build here to make `torch.jit.trace` work.
-        self._set_cos_sin_cache(
-            seq_len=max_position_embeddings, device=None, dtype=ms.float32
-        )
+        # self._set_cos_sin_cache(
+        #     seq_len=max_position_embeddings, device=None, dtype=ms.float32
+        # )
 
     def _set_cos_sin_cache(self, seq_len, device, dtype):
         self.max_seq_len_cached = seq_len
@@ -186,9 +186,19 @@ class Qwen2RotaryEmbedding(nn.Cell):
         if seq_len > self.max_seq_len_cached:
             self._set_cos_sin_cache(seq_len=seq_len, device=None, dtype=x.dtype)
 
+        dtype = ms.float32
+
+        t = ops.arange(self.max_seq_len_cached, dtype=ms.int64).type_as(self.inv_freq)
+
+        freqs = ops.outer(t, self.inv_freq)
+        # Different from paper, but it uses a different permutation in order to obtain the same calculation
+        emb = ops.cat((freqs, freqs), axis=-1)
+        cos_cached = emb.cos().to(dtype)
+        sin_cached = emb.sin().to(dtype)
+
         return (
-            self.cos_cached[:seq_len].to(dtype=x.dtype),
-            self.sin_cached[:seq_len].to(dtype=x.dtype),
+            cos_cached[:seq_len].to(dtype=x.dtype),
+            sin_cached[:seq_len].to(dtype=x.dtype),
         )
 
 
