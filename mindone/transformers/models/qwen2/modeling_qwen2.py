@@ -183,8 +183,8 @@ class Qwen2RotaryEmbedding(nn.Cell):
 
     def construct(self, x, seq_len=None):
         # x: [bs, num_attention_heads, seq_len, head_size]
-        if seq_len > self.max_seq_len_cached:
-            self._set_cos_sin_cache(seq_len=seq_len, device=None, dtype=x.dtype)
+        # if seq_len > self.max_seq_len_cached:
+        #     self._set_cos_sin_cache(seq_len=seq_len, device=None, dtype=x.dtype)
 
         dtype = ms.float32
 
