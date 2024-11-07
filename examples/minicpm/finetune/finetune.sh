@@ -4,7 +4,7 @@ MODEL="openbmb/MiniCPM-V-2_6"
 # or openbmb/MiniCPM-V-2, openbmb/MiniCPM-Llama3-V-2_5
 # ATTENTION: specify the path to your training data, which should be a json file consisting of a list of conversations.
 # See the section for finetuning in README for more information.
-DATA="/data4/wcr/minicpm/mindone/finetune.json"
+DATA="/data3/wcr/mindone/examples/minicpm/finetune/finetune.json"
 #EVAL_DATA="path/to/test_data"
 LLM_TYPE="qwen2" # if use openbmb/MiniCPM-V-2, please set LLM_TYPE=minicpm, if use openbmb/MiniCPM-Llama3-V-2_5, please set LLM_TYPE="llama3"
 MODEL_MAX_Length=2048 # if conduct multi-images sft, please set MODEL_MAX_Length=4096
