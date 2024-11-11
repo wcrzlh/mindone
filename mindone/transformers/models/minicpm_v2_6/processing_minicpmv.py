@@ -21,14 +21,16 @@ from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 from mindnlp.transformers.image_processing_utils import BatchFeature
-from mindnlp.transformers.image_utils import ImageInput
-from mindnlp.transformers.tokenization_utils_base import (
-    PaddingStrategy,
-    PreTokenizedInput,
-    TextInput,
-    TruncationStrategy,
-)
+# from mindnlp.transformers.image_utils import ImageInput
+# from mindnlp.transformers.tokenization_utils_base import (
+#     PaddingStrategy,
+#     PreTokenizedInput,
+#     TextInput,
+#     TruncationStrategy,
+# )
 from transformers.utils import TensorType, is_torch_device, is_torch_dtype, requires_backends
+from transformers.image_utils import ImageInput
+from transformers.tokenization_utils_base import PreTokenizedInput, TextInput
 
 import mindspore as ms
 from mindspore import Parameter, Tensor, nn, ops

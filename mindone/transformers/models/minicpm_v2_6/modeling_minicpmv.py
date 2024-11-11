@@ -4,7 +4,7 @@ from copy import deepcopy
 from threading import Thread
 from typing import List, Optional
 
-from mindnlp.transformers import TextIteratorStreamer
+from transformers import TextIteratorStreamer
 from PIL import Image
 
 import mindspore as ms
