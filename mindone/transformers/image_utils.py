@@ -7,7 +7,7 @@ import numpy as np
 import requests
 from packaging import version
 
-from utils.generic import ExplicitEnum
+from .utils.generic import ExplicitEnum
 
 class ChannelDimension(ExplicitEnum):
     FIRST = "channels_first"
