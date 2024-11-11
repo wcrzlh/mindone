@@ -52,7 +52,7 @@ class MiniCPMVProcessor(ProcessorMixin):
             The tokenizer is a required input.
     """
     attributes = ["image_processor", "tokenizer"]
-    image_processor_class = "AutoImageProcessor"
+    image_processor_class = "MiniCPMVImageProcessor"
     tokenizer_class = "AutoTokenizer"
 
     def __init__(self, image_processor=None, tokenizer=None):
@@ -175,7 +175,7 @@ class MiniCPMVProcessor(ProcessorMixin):
             final_text = ""
             for i in range(len(image_tags)):
                 final_text = final_text + text_chunks[i] + \
-                    self.image_processor.get_slice_image_placeholder(
+                    MiniCPMVImageProcessor.get_slice_image_placeholder(
                         image_sizes[index][i],
                         i,
                         max_slice_nums,
@@ -206,7 +206,7 @@ class MiniCPMVProcessor(ProcessorMixin):
     # Copied from transformers.models.clip.processing_clip.CLIPProcessor.model_input_names
     def model_input_names(self):
         tokenizer_input_names = self.tokenizer.model_input_names
-        image_processor_input_names = self.image_processor.model_input_names
+        image_processor_input_names = MiniCPMVImageProcessor.model_input_names
         return list(dict.fromkeys(tokenizer_input_names + image_processor_input_names))
 
 
