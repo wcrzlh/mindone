@@ -30,10 +30,15 @@ logger = logging.get_logger(__name__)
 # Dynamically import the Transformers module to grab the attribute classes of the processor form their names.
 transformers_module = transformers
 
+# AUTO_TO_BASE_CLASS_MAPPING = {
+#     "AutoTokenizer": "PreTrainedTokenizerBase",
+#     "AutoFeatureExtractor": "FeatureExtractionMixin",
+#     "AutoImageProcessor": "ImageProcessingMixin",
+# }
+
 AUTO_TO_BASE_CLASS_MAPPING = {
     "AutoTokenizer": "PreTrainedTokenizerBase",
     "AutoFeatureExtractor": "FeatureExtractionMixin",
-    "AutoImageProcessor": "ImageProcessingMixin",
 }
 
 class ProcessorMixin:
