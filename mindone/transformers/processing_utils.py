@@ -22,7 +22,7 @@ import os
 import warnings
 from typing import Optional, Union
 
-from mindnlp import transformers
+import transformers
 from transformers.utils import logging
 
 logger = logging.get_logger(__name__)
