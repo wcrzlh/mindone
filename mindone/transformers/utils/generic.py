@@ -6,6 +6,7 @@ from transformers.utils.generic import (
     cached_property
 )
 
+from enum import Enum
 
 def can_return_loss(model_class):
     """
@@ -37,3 +38,14 @@ def find_labels(model_class):
         return [p for p in signature.parameters if "label" in p or p in ("start_positions", "end_positions")]
     else:
         return [p for p in signature.parameters if "label" in p]
+
+class ExplicitEnum(str, Enum):
+    """
+    Enum with more explicit error message for missing values.
+    """
+
+    @classmethod
+    def _missing_(cls, value):
+        raise ValueError(
+            f"{value} is not a valid {cls.__name__}, please select one of {list(cls._value2member_map_.keys())}"
+        )

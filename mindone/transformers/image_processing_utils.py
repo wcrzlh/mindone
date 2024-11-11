@@ -27,10 +27,9 @@ import requests
 FEATURE_EXTRACTOR_NAME = "preprocessor_config.json"
 IMAGE_PROCESSOR_NAME = FEATURE_EXTRACTOR_NAME
 
-from mindnlp.transformers.feature_extraction_utils import BatchFeature as BaseBatchFeature
-# from transformers.feature_extraction_utils import BatchFeature as BaseBatchFeature
-from mindnlp.transformers.image_transforms import center_crop, normalize, rescale
-from mindnlp.transformers.image_utils import ChannelDimension
+from .feature_extraction_utils import BatchFeature as BaseBatchFeature
+from .image_transforms import center_crop, normalize, rescale
+from .image_utils import ChannelDimension
 from transformers.utils import cached_file, download_url, is_offline_mode, is_remote_url, is_vision_available, logging
 
 if is_vision_available():

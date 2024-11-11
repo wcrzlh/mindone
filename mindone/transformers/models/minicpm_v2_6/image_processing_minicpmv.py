@@ -6,7 +6,7 @@ import PIL
 import PIL.Image
 import PIL.ImageSequence
 from mindnlp.transformers import AutoImageProcessor
-from mindnlp.transformers.image_processing_utils import BaseImageProcessor, BatchFeature
+from ...image_processing_utils import BaseImageProcessor, BatchFeature
 from PIL import Image
 from transformers.image_transforms import to_channel_dimension_format
 from transformers.image_utils import (
