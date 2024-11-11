@@ -30,15 +30,10 @@ logger = logging.get_logger(__name__)
 # Dynamically import the Transformers module to grab the attribute classes of the processor form their names.
 transformers_module = transformers
 
-# AUTO_TO_BASE_CLASS_MAPPING = {
-#     "AutoTokenizer": "PreTrainedTokenizerBase",
-#     "AutoFeatureExtractor": "FeatureExtractionMixin",
-#     "AutoImageProcessor": "ImageProcessingMixin",
-# }
-
 AUTO_TO_BASE_CLASS_MAPPING = {
     "AutoTokenizer": "PreTrainedTokenizerBase",
     "AutoFeatureExtractor": "FeatureExtractionMixin",
+    "AutoImageProcessor": "ImageProcessingMixin",
 }
 
 class ProcessorMixin:
@@ -269,6 +264,9 @@ class ProcessorMixin:
                     attribute_class = classes[1]
                 else:
                     attribute_class = classes[0]
+            elif class_name == "MiniCPMVImageProcessor":
+                from mindone.transformers.models.minicpm_v2_6.image_processing_minicpmv import MiniCPMVImageProcessor
+                attribute_class = MiniCPMVImageProcessor
             else:
                 attribute_class = getattr(transformers_module, class_name)
 
