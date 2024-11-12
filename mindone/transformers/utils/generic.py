@@ -1,11 +1,5 @@
 import inspect
 
-from transformers.utils.generic import (
-    ExplicitEnum,
-    PaddingStrategy,
-    cached_property
-)
-
 from enum import Enum
 
 def can_return_loss(model_class):
@@ -61,4 +55,4 @@ class TensorType(ExplicitEnum):
     NUMPY = "np"
     JAX = "jax"
     MLX = "mlx"
-    MINDSPORE = "MS"
+    MINDSPORE = "ms"
