@@ -25,3 +25,5 @@ from .models.t5 import (
     T5PreTrainedModel,
 )
 from .models.xlm_roberta import XLMRobertaModel, XLMRobertaPreTrainedModel
+
+from models.minicpm_v2_6 import MiniCPMVImageProcessor
