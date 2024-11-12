@@ -25,7 +25,7 @@ rank, rank_size = 0, 1
 
 ms.set_context(mode=ms.context.PYNATIVE_MODE, pynative_synchronize=True, mempool_block_size="59GB", max_device_memory="59GB")
 
-from mindnlp import engine, transformers
+import transformers
 from transformers import HfArgumentParser
 
 from mindspore.dataset import transforms, vision
@@ -36,11 +36,12 @@ mindone_lib_path = os.path.abspath(os.path.abspath("../../../"))
 sys.path.insert(0, mindone_lib_path)
 
 from dataset import SupervisedDataset
-from mindnlp.dataset.map_fn import BaseMapFuction
-from trainer import CPMTrainer
+from mindone.transformers.trainer import Trainer
 from transformers import AutoTokenizer
+from mindone.transformers.training_args import TrainingArguments
 
 from mindone.transformers.models.minicpm_v2_6 import MiniCPMV_v2_6
+from mindone.transformers.mindspore_adapter import MindSporeArguments
 
 # from transformers.integrations import deepspeed
 
@@ -65,7 +66,7 @@ class DataArguments:
     )
 
 @dataclass
-class TrainingArguments(engine.train_args.base.TrainingArguments):
+class TrainingArguments(TrainingArguments):
     cache_dir: Optional[str] = field(default=None)
     optim: str = field(default="adamw")
     model_max_length: int = field(
@@ -96,6 +97,15 @@ class LoraArguments:
     lora_layer_replication: Optional[List[Tuple[int, int]]] = None
     lora_layers_to_transform: Optional[List[int]] = None
     lora_layers_pattern: Optional[str] = None
+
+@dataclass
+class MyArguments(MindSporeArguments, TrainingArguments):
+    model_path: str = field(default="meta-llama/Meta-Llama-3-8B")
+    dataset_path: str = field(default="Yelp/yelp_review_full")
+    output_dir: str = field(default="./outputs")
+    enable_flash_attention: bool = field(default=True)
+    gradient_checkpointing: bool = field(default=True)
+    is_distribute: bool = field(default=False)
 
 local_rank = None
 def rank0_print(*args):
@@ -382,7 +392,7 @@ def train():
     )
 
     training_args.gradient_checkpointing_kwargs={"use_reentrant":False}
-    trainer = CPMTrainer(
+    trainer = Trainer(
         model=model,
         tokenizer=tokenizer,
         args=training_args,
@@ -390,7 +400,7 @@ def train():
     )
 
     trainer.train()
-    trainer.save_state()
+    # trainer.save_state()
 
     safe_save_model_for_hf_trainer(
         trainer=trainer,
