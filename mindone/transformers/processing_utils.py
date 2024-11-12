@@ -25,8 +25,6 @@ from typing import Optional, Union
 import transformers
 from transformers.utils import logging
 
-from mindone.transformers import MiniCPMVImageProcessor
-
 logger = logging.get_logger(__name__)
 
 # Dynamically import the Transformers module to grab the attribute classes of the processor form their names.
@@ -90,6 +88,7 @@ class ProcessorMixin:
             if isinstance(class_name, tuple):
                 proper_class = tuple(getattr(transformers_module, n) for n in class_name if n is not None)
             elif class_name == "MiniCPMVImageProcessor":
+                from mindone.transformers import MiniCPMVImageProcessor
                 proper_class = MiniCPMVImageProcessor
             else:
                 proper_class = getattr(transformers_module, class_name)
@@ -269,7 +268,7 @@ class ProcessorMixin:
                 else:
                     attribute_class = classes[0]
             elif class_name == "MiniCPMVImageProcessor":
-                from mindone.transformers.models.minicpm_v2_6.image_processing_minicpmv import MiniCPMVImageProcessor
+                from mindone.transformers import MiniCPMVImageProcessor
                 attribute_class = MiniCPMVImageProcessor
             else:
                 attribute_class = getattr(transformers_module, class_name)
