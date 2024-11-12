@@ -311,9 +311,10 @@ class MiniCPMV_v2_6(MiniCPMVPreTrainedModel):
             images_list = [None] * len(msgs_list)
         assert len(images_list) == len(msgs_list), "The batch dim of images_list and msgs_list should be the same."
 
+        image_processor = MiniCPMVImageProcessor.from_pretrained(self.config._name_or_path, trust_remote_code=True)
+
         if processor is None:
             if self.processor is None:
-                image_processor = MiniCPMVImageProcessor.from_pretrained(self.config._name_or_path, trust_remote_code=True)
                 self.processor = MiniCPMVProcessor.from_pretrained(self.config._name_or_path, trust_remote_code=True)
             processor = self.processor
 
