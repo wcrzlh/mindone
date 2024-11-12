@@ -25,7 +25,6 @@ from typing import List, Optional, Tuple, Union
 import numpy as np
 
 import mindspore as ms
-# import torch.utils.checkpoint
 from mindspore import nn, ops, Tensor, Parameter
 from mindspore.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
