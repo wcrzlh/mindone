@@ -49,3 +49,16 @@ class ExplicitEnum(str, Enum):
         raise ValueError(
             f"{value} is not a valid {cls.__name__}, please select one of {list(cls._value2member_map_.keys())}"
         )
+
+class TensorType(ExplicitEnum):
+    """
+    Possible values for the `return_tensors` argument in [`PreTrainedTokenizerBase.__call__`]. Useful for
+    tab-completion in an IDE.
+    """
+
+    PYTORCH = "pt"
+    TENSORFLOW = "tf"
+    NUMPY = "np"
+    JAX = "jax"
+    MLX = "mlx"
+    MINDSPORE = "MS"

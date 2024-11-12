@@ -27,8 +27,8 @@ from typing import Any, Dict, Optional, Tuple, Union
 import numpy as np
 
 FEATURE_EXTRACTOR_NAME = "preprocessor_config.json"
+from .utils.generic import TensorType
 from transformers.utils import (
-    TensorType,
     cached_file,
     download_url,
     is_numpy_array,
