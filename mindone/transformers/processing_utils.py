@@ -25,7 +25,7 @@ from typing import Optional, Union
 import transformers
 from transformers.utils import logging
 
-from mindone.transformers.models.minicpm_v2_6.image_processing_minicpmv import MiniCPMVImageProcessor
+from mindone.transformers import MiniCPMVImageProcessor
 
 logger = logging.get_logger(__name__)
 
