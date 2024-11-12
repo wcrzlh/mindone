@@ -65,7 +65,7 @@ class MiniCPMVProcessor(ProcessorMixin):
         images: ImageInput = None,
         max_length: Optional[int] = None,
         do_pad: Optional[bool] = True,
-        max_slice_nums: int = None,
+        max_slice_nums: int = 9,
         use_image_id: bool = None,
         return_tensors: Optional[Union[str, TensorType]] = TensorType.PYTORCH,
         **kwargs
