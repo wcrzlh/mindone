@@ -81,7 +81,7 @@ class MiniCPMV_v2_6(MiniCPMVPreTrainedModel):
 
     def get_vllm_embedding(self, data):
         if 'vision_hidden_states' not in data:
-            dtype = self.llm.model.embed_tokens.weight.dtype
+            dtype = self.llm.model.embed_tokens.embedding_table.dtype
             device = None
             tgt_sizes = data['tgt_sizes']
             pixel_values_list = data['pixel_values']
