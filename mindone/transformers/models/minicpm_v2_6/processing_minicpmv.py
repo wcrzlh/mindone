@@ -68,11 +68,12 @@ class MiniCPMVProcessor(ProcessorMixin):
         max_slice_nums: int = 9,
         use_image_id: bool = None,
         return_tensors: Optional[Union[str, TensorType]] = TensorType.PYTORCH,
+        image_processor=None,
         **kwargs
     ) -> MiniCPMVBatchFeature:
 
         if images is not None:
-            image_inputs = MiniCPMVImageProcessor(max_slice_nums, **kwargs).preprocess(images=images, do_pad=do_pad, max_slice_nums=max_slice_nums, return_tensors=return_tensors)
+            image_inputs = image_processor.preprocess(images=images, do_pad=do_pad, max_slice_nums=max_slice_nums, return_tensors=return_tensors)
         return self._convert_images_texts_to_inputs(image_inputs, text, max_slice_nums=max_slice_nums, use_image_id=use_image_id, max_length=max_length, **kwargs)
 
     # Copied from transformers.models.clip.processing_clip.CLIPProcessor.batch_decode with CLIP->Llama

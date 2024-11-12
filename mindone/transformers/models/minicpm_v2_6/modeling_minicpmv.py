@@ -14,6 +14,7 @@ from ..qwen2 import Qwen2ForCausalLM, Qwen2PreTrainedModel
 from .configuration_minicpm import MiniCPMVConfig
 from .modeling_navit_siglip import SiglipVisionTransformer
 from .processing_minicpmv import MiniCPMVProcessor
+from .image_processing_minicpmv import MiniCPMVImageProcessor
 from .resampler import Resampler
 from .tokenization_minicpmv_fast import MiniCPMVTokenizerFast
 
@@ -312,6 +313,7 @@ class MiniCPMV_v2_6(MiniCPMVPreTrainedModel):
 
         if processor is None:
             if self.processor is None:
+                image_processor = MiniCPMVImageProcessor.from_pretrained(self.config._name_or_path, trust_remote_code=True)
                 self.processor = MiniCPMVProcessor.from_pretrained(self.config._name_or_path, trust_remote_code=True)
             processor = self.processor
 
@@ -365,7 +367,8 @@ class MiniCPMV_v2_6(MiniCPMVPreTrainedModel):
             max_slice_nums=max_slice_nums,
             use_image_id=use_image_id,
             return_tensors="ms",
-            max_length=max_inp_length
+            max_length=max_inp_length,
+            image_processor=image_processor
         )
 
         if sampling:
