@@ -87,6 +87,9 @@ class ProcessorMixin:
             class_name = AUTO_TO_BASE_CLASS_MAPPING.get(class_name, class_name)
             if isinstance(class_name, tuple):
                 proper_class = tuple(getattr(transformers_module, n) for n in class_name if n is not None)
+            elif class_name == "MiniCPMVImageProcessor":
+                from mindone.transformers.models.minicpm_v2_6.image_processing_minicpmv import MiniCPMVImageProcessor
+                proper_class = MiniCPMVImageProcessor
             else:
                 proper_class = getattr(transformers_module, class_name)
 
