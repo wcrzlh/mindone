@@ -25,8 +25,6 @@ sys.path.insert(0, mindone_lib_path)
 
 import logging
 
-from mindnlp.dataset.map_fn import BaseMapFuction
-
 from mindone.transformers.models.minicpm_v2_6.processing_minicpmv import MiniCPMVProcessor
 
 logger = logging.getLogger(__name__)
