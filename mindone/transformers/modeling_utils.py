@@ -53,7 +53,7 @@ from transformers.utils.hub import convert_file_size_to_int, get_checkpoint_shar
 import mindspore as ms
 from mindspore import Tensor, nn, ops
 
-from .generation import GenerationMixin
+from .generation.utils import GenerationMixin
 from .integrations import PeftAdapterMixin
 from .modeling_attn_mask_utils import dtype_to_min
 
