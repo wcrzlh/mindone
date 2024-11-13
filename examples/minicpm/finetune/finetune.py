@@ -154,15 +154,15 @@ def make_supervised_data_module(
         max_length=max_length,
     )
 
-    train_ds = dataset.GeneratorDataset(
-        train_dataset,
-        column_names=train_dataset.dataset_column_names,
-        num_parallel_workers=2,
-        shuffle=True,
-        python_multiprocessing=False,
-        num_shards=rank_size,
-        shard_id=rank
-    )
+    # train_ds = dataset.GeneratorDataset(
+    #     train_dataset,
+    #     column_names=train_dataset.dataset_column_names,
+    #     num_parallel_workers=2,
+    #     shuffle=True,
+    #     python_multiprocessing=False,
+    #     num_shards=rank_size,
+    #     shard_id=rank
+    # )
 
     if data_args.eval_data_path:
         eval_json = json.load(open(data_args.eval_data_path, "r"))
@@ -178,13 +178,13 @@ def make_supervised_data_module(
             max_length=max_length,
         )
 
-        eval_ds = dataset.GeneratorDataset(
-            eval_dataset,
-            column_names=eval_dataset.dataset_column_names,
-            num_parallel_workers=8,
-            shuffle=False,
-            python_multiprocessing=False,
-        )
+        # eval_ds = dataset.GeneratorDataset(
+        #     eval_dataset,
+        #     column_names=eval_dataset.dataset_column_names,
+        #     num_parallel_workers=8,
+        #     shuffle=False,
+        #     python_multiprocessing=False,
+        # )
     else:
         eval_ds = None
 
@@ -198,8 +198,8 @@ def make_supervised_data_module(
     #         return trim_and_pad(input_ids), trim_and_pad(position_ids), trim_and_pad(labels), trim_and_pad(attention_mask)
 
     return dict(
-        train_dataset=train_ds,
-        eval_dataset=eval_ds,
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
     )
 
 
