@@ -200,7 +200,6 @@ def make_supervised_data_module(
     return dict(
         train_dataset=train_ds,
         eval_dataset=eval_ds,
-        map_fn=None,
     )
 
 
