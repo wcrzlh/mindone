@@ -769,9 +769,9 @@ class SiglipEncoderLayer(nn.Cell):
             if not self._use_flash_attention
             else SiglipFlashAttention(config)
         )
-        self.layer_norm1 = nn.LayerNorm(self.embed_dim, epsilon=config.layer_norm_eps)
+        self.layer_norm1 = nn.LayerNorm((self.embed_dim,), epsilon=config.layer_norm_eps)
         self.mlp = SiglipMLP(config)
-        self.layer_norm2 = nn.LayerNorm(self.embed_dim, epsilon=config.layer_norm_eps)
+        self.layer_norm2 = nn.LayerNorm((self.embed_dim,), epsilon=config.layer_norm_eps)
 
         # add recompute
         # self.self_attn.recompute()
@@ -991,7 +991,7 @@ class SiglipVisionTransformer(SiglipPreTrainedModel):
 
         self.embeddings = SiglipVisionEmbeddings(config)
         self.encoder = SiglipEncoder(config)
-        self.post_layernorm = nn.LayerNorm(embed_dim, epsilon=config.layer_norm_eps)
+        self.post_layernorm = nn.LayerNorm((embed_dim,), epsilon=config.layer_norm_eps)
         self._use_flash_attention_2 = config._attn_implementation == "flash_attention_2"
         self._use_flash_attention = config._attn_implementation == "flash_attention"
 
