@@ -75,13 +75,13 @@ def _get_pt2ms_mappings(m):
             mappings[f"{name}.weight"] = f"{name}.weight", lambda x: ops.expand_dims(x, axis=-2)
         elif isinstance(cell, nn.Embedding):
             mappings[f"{name}.weight"] = f"{name}.embedding_table", lambda x: x
-        # elif isinstance(cell, (nn.BatchNorm2d, nn.LayerNorm, nn.GroupNorm)):
-        #     mappings[f"{name}.weight"] = f"{name}.gamma", lambda x: x
-        #     mappings[f"{name}.bias"] = f"{name}.beta", lambda x: x
-        #     if isinstance(cell, (nn.BatchNorm2d,)):
-        #         mappings[f"{name}.running_mean"] = f"{name}.moving_mean", lambda x: x
-        #         mappings[f"{name}.running_var"] = f"{name}.moving_variance", lambda x: x
-        #         mappings[f"{name}.num_batches_tracked"] = None, lambda x: x
+        elif isinstance(cell, (nn.BatchNorm2d, nn.LayerNorm, nn.GroupNorm)):
+            mappings[f"{name}.weight"] = f"{name}.gamma", lambda x: x
+            mappings[f"{name}.bias"] = f"{name}.beta", lambda x: x
+            if isinstance(cell, (nn.BatchNorm2d,)):
+                mappings[f"{name}.running_mean"] = f"{name}.moving_mean", lambda x: x
+                mappings[f"{name}.running_var"] = f"{name}.moving_variance", lambda x: x
+                mappings[f"{name}.num_batches_tracked"] = None, lambda x: x
     return mappings
 
 
