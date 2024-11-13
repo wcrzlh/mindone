@@ -16,7 +16,7 @@ from .modeling_navit_siglip import SiglipVisionTransformer
 from .processing_minicpmv import MiniCPMVProcessor
 from .image_processing_minicpmv import MiniCPMVImageProcessor
 from .resampler import Resampler
-from .tokenization_minicpmv_fast import MiniCPMVTokenizerFast
+# from .tokenization_minicpmv_fast import MiniCPMVTokenizerFast
 
 from mindspore import _no_grad
 
