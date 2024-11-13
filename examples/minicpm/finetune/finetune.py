@@ -68,7 +68,7 @@ class DataArguments:
 @dataclass
 class TrainingArguments(TrainingArguments):
     cache_dir: Optional[str] = field(default=None)
-    optim: str = field(default="adamw")
+    optim: str = field(default="adamw_mindspore")
     model_max_length: int = field(
         default=2048,
         metadata={
