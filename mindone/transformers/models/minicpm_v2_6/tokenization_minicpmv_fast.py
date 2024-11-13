@@ -1,4 +1,4 @@
-from mindnlp.transformers import AutoTokenizer
+from transformers import AutoTokenizer
 
 from ..qwen2 import Qwen2TokenizerFast
 
