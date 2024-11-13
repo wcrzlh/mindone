@@ -2,6 +2,11 @@ import inspect
 
 from enum import Enum
 
+from transformers.utils.generic import (
+    PaddingStrategy,
+    cached_property
+)
+
 def can_return_loss(model_class):
     """
     Check if a given model can return loss.
