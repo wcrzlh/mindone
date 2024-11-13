@@ -58,8 +58,9 @@ class SupervisedDataset:
         self.query_nums=query_nums
         self.batch_vision = batch_vision
         self.max_length = max_length
-        self.dataset_column_names = ["input_ids", "position_ids", "labels", "attention_mask", "pixel_values", "tgt_sizes", "image_bound"]
-        self.dataset_output_column_names = ["input_ids", "position_ids", "labels", "attention_mask", "pixel_values", "tgt_sizes", "image_bound"]
+        # self.dataset_column_names = ["input_ids", "position_ids", "labels", "attention_mask", "pixel_values", "tgt_sizes", "image_bound"]
+        # self.dataset_output_column_names = ["input_ids", "position_ids", "labels", "attention_mask", "pixel_values", "tgt_sizes", "image_bound"]
+        self.dataset_column_names = ["item"]
 
     def __len__(self):
         return len(self.raw_data)
@@ -99,8 +100,8 @@ class SupervisedDataset:
         # except:
         #     logger.error(f"data fetch error")
         #     # return self.__getitem__(random.randint(0, len(self)))
-        return (ret["input_ids"], ret["position_ids"], ret["labels"], np.ones_like(ret["input_ids"], dtype=np.bool_), ret["pixel_values"], ret["tgt_sizes"], ret["image_bound"])
-
+        # return (ret["input_ids"], ret["position_ids"], ret["labels"], np.ones_like(ret["input_ids"], dtype=np.bool_), ret["pixel_values"], ret["tgt_sizes"], ret["image_bound"])
+        return ret
 
 def data_collator(examples, padding_value=0, max_length=2048):
     def trim_and_pad(seq, batch_first, padding_value):
