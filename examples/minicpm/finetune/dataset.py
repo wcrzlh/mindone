@@ -406,7 +406,7 @@ def preprocess(
                 image_placeholder = default_image_placeholder
             image_placeholder_dict[img_name] = image_placeholder
 
-    images = [trans_fn(i) for i in images]
+    images = [transform(i) for i in images]
 
     if len(images_dict) == 1 and "<image>" in images_dict:
         if "<image>" in conversations[0]["content"]:
