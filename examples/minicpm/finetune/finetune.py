@@ -186,7 +186,7 @@ def make_supervised_data_module(
         #     python_multiprocessing=False,
         # )
     else:
-        eval_ds = None
+        eval_dataset = None
 
     # def trim_and_pad(seq):
     #     # return pad_sequence([s[:max_length] for s in seq], batch_first=True, padding_value=padding_value)
