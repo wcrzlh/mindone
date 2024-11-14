@@ -63,37 +63,50 @@ class SupervisedDataset:
     def __len__(self):
         return len(self.raw_data)
 
-    def __getitem__(self, idx):
-        # try:
-        if isinstance(self.raw_data[idx]["image"], str):
-            images_dict = { "<image>" : Image.open(self.raw_data[idx]["image"]).convert("RGB") }
-        elif isinstance(self.raw_data[idx]["image"], Dict):
-            ### for multi-images input, the template for every image is <image_xx>, such as <image_00>, <image_01>
-            images_dict = {img_name : Image.open(img_path).convert("RGB") for img_name, img_path in self.raw_data[idx]["image"].items()}
+    def __getitem__(self, idx, retry_count=3):
+        try:
+            if isinstance(self.raw_data[idx]["image"], str):
+                images_dict = { "<image>" : Image.open(self.raw_data[idx]["image"]).convert("RGB") }
+            elif isinstance(self.raw_data[idx]["image"], Dict):
+                ### for multi-images input, the template for every image is <image_xx>, such as <image_00>, <image_01>
+                images_dict = {img_name : Image.open(img_path).convert("RGB") for img_name, img_path in self.raw_data[idx]["image"].items()}
 
-        ret = preprocess(
-            images_dict,
-            self.raw_data[idx]["conversations"],
-            self.tokenizer,
-            self.transform,
-            query_nums=self.query_nums,
-            slice_config=self.slice_config,
-            llm_type=self.llm_type,
-            patch_size=self.patch_size,
-            batch_vision=self.batch_vision,
-            max_length=self.max_length
-        )
-        ret = dict(
-            input_ids=ret["input_ids"],
-            position_ids=ret["position_ids"],
-            labels=ret["target"],
-            attention_mask=np.ones_like(ret["input_ids"], dtype=np.bool_),
-            pixel_values=ret["pixel_values"],
-            tgt_sizes=ret["tgt_sizes"],
-            image_bound=ret["image_bound"],
-        )
+            ret = preprocess(
+                images_dict,
+                self.raw_data[idx]["conversations"],
+                self.tokenizer,
+                self.transform,
+                query_nums=self.query_nums,
+                slice_config=self.slice_config,
+                llm_type=self.llm_type,
+                patch_size=self.patch_size,
+                batch_vision=self.batch_vision,
+                max_length=self.max_length
+            )
+            ret = dict(
+                input_ids=ret["input_ids"],
+                position_ids=ret["position_ids"],
+                labels=ret["target"],
+                attention_mask=np.ones_like(ret["input_ids"], dtype=np.bool_),
+                pixel_values=ret["pixel_values"],
+                tgt_sizes=ret["tgt_sizes"],
+                image_bound=ret["image_bound"],
+            )
 
-        ret = data_collator(ret, max_length = self.max_length)
+            ret = data_collator(ret, max_length = self.max_length)
+
+        except (EOFError, ValueError, OSError) as e:
+            # Log and handle EOFError and other file-related errors
+            logger.error(f"Data fetch error at index {idx}: {e}")
+
+            if retry_count > 0:
+                logger.info(f"Retrying with a different sample. {retry_count} retries left.")
+                retry_idx = random.randint(0, len(self) - 1)
+                return self.__getitem__(retry_idx, retry_count - 1)
+            else:
+                # If max retries reached, return a blank or default item
+                logger.warning("Max retries reached. Returning a blank entry.")
+                return None
 
         # except:
         #     logger.error(f"data fetch error")
