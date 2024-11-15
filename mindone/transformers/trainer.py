@@ -1478,9 +1478,9 @@ class Trainer:
                     inputs["item"][key] = ms.Tensor(data, dtype=self.args.input_dtype)
                 elif data.dtype in (np.uint8, np.uint16, np.uint32, np.uint64,
                                     np.int8, np.int16, np.int32, np.int64):
-                    inputs[key] = ms.Tensor(data, dtype=ms.int32)
+                    inputs["item"][key] = ms.Tensor(data, dtype=ms.int32)
                 else:
-                    inputs[key] = ms.Tensor(data)
+                    inputs["item"][key] = ms.Tensor(data)
 
         return inputs["item"]
 
