@@ -168,4 +168,4 @@ class DataCollatorWithPadding:
         if "label_ids" in batch:
             batch["labels"] = batch["label_ids"]
             del batch["label_ids"]
-        return batch
+        return dict(item=batch)
