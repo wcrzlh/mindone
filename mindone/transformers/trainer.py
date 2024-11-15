@@ -603,6 +603,7 @@ class Trainer:
             "batch_size": self.args.per_device_train_batch_size,       # per device batch size
             "per_batch_map": data_collator,                            # collate function
             "drop_remainder": self.args.dataloader_drop_last,          # drop last
+            "output_columns": ["input_ids", "position_ids", "labels", "attention_mask", "pixel_values", "tgt_sizes", "image_bound"],
         }
         ds_repeat_params = {
             "count": 1  # self.args.num_train_epochs            # num_train_epochs, loop at train func
