@@ -1521,7 +1521,7 @@ class Trainer:
 
         tuple_inputs = self._prepare_inputs_ms(inputs)
 
-        loss, _, overflow = train_model(*tuple_inputs)
+        loss, _, overflow = train_model(tuple_inputs)
 
         # For LOMO optimizers you need to explicitly use the learnign rate
         if self.args.optim in [OptimizerNames.LOMO, OptimizerNames.ADALOMO]:
