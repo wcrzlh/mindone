@@ -1472,14 +1472,15 @@ class Trainer:
         #     inputs += (data,)
 
         for key in inputs["item"].keys():
-            if inputs[key] is not None:
-                if inputs[key].dtype in (np.float16, np.float32, np.float64):
-                    inputs[key] = ms.Tensor(inputs[key], dtype=self.args.input_dtype)
-                elif inputs[key].dtype in (np.uint8, np.uint16, np.uint32, np.uint64,
+            data = inputs["item"][key]
+            if data is not None:
+                if data.dtype in (np.float16, np.float32, np.float64):
+                    inputs["item"][key] = ms.Tensor(data, dtype=self.args.input_dtype)
+                elif data.dtype in (np.uint8, np.uint16, np.uint32, np.uint64,
                                     np.int8, np.int16, np.int32, np.int64):
-                    inputs[key] = ms.Tensor(inputs[key], dtype=ms.int32)
+                    inputs[key] = ms.Tensor(data, dtype=ms.int32)
                 else:
-                    inputs[key] = ms.Tensor(inputs[key])
+                    inputs[key] = ms.Tensor(data)
 
         return inputs["item"]
 
