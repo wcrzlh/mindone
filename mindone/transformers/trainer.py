@@ -1429,49 +1429,59 @@ class Trainer:
             inputs["mems"] = self._past
 
         # 1. get model args
-        model_to_inspect = self.model
-        signature = inspect.signature(model_to_inspect.construct)
-        for n, p in signature.parameters.items():
-            assert p.kind in (inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                              inspect.Parameter.POSITIONAL_ONLY,
-                              inspect.Parameter.VAR_POSITIONAL), \
-                f"construct func input not position args, check in `class {model_to_inspect.__class__.__name__}`"
-        _signature_columns = list(signature.parameters.keys())
-        _signature_columns = _signature_columns[1:] if _signature_columns[0] == self else _signature_columns
+        # model_to_inspect = self.model
+        # signature = inspect.signature(model_to_inspect.construct)
+        # for n, p in signature.parameters.items():
+        #     assert p.kind in (inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        #                       inspect.Parameter.POSITIONAL_ONLY,
+        #                       inspect.Parameter.VAR_POSITIONAL), \
+        #         f"construct func input not position args, check in `class {model_to_inspect.__class__.__name__}`"
+        # _signature_columns = list(signature.parameters.keys())
+        # _signature_columns = _signature_columns[1:] if _signature_columns[0] == self else _signature_columns
 
-        input_keys = _signature_columns
-        dict_inputs = inputs
-        input_len = max([input_keys.index(k) for k in dict_inputs]) + 1
+        # input_keys = _signature_columns
+        # dict_inputs = inputs
+        # input_len = max([input_keys.index(k) for k in dict_inputs]) + 1
 
         # 2. to tuple
         tuple_inputs = ()
-        for k in input_keys[:input_len]:
-            if k not in dict_inputs:
-                assert not isinstance(signature.parameters[k].default, inspect._empty)
-                v = signature.parameters[k].default
-            else:
-                v = dict_inputs.pop(k)
-            if isinstance(v, (tuple, list)):
-                tuple_inputs += (*v,)
-            else:
-                tuple_inputs += (v,)
-        if len(dict_inputs) > 0:
-            logger.warning(f"input args {dict_inputs.keys()} not found in {self.model.__class__.__name__}, ignore them.")
+        # for k in input_keys[:input_len]:
+        #     if k not in dict_inputs:
+        #         assert not isinstance(signature.parameters[k].default, inspect._empty)
+        #         v = signature.parameters[k].default
+        #     else:
+        #         v = dict_inputs.pop(k)
+        #     if isinstance(v, (tuple, list)):
+        #         tuple_inputs += (*v,)
+        #     else:
+        #         tuple_inputs += (v,)
+        # if len(dict_inputs) > 0:
+        #     logger.warning(f"input args {dict_inputs.keys()} not found in {self.model.__class__.__name__}, ignore them.")
 
         # 3. to tensor
-        inputs = ()
-        for data in tuple_inputs:
-            if data is not None:
-                if hasattr(self.args, "input_dtype") and data.dtype in (np.float16, np.float32, np.float64):
-                    data = ms.Tensor(data, dtype=self.args.input_dtype)
-                elif data.dtype in (np.uint8, np.uint16, np.uint32, np.uint64,
-                                    np.int8, np.int16, np.int32, np.int64):
-                    data = ms.Tensor(data, dtype=ms.int32)
-                else:
-                    data = ms.Tensor(data)
-            inputs += (data,)
+        # inputs = ()
+        # for data in tuple_inputs:
+        #     if data is not None:
+        #         if hasattr(self.args, "input_dtype") and data.dtype in (np.float16, np.float32, np.float64):
+        #             data = ms.Tensor(data, dtype=self.args.input_dtype)
+        #         elif data.dtype in (np.uint8, np.uint16, np.uint32, np.uint64,
+        #                             np.int8, np.int16, np.int32, np.int64):
+        #             data = ms.Tensor(data, dtype=ms.int32)
+        #         else:
+        #             data = ms.Tensor(data)
+        #     inputs += (data,)
 
-        return inputs
+        for key in inputs["item"].keys():
+            if inputs[key] is not None:
+                if inputs[key].dtype in (np.float16, np.float32, np.float64):
+                    inputs[key] = ms.Tensor(inputs[key], dtype=self.args.input_dtype)
+                elif inputs[key].dtype in (np.uint8, np.uint16, np.uint32, np.uint64,
+                                    np.int8, np.int16, np.int32, np.int64):
+                    inputs[key] = ms.Tensor(inputs[key], dtype=ms.int32)
+                else:
+                    inputs[key] = ms.Tensor(inputs[key])
+
+        return inputs["item"]
 
     def call_model_init(self, trial=None):
         model_init_argcount = number_of_arguments(self.model_init)
