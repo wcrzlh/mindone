@@ -172,7 +172,7 @@ class Resampler(nn.Cell):
         q = self.ln_q(self.query)  # Q * D
 
         out = self.attn(
-            self._repeat(q, bs),  # Q * B * D
+            q.unsqueeze(1).file((1, bs, 1)),  # Q * B * D
             x + pos_embed,  # L * B * D +  L * B * D
             x,
             key_padding_mask=key_padding_mask)[0]
