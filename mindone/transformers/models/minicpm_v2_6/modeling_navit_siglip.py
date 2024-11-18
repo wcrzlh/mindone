@@ -37,6 +37,8 @@ from ...modeling_attn_mask_utils import _prepare_4d_attention_mask
 from ...modeling_outputs import BaseModelOutput, BaseModelOutputWithPooling, ModelOutput
 from ...modeling_utils import MSPreTrainedModel
 
+from ...mindspore_adapter import recompute_except_output
+
 # from torch.nn.init import _calculate_fan_in_and_fan_out
 
 
@@ -908,6 +910,9 @@ class SiglipEncoder(nn.Cell):
         # recompute
         # for layer in self.layers:
         #     layer.recompute()
+        for layer in self.layers:
+            for name, cell in layer.name_cells().items():
+                recompute_except_output(cell)
 
     # Ignore copy
     def construct(
