@@ -112,7 +112,7 @@ def _prepare_4d_causal_attention_mask_with_cache_position(
         if sequence_length != 1:
             causal_mask = ops.triu(causal_mask, diagonal=1)
         causal_mask *= ops.arange(target_length) > cache_position.reshape(-1, 1)
-        causal_mask = causal_mask[None, None, :, :].expand(batch_size, 1, -1, -1)
+        causal_mask = causal_mask[None, None, :, :].broadcast_to((batch_size, 1, -1, -1))
         if attention_mask is not None:
             # causal_mask = causal_mask  # copy to contiguous memory for in-place edit
             mask_length = attention_mask.shape[-1]
