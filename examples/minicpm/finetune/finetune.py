@@ -100,9 +100,9 @@ class LoraArguments:
 
 @dataclass
 class MyArguments(MindSporeArguments, TrainingArguments):
-    model_path: str = field(default="meta-llama/Meta-Llama-3-8B")
-    dataset_path: str = field(default="Yelp/yelp_review_full")
-    output_dir: str = field(default="./outputs")
+    # model_path: str = field(default="meta-llama/Meta-Llama-3-8B")
+    # dataset_path: str = field(default="Yelp/yelp_review_full")
+    # output_dir: str = field(default="./outputs")
     enable_flash_attention: bool = field(default=True)
     gradient_checkpointing: bool = field(default=True)
     is_distribute: bool = field(default=False)
@@ -250,7 +250,7 @@ local_rank = 0
 def train():
     global local_rank
     parser = HfArgumentParser(
-        (ModelArguments, DataArguments, TrainingArguments, LoraArguments)
+        (ModelArguments, DataArguments, TrainingArguments, LoraArguments, MyArguments)
     )
 
     (
