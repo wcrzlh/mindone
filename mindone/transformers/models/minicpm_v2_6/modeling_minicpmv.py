@@ -192,6 +192,7 @@ class MiniCPMV_v2_6(MiniCPMVPreTrainedModel):
                 input_ids=None,
                 position_ids=position_ids,
                 inputs_embeds=vllm_embedding,
+                labels=data["labels"],
                 **kwargs
             )
 
