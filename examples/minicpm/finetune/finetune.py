@@ -100,8 +100,8 @@ class LoraArguments:
 
 @dataclass
 class MyArguments(MindSporeArguments, TrainingArguments):
-    enable_flash_attention: bool = field(default=True)
-    gradient_checkpointing: bool = field(default=True)
+    enable_flash_attention: bool = field(default=False)
+    gradient_checkpointing: bool = field(default=False)
     is_distribute: bool = field(default=False)
     cache_dir: Optional[str] = field(default=None)
     optim: str = field(default="adamw_mindspore")
