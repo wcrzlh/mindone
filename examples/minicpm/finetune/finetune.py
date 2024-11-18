@@ -65,23 +65,23 @@ class DataArguments:
         default=None, metadata={"help": "Path to the evaluation data."}
     )
 
-@dataclass
-class TrainingArguments(TrainingArguments):
-    cache_dir: Optional[str] = field(default=None)
-    optim: str = field(default="adamw_mindspore")
-    model_max_length: int = field(
-        default=2048,
-        metadata={
-            "help": "Maximum sequence length. Sequences will be right padded (and possibly truncated)."
-        },
-    )
-    tune_vision: Optional[bool] = field(default=True)
-    tune_llm: Optional[bool] = field(default=True)
-    llm_type: str = field(default="minicpm")
-    use_lora: Optional[bool] = field(default=False)
-    max_slice_nums: Optional[int] = field(default=9)
-    distributed: Optional[bool] = field(default=False)
-    amp_level: Optional[str] = field(default="O0")
+# @dataclass
+# class TrainingArguments(TrainingArguments):
+#     cache_dir: Optional[str] = field(default=None)
+#     optim: str = field(default="adamw_mindspore")
+#     model_max_length: int = field(
+#         default=2048,
+#         metadata={
+#             "help": "Maximum sequence length. Sequences will be right padded (and possibly truncated)."
+#         },
+#     )
+#     tune_vision: Optional[bool] = field(default=True)
+#     tune_llm: Optional[bool] = field(default=True)
+#     llm_type: str = field(default="minicpm")
+#     use_lora: Optional[bool] = field(default=False)
+#     max_slice_nums: Optional[int] = field(default=9)
+#     distributed: Optional[bool] = field(default=False)
+#     amp_level: Optional[str] = field(default="O0")
 
 
 @dataclass
@@ -106,6 +106,21 @@ class MyArguments(MindSporeArguments, TrainingArguments):
     enable_flash_attention: bool = field(default=True)
     gradient_checkpointing: bool = field(default=True)
     is_distribute: bool = field(default=False)
+    cache_dir: Optional[str] = field(default=None)
+    optim: str = field(default="adamw_mindspore")
+    model_max_length: int = field(
+        default=2048,
+        metadata={
+            "help": "Maximum sequence length. Sequences will be right padded (and possibly truncated)."
+        },
+    )
+    tune_vision: Optional[bool] = field(default=True)
+    tune_llm: Optional[bool] = field(default=True)
+    llm_type: str = field(default="minicpm")
+    use_lora: Optional[bool] = field(default=False)
+    max_slice_nums: Optional[int] = field(default=9)
+    distributed: Optional[bool] = field(default=False)
+    amp_level: Optional[str] = field(default="O0")
 
 local_rank = None
 def rank0_print(*args):
