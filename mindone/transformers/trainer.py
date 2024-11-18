@@ -742,7 +742,9 @@ class Trainer:
 
                 def construct(self, *args, **kwargs):
                     outputs = self.model(*args, **kwargs)
-                    loss = outputs[0]
+                    # fixme how to deal with loss
+                    # loss = outputs[0]
+                    loss = outputs.loss
                     return loss
 
             model_ = ReturnLoss(model)
