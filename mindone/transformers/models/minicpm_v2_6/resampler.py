@@ -572,7 +572,7 @@ class MultiheadAttention(nn.MultiheadAttention):
             assert key_padding_mask.shape == (bsz, src_len), \
                 f"expecting key_padding_mask shape of {(bsz, src_len)}, but got {key_padding_mask.shape}"
             key_padding_mask = key_padding_mask.view(bsz, 1, 1, src_len). \
-                expand(-1, num_heads, -1, -1).reshape(bsz * num_heads, 1, src_len)
+                broadcast_to((-1, num_heads, -1, -1)).reshape(bsz * num_heads, 1, src_len)
             if attn_mask is None:
                 attn_mask = key_padding_mask
             else:
