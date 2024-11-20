@@ -112,8 +112,8 @@ class MiniCPMVProcessor(ProcessorMixin):
         input_ids = ms.Tensor(input_ids, dtype=ms.int32)
 
         # FIXME ops.where issue
-        start_cond = (input_ids == self.tokenizer.im_start_id) | (input_ids == self.tokenizer.slice_start_id)
-        end_cond = (input_ids == self.tokenizer.im_end_id) | (input_ids == self.tokenizer.slice_end_id)
+        # start_cond = (input_ids == self.tokenizer.im_start_id) | (input_ids == self.tokenizer.slice_start_id)
+        # end_cond = (input_ids == self.tokenizer.im_end_id) | (input_ids == self.tokenizer.slice_end_id)
         # image_start_tokens = ops.where(start_cond)[0]
         # image_start_tokens += 1
         # image_end_tokens = ops.where(end_cond)[0]

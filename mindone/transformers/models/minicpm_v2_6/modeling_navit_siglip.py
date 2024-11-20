@@ -908,11 +908,11 @@ class SiglipEncoder(nn.Cell):
         self.gradient_checkpointing = False
 
         # recompute
-        # for layer in self.layers:
-        #     layer.recompute()
         for layer in self.layers:
-            for name, cell in layer.name_cells().items():
-                recompute_except_output(cell)
+            layer.recompute()
+        # for layer in self.layers:
+        #     for name, cell in layer.name_cells().items():
+        #         recompute_except_output(cell)
 
     # Ignore copy
     def construct(
