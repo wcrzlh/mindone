@@ -372,8 +372,8 @@ def load_image(image: Union[str, "PIL.Image.Image"], timeout: Optional[float] = 
                 image = PIL.Image.open(BytesIO(b64))
             except Exception as e:
                 raise ValueError(
-                    f"Incorrect image source. Must be a valid URL starting with `http://` or `https://`, a valid path to an image file, or a base64 encoded string. Got {image}. "
-                    f"Failed with {e}"
+                    f"Incorrect image source. Must be a valid URL starting with `http://` or `https://`, "
+                    f"a valid path to an image file, or a base64 encoded string. Got {image}. ""Failed with {e}"
                 )
     elif isinstance(image, PIL.Image.Image):
         image = image
