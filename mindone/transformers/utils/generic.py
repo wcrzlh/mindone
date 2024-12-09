@@ -18,21 +18,16 @@ Generic utilities
 import inspect
 import tempfile
 import warnings
-from collections import OrderedDict, UserDict
+from collections import UserDict
 from collections.abc import MutableMapping
 from contextlib import ExitStack, contextmanager
-from dataclasses import fields, is_dataclass
 from enum import Enum
-from functools import partial, wraps
-from typing import Any, ContextManager, Iterable, List, Optional, Tuple
+from functools import wraps
+from typing import ContextManager, List, Optional
 
 import numpy as np
-from packaging import version
 
-from .import_utils import (
-    get_mindspore_version,
-    is_mindspore_available,
-)
+from .import_utils import is_mindspore_available
 
 
 class cached_property(property):
@@ -83,6 +78,7 @@ def infer_framework_from_repr(x):
         return "ms"
     elif representation.startswith("<class 'numpy."):
         return "np"
+
 
 def _get_frameworks_and_test_func(x):
     """

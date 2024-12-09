@@ -21,18 +21,17 @@ from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Tuple, Union
 import numpy as np
 import requests
 from packaging import version
+from transformers.utils import logging
 
 from .utils import (
     ExplicitEnum,
-    is_numpy_array,
     is_mindspore_available,
     is_mindspore_tensor,
+    is_numpy_array,
     is_vision_available,
     requires_backends,
     to_numpy,
 )
-
-from transformers.utils import logging
 from .utils.constants import (  # noqa: F401
     IMAGENET_DEFAULT_MEAN,
     IMAGENET_DEFAULT_STD,
@@ -41,7 +40,6 @@ from .utils.constants import (  # noqa: F401
     OPENAI_CLIP_MEAN,
     OPENAI_CLIP_STD,
 )
-
 
 if is_vision_available():
     import PIL.Image
@@ -74,7 +72,12 @@ logger = logging.get_logger(__name__)
 
 
 ImageInput = Union[
-    "PIL.Image.Image", np.ndarray, "mindspore.Tensor", List["PIL.Image.Image"], List[np.ndarray], List["mindspore.Tensor"]
+    "PIL.Image.Image",
+    np.ndarray,
+    "mindspore.Tensor",
+    List["PIL.Image.Image"],
+    List[np.ndarray],
+    List["mindspore.Tensor"],
 ]  # noqa
 
 
@@ -305,7 +308,8 @@ def is_valid_annotation_coco_detection(annotation: Dict[str, Union[List, Tuple]]
         and isinstance(annotation["annotations"], (list, tuple))
         and (
             # an image can have no annotations
-            len(annotation["annotations"]) == 0 or isinstance(annotation["annotations"][0], dict)
+            len(annotation["annotations"]) == 0
+            or isinstance(annotation["annotations"][0], dict)
         )
     ):
         return True
@@ -321,7 +325,8 @@ def is_valid_annotation_coco_panoptic(annotation: Dict[str, Union[List, Tuple]])
         and isinstance(annotation["segments_info"], (list, tuple))
         and (
             # an image can have no segments
-            len(annotation["segments_info"]) == 0 or isinstance(annotation["segments_info"][0], dict)
+            len(annotation["segments_info"]) == 0
+            or isinstance(annotation["segments_info"][0], dict)
         )
     ):
         return True
@@ -367,7 +372,8 @@ def load_image(image: Union[str, "PIL.Image.Image"], timeout: Optional[float] = 
                 image = PIL.Image.open(BytesIO(b64))
             except Exception as e:
                 raise ValueError(
-                    f"Incorrect image source. Must be a valid URL starting with `http://` or `https://`, a valid path to an image file, or a base64 encoded string. Got {image}. Failed with {e}"
+                    f"Incorrect image source. Must be a valid URL starting with `http://` or `https://`, a valid path to an image file, or a base64 encoded string. Got {image}. "
+                    f"Failed with {e}"
                 )
     elif isinstance(image, PIL.Image.Image):
         image = image

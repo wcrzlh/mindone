@@ -1,9 +1,7 @@
 from .backbone_utils import BackboneMixin
-
 from .generic import (
     ContextManagers,
     ExplicitEnum,
-    ModelOutput,
     PaddingStrategy,
     TensorType,
     add_model_info_to_auto_map,
@@ -15,9 +13,9 @@ from .generic import (
     find_labels,
     flatten_dict,
     infer_framework,
+    is_mindspore_tensor,
     is_numpy_array,
     is_tensor,
-    is_mindspore_tensor,
     reshape,
     squeeze,
     strtobool,
@@ -29,10 +27,4 @@ from .generic import (
     transpose,
     working_or_temp_dir,
 )
-
-from .import_utils import (
-    is_mindspore_available,
-    is_vision_available,
-    get_mindspore_version,
-    requires_backends,
-)
+from .import_utils import get_mindspore_version, is_mindspore_available, is_vision_available, requires_backends

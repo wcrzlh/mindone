@@ -18,23 +18,12 @@ Import utilities: Utilities related to imports and our lazy inits.
 import importlib.machinery
 import importlib.metadata
 import importlib.util
-import json
-import os
-import shutil
-import subprocess
-import sys
-import warnings
 from collections import OrderedDict
 from functools import lru_cache
-from itertools import chain
-from types import ModuleType
-from typing import Any, Dict, FrozenSet, Optional, Set, Tuple, Union
-
-from packaging import version
+from typing import Tuple, Union
 
 # hf exists
 from transformers.utils import logging
-
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
@@ -71,13 +60,17 @@ def _is_package_available(pkg_name: str, return_version: bool = False) -> Union[
         return package_exists, package_version
     else:
         return package_exists
+
+
 def is_mindspore_available():
     _mindspore_available, _mindspore_version = _is_package_available("mindspore", return_version=True)
     return _mindspore_available
 
+
 def get_mindspore_version():
     _mindspore_available, _mindspore_version = _is_package_available("mindspore", return_version=True)
     return _mindspore_version
+
 
 @lru_cache
 def is_vision_available():
@@ -92,6 +85,7 @@ def is_vision_available():
                 return False
         logger.debug(f"Detected PIL version {package_version}")
     return _pil_available
+
 
 MINDSPORE_IMPORT_ERROR_WITH_TF = """
 {0} requires the PyTorch library but it was not found in your environment.
@@ -117,6 +111,8 @@ BACKENDS_MAPPING = OrderedDict(
         ("vision", (is_vision_available, VISION_IMPORT_ERROR)),
     ]
 )
+
+
 def requires_backends(obj, backends):
     if not isinstance(backends, (list, tuple)):
         backends = [backends]
