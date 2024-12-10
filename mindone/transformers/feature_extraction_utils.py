@@ -24,22 +24,27 @@ from collections import UserDict
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 import numpy as np
-
 from transformers.dynamic_module_utils import custom_object_save
+from transformers.utils import (
+    PushToHubMixin,
+    cached_file,
+    copy_func,
+    download_url,
+    is_offline_mode,
+    is_remote_url,
+    logging,
+)
+
 from .utils import (
     FEATURE_EXTRACTOR_NAME,
     TensorType,
     add_model_info_to_auto_map,
     add_model_info_to_custom_pipelines,
-    is_numpy_array,
     is_mindspore_available,
-    is_mindspore_dtype,
     is_mindspore_tensor,
+    is_numpy_array,
     requires_backends,
 )
-
-from transformers.utils import PushToHubMixin, cached_file, copy_func, download_url, is_offline_mode, is_remote_url, logging
-
 
 if TYPE_CHECKING:
     if is_mindspore_available():
