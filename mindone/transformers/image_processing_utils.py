@@ -16,12 +16,11 @@
 from typing import Dict, Iterable, Optional, Union
 
 import numpy as np
+from transformers.utils import logging
 
 from .image_processing_base import BatchFeature, ImageProcessingMixin
 from .image_transforms import center_crop, normalize, rescale
 from .image_utils import ChannelDimension
-from transformers.utils import logging
-
 
 logger = logging.get_logger(__name__)
 
