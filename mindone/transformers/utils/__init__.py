@@ -16,6 +16,7 @@ from .generic import (
     is_mindspore_tensor,
     is_numpy_array,
     is_tensor,
+    is_mindspore_dtype,
     reshape,
     squeeze,
     strtobool,
@@ -28,3 +29,5 @@ from .generic import (
     working_or_temp_dir,
 )
 from .import_utils import get_mindspore_version, is_mindspore_available, is_vision_available, requires_backends
+
+FEATURE_EXTRACTOR_NAME = "preprocessor_config.json"

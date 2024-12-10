@@ -107,7 +107,7 @@ VISION_IMPORT_ERROR = """
 
 BACKENDS_MAPPING = OrderedDict(
     [
-        ("torch", (is_mindspore_available, MINDSPORE_IMPORT_ERROR_WITH_TF)),
+        ("mindspore", (is_mindspore_available, MINDSPORE_IMPORT_ERROR_WITH_TF)),
         ("vision", (is_vision_available, VISION_IMPORT_ERROR)),
     ]
 )
