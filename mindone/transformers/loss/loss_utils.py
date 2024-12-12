@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import mindspore as ms
-from mindspore.nn import BCEWithLogitsLoss, MSELoss
 from mindspore import ops
+from mindspore.nn import BCEWithLogitsLoss, MSELoss
 
 from .loss_deformable_detr import DeformableDetrForObjectDetectionLoss, DeformableDetrForSegmentationLoss
 from .loss_for_object_detection import ForObjectDetectionLoss, ForSegmentationLoss

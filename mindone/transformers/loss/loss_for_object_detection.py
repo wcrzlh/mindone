@@ -15,7 +15,7 @@ from typing import List, Optional
 
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore import ops, Tensor
+from mindspore import Tensor, ops
 
 from ..utils import is_scipy_available, is_vision_available, requires_backends
 
@@ -125,9 +125,7 @@ class ImageLoss(nn.Cell):
 
         idx = self._get_source_permutation_idx(indices)
         target_classes_o = ops.cat([t["class_labels"][J] for t, (_, J) in zip(targets, indices)])
-        target_classes = ops.full(
-            source_logits.shape[:2], self.num_classes, dtype=ms.int64
-        )
+        target_classes = ops.full(source_logits.shape[:2], self.num_classes, dtype=ms.int64)
         target_classes[idx] = target_classes_o
 
         loss_ce = ops.cross_entropy(source_logits.transpose(1, 2), target_classes, self.empty_weight)
@@ -168,7 +166,9 @@ class ImageLoss(nn.Cell):
         losses = {}
         losses["loss_bbox"] = loss_bbox.sum() / num_boxes
 
-        loss_giou = 1 - ops.diag(generalized_box_iou(center_to_corners_format(source_boxes), center_to_corners_format(target_boxes)))
+        loss_giou = 1 - ops.diag(
+            generalized_box_iou(center_to_corners_format(source_boxes), center_to_corners_format(target_boxes))
+        )
         losses["loss_giou"] = loss_giou.sum() / num_boxes
         return losses
 

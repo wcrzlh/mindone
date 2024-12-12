@@ -26,7 +26,6 @@ from .loss_for_object_detection import (
     sigmoid_focal_loss,
 )
 
-
 if is_scipy_available():
     from scipy.optimize import linear_sum_assignment
 
@@ -172,9 +171,7 @@ class RTDetrLoss(nn.Cell):
 
         src_logits = outputs["logits"]
         target_classes_original = ops.cat([_target["class_labels"][i] for _target, (_, i) in zip(targets, indices)])
-        target_classes = ops.full(
-            src_logits.shape[:2], self.num_classes, dtype=ms.int64
-        )
+        target_classes = ops.full(src_logits.shape[:2], self.num_classes, dtype=ms.int64)
         target_classes[idx] = target_classes_original
         # fixme how to deal with torch.one_hot
         target = ops.one_hot(target_classes, depth=self.num_classes + 1)[..., :-1]
@@ -201,9 +198,7 @@ class RTDetrLoss(nn.Cell):
 
         idx = self._get_source_permutation_idx(indices)
         target_classes_original = ops.cat([_target["class_labels"][i] for _target, (_, i) in zip(targets, indices)])
-        target_classes = ops.full(
-            src_logits.shape[:2], self.num_classes, dtype=ms.int64
-        )
+        target_classes = ops.full(src_logits.shape[:2], self.num_classes, dtype=ms.int64)
         target_classes[idx] = target_classes_original
 
         loss_ce = ops.cross_entropy(src_logits.transpose(1, 2), target_classes, self.class_weight)
@@ -282,9 +277,7 @@ class RTDetrLoss(nn.Cell):
         src_logits = outputs["logits"]
         idx = self._get_source_permutation_idx(indices)
         target_classes_original = ops.cat([_target["class_labels"][i] for _target, (_, i) in zip(targets, indices)])
-        target_classes = ops.full(
-            src_logits.shape[:2], self.num_classes, dtype=ms.int64
-        )
+        target_classes = ops.full(src_logits.shape[:2], self.num_classes, dtype=ms.int64)
         target_classes[idx] = target_classes_original
 
         target = ops.one_hot(target_classes, depth=self.num_classes + 1)[..., :-1]
@@ -312,9 +305,7 @@ class RTDetrLoss(nn.Cell):
 
         idx = self._get_source_permutation_idx(indices)
         target_classes_original = ops.cat([_target["class_labels"][i] for _target, (_, i) in zip(targets, indices)])
-        target_classes = ops.full(
-            src_logits.shape[:2], self.num_classes, dtype=ms.int64
-        )
+        target_classes = ops.full(src_logits.shape[:2], self.num_classes, dtype=ms.int64)
         target_classes[idx] = target_classes_original
 
         target = ops.one_hot(target_classes, depth=self.num_classes + 1)[..., :-1]
@@ -340,7 +331,6 @@ class RTDetrLoss(nn.Cell):
     def get_cdn_matched_indices(dn_meta, targets):
         dn_positive_idx, dn_num_group = dn_meta["dn_positive_idx"], dn_meta["dn_num_group"]
         num_gts = [len(t["class_labels"]) for t in targets]
-        device = targets[0]["class_labels"].device
 
         dn_match_indices = []
         for i, num_gt in enumerate(num_gts):

@@ -12,7 +12,6 @@ from .loss_for_object_detection import (
     sigmoid_focal_loss,
 )
 
-
 if is_scipy_available():
     from scipy.optimize import linear_sum_assignment
 
@@ -77,9 +76,7 @@ class DeformableDetrImageLoss(ImageLoss):
 
         idx = self._get_source_permutation_idx(indices)
         target_classes_o = ops.cat([t["class_labels"][J] for t, (_, J) in zip(targets, indices)])
-        target_classes = ops.full(
-            source_logits.shape[:2], self.num_classes, dtype=ms.int64
-        )
+        target_classes = ops.full(source_logits.shape[:2], self.num_classes, dtype=ms.int64)
         target_classes[idx] = target_classes_o
 
         # fixme here
