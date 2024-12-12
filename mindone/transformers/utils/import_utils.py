@@ -61,6 +61,7 @@ def _is_package_available(pkg_name: str, return_version: bool = False) -> Union[
     else:
         return package_exists
 
+_scipy_available = _is_package_available("scipy")
 
 def is_mindspore_available():
     _mindspore_available, _mindspore_version = _is_package_available("mindspore", return_version=True)
@@ -71,6 +72,8 @@ def get_mindspore_version():
     _mindspore_available, _mindspore_version = _is_package_available("mindspore", return_version=True)
     return _mindspore_version
 
+def is_scipy_available():
+    return _scipy_available
 
 @lru_cache
 def is_vision_available():

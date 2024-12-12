@@ -28,7 +28,7 @@ from .generic import (
     transpose,
     working_or_temp_dir,
 )
-from .import_utils import get_mindspore_version, is_mindspore_available, is_vision_available, requires_backends
+from .import_utils import get_mindspore_version, is_mindspore_available, is_scipy_available, is_vision_available, requires_backends
 
 FEATURE_EXTRACTOR_NAME = "preprocessor_config.json"
 IMAGE_PROCESSOR_NAME = FEATURE_EXTRACTOR_NAME
