@@ -420,12 +420,9 @@ def infer_framework(model_class):
     for base_class in inspect.getmro(model_class):
         module = base_class.__module__
         name = base_class.__name__
-        if module.startswith("tensorflow") or module.startswith("keras") or name == "TFPreTrainedModel":
-            return "tf"
-        elif module.startswith("torch") or name == "PreTrainedModel":
-            return "pt"
-        elif module.startswith("flax") or module.startswith("jax") or name == "FlaxPreTrainedModel":
-            return "flax"
+        # fixme check module
+        if module.startswith("mindspore") or name == "PreTrainedModel":
+            return "ms"
     else:
         raise TypeError(f"Could not infer framework from class {model_class}.")
 
@@ -437,9 +434,9 @@ def torch_int(x):
     if not is_mindspore_available():
         return int(x)
 
-    import torch
+    import mindspore as ms
 
-    return x.to(torch.int64) if torch.jit.is_tracing() and isinstance(x, torch.Tensor) else int(x)
+    return x.to(ms.int64) if isinstance(x, ms.Tensor) else int(x)
 
 
 def torch_float(x):
@@ -449,9 +446,9 @@ def torch_float(x):
     if not is_mindspore_available():
         return int(x)
 
-    import torch
+    import mindspore as ms
 
-    return x.to(torch.float32) if torch.jit.is_tracing() and isinstance(x, torch.Tensor) else int(x)
+    return x.to(ms.float32) if isinstance(x, ms.Tensor) else int(x)
 
 
 def filter_out_non_signature_kwargs(extra: Optional[list] = None):
