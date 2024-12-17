@@ -21,13 +21,7 @@ from collections import OrderedDict
 
 from transformers.configuration_utils import PretrainedConfig
 from transformers.dynamic_module_utils import get_class_from_dynamic_module, resolve_trust_remote_code
-from transformers.utils import (
-    CONFIG_NAME,
-    cached_file,
-    copy_func,
-    extract_commit_hash,
-    logging,
-)
+from transformers.utils import CONFIG_NAME, cached_file, copy_func, extract_commit_hash, logging
 
 from ...utils import is_mindspore_available, requires_backends
 from .configuration_auto import AutoConfig, model_type_to_module_name, replace_list_option_in_docstrings
@@ -60,9 +54,9 @@ FROM_CONFIG_DOCSTRING = """
 
                 List options
             attn_implementation (`str`, *optional*):
-                The attention implementation to use in the model (if relevant). Can be any of `"eager"` (manual implementation of the attention), 
-                `"sdpa"` (using [`F.scaled_dot_product_attention`](https://pytorch.org/docs/master/generated/torch.nn.functional.scaled_dot_product_attention.html)), 
-                or `"flash_attention_2"` (using [Dao-AILab/flash-attention](https://github.com/Dao-AILab/flash-attention)). 
+                The attention implementation to use in the model (if relevant). Can be any of `"eager"` (manual implementation of the attention),
+                `"sdpa"` ([`F.scaled_dot_product_attention`](https://pytorch.org/docs/master/generated/torch.nn.functional.scaled_dot_product_attention.html)),
+                or `"flash_attention_2"` (using [Dao-AILab/flash-attention](https://github.com/Dao-AILab/flash-attention)).
                 By default, if available, SDPA will be used for torch>=2.1.1. The default is otherwise the manual `"eager"` implementation.
 
         Examples:
