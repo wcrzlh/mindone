@@ -18,14 +18,9 @@ import warnings
 from collections import OrderedDict
 
 from transformers.utils import logging
-from .auto_factory import (
-    _BaseAutoBackboneClass,
-    _BaseAutoModelClass,
-    _LazyAutoMapping,
-    auto_class_update,
-)
-from .configuration_auto import CONFIG_MAPPING_NAMES
 
+from .auto_factory import _BaseAutoBackboneClass, _BaseAutoModelClass, _LazyAutoMapping, auto_class_update
+from .configuration_auto import CONFIG_MAPPING_NAMES
 
 logger = logging.get_logger(__name__)
 
@@ -1692,9 +1687,7 @@ class AutoModelForSemanticSegmentation(_BaseAutoModelClass):
     _model_mapping = MODEL_FOR_SEMANTIC_SEGMENTATION_MAPPING
 
 
-AutoModelForSemanticSegmentation = auto_class_update(
-    AutoModelForSemanticSegmentation, head_doc="semantic segmentation"
-)
+AutoModelForSemanticSegmentation = auto_class_update(AutoModelForSemanticSegmentation, head_doc="semantic segmentation")
 
 
 class AutoModelForUniversalSegmentation(_BaseAutoModelClass):
@@ -1710,9 +1703,7 @@ class AutoModelForInstanceSegmentation(_BaseAutoModelClass):
     _model_mapping = MODEL_FOR_INSTANCE_SEGMENTATION_MAPPING
 
 
-AutoModelForInstanceSegmentation = auto_class_update(
-    AutoModelForInstanceSegmentation, head_doc="instance segmentation"
-)
+AutoModelForInstanceSegmentation = auto_class_update(AutoModelForInstanceSegmentation, head_doc="instance segmentation")
 
 
 class AutoModelForObjectDetection(_BaseAutoModelClass):

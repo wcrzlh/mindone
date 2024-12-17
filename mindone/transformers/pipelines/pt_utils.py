@@ -1,8 +1,8 @@
 import numpy as np
+from transformers.utils.generic import ModelOutput
+
 import mindspore as ms
 from mindspore.dataset import Dataset, GeneratorDataset
-
-from transformers.utils.generic import ModelOutput
 
 
 class PipelineDataset(Dataset):

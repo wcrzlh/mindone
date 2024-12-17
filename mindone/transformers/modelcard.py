@@ -56,7 +56,6 @@ from .utils import (
     logging,
 )
 
-
 TASK_MAPPING = {
     "text-generation": MODEL_FOR_CAUSAL_LM_MAPPING_NAMES,
     "image-classification": MODEL_FOR_IMAGE_CLASSIFICATION_MAPPING_NAMES,

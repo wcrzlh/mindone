@@ -43,10 +43,9 @@ from ..utils import infer_framework, is_mindspore_available
 GenericTensor = Union[List["GenericTensor"], "ms.Tensor"]
 
 if is_mindspore_available():
-    from mindspore.dataset import GeneratorDataset, Dataset
-
     import mindspore as ms
     from mindspore import ops
+    from mindspore.dataset import Dataset, GeneratorDataset
 
     from ..models.auto.modeling_auto import AutoModel
 
@@ -818,7 +817,7 @@ class Pipeline(_ScikitCompat, PushToHubMixin):
         task: str = "",
         args_parser: ArgumentHandler = None,
         device: Union[int] = None,
-        mindspore_dtype: Optional[Union[str, "mindspore.dtype"]] = None,
+        mindspore_dtype: Optional[Union[str, "ms.dtype"]] = None,
         binary_output: bool = False,
         **kwargs,
     ):
@@ -1018,7 +1017,7 @@ class Pipeline(_ScikitCompat, PushToHubMixin):
         return self(X)
 
     @property
-    def torch_dtype(self) -> Optional["torch.dtype"]:
+    def torch_dtype(self) -> Optional["ms.dtype"]:
         """
         Torch dtype of the model (if it's Pytorch model), `None` otherwise.
         """
