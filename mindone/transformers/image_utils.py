@@ -22,6 +22,14 @@ import numpy as np
 import requests
 from packaging import version
 from transformers.utils import logging
+from transformers.utils.constants import (  # noqa: F401
+    IMAGENET_DEFAULT_MEAN,
+    IMAGENET_DEFAULT_STD,
+    IMAGENET_STANDARD_MEAN,
+    IMAGENET_STANDARD_STD,
+    OPENAI_CLIP_MEAN,
+    OPENAI_CLIP_STD,
+)
 
 from .utils import (
     ExplicitEnum,
@@ -31,14 +39,6 @@ from .utils import (
     is_vision_available,
     requires_backends,
     to_numpy,
-)
-from transformers.utils.constants import (  # noqa: F401
-    IMAGENET_DEFAULT_MEAN,
-    IMAGENET_DEFAULT_STD,
-    IMAGENET_STANDARD_MEAN,
-    IMAGENET_STANDARD_STD,
-    OPENAI_CLIP_MEAN,
-    OPENAI_CLIP_STD,
 )
 
 if is_vision_available():

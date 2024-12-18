@@ -25,7 +25,10 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 from transformers.dynamic_module_utils import custom_object_save
+
+# fixme
 from transformers.utils import (
+    FEATURE_EXTRACTOR_NAME,
     PushToHubMixin,
     cached_file,
     copy_func,
@@ -44,9 +47,6 @@ from .utils import (
     is_numpy_array,
     requires_backends,
 )
-
-# fixme
-from transformers.utils import FEATURE_EXTRACTOR_NAME
 
 if TYPE_CHECKING:
     if is_mindspore_available():

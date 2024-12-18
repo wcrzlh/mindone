@@ -24,7 +24,10 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import requests
 from transformers.dynamic_module_utils import custom_object_save
+
+# fixme
 from transformers.utils import (
+    IMAGE_PROCESSOR_NAME,
     PushToHubMixin,
     cached_file,
     copy_func,
@@ -35,14 +38,7 @@ from transformers.utils import (
 )
 
 from .feature_extraction_utils import BatchFeature as BaseBatchFeature
-from .utils import (
-    add_model_info_to_auto_map,
-    add_model_info_to_custom_pipelines,
-    is_vision_available,
-)
-
-# fixme
-from transformers.utils import IMAGE_PROCESSOR_NAME
+from .utils import add_model_info_to_auto_map, add_model_info_to_custom_pipelines, is_vision_available
 
 if is_vision_available():
     from PIL import Image
