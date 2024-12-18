@@ -36,7 +36,6 @@ from transformers.utils import (
 )
 
 from .utils import (
-    FEATURE_EXTRACTOR_NAME,
     TensorType,
     add_model_info_to_auto_map,
     add_model_info_to_custom_pipelines,
@@ -45,6 +44,9 @@ from .utils import (
     is_numpy_array,
     requires_backends,
 )
+
+# fixme
+from transformers.utils import FEATURE_EXTRACTOR_NAME
 
 if TYPE_CHECKING:
     if is_mindspore_available():

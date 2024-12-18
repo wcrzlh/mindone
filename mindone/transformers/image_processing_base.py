@@ -36,11 +36,13 @@ from transformers.utils import (
 
 from .feature_extraction_utils import BatchFeature as BaseBatchFeature
 from .utils import (
-    IMAGE_PROCESSOR_NAME,
     add_model_info_to_auto_map,
     add_model_info_to_custom_pipelines,
     is_vision_available,
 )
+
+# fixme
+from transformers.utils import IMAGE_PROCESSOR_NAME
 
 if is_vision_available():
     from PIL import Image

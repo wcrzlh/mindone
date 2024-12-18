@@ -32,7 +32,7 @@ from .utils import (
     requires_backends,
     to_numpy,
 )
-from .utils.constants import (  # noqa: F401
+from transformers.utils.constants import (  # noqa: F401
     IMAGENET_DEFAULT_MEAN,
     IMAGENET_DEFAULT_STD,
     IMAGENET_STANDARD_MEAN,
@@ -55,11 +55,8 @@ if is_vision_available():
 
         pil_torch_interpolation_mapping = {
             PILImageResampling.NEAREST: InterpolationMode.NEAREST,
-            PILImageResampling.BOX: InterpolationMode.BOX,
             PILImageResampling.BILINEAR: InterpolationMode.BILINEAR,
-            PILImageResampling.HAMMING: InterpolationMode.HAMMING,
             PILImageResampling.BICUBIC: InterpolationMode.BICUBIC,
-            PILImageResampling.LANCZOS: InterpolationMode.LANCZOS,
         }
 
 
@@ -121,7 +118,6 @@ class ImageType(ExplicitEnum):
     NUMPY = "numpy"
     TENSORFLOW = "tensorflow"
     JAX = "jax"
-    MINDSPORE = "MINDSPORE"
 
 
 def get_image_type(image):
