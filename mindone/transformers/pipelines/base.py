@@ -757,12 +757,7 @@ PIPELINE_INIT_ARGS = build_pipeline_init_args(
 
 if is_mindspore_available():
     # fixme
-    from .pt_utils import (
-        PipelineChunkIterator,
-        PipelineDataset,
-        PipelineIterator,
-        PipelinePackIterator,
-    )
+    from .pt_utils import PipelineChunkIterator, PipelineDataset, PipelineIterator, PipelinePackIterator
 
 
 @add_end_docstrings(

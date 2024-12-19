@@ -2,7 +2,7 @@ import numpy as np
 from transformers.utils.generic import ModelOutput
 
 import mindspore as ms
-from mindspore.dataset import Dataset, GeneratorDataset
+from mindspore.dataset import Dataset
 
 
 # fixme
@@ -20,6 +20,7 @@ class PipelineDataset(Dataset):
         item = self.dataset[i]
         processed = self.process(item, **self.params)
         return processed
+
 
 # It is like dataloader --> batch --> create_dict_iterator
 class PipelineIterator:
