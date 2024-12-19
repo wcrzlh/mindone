@@ -5,6 +5,8 @@ import mindspore as ms
 from mindspore.dataset import Dataset, GeneratorDataset
 
 
+# fixme
+# how to deal with different processing???
 class PipelineDataset(Dataset):
     def __init__(self, dataset, process, params):
         self.dataset = dataset
@@ -19,8 +21,8 @@ class PipelineDataset(Dataset):
         processed = self.process(item, **self.params)
         return processed
 
-
-class PipelineIterator(GeneratorDataset):
+# It is like dataloader --> batch --> create_dict_iterator
+class PipelineIterator:
     def __init__(self, loader, infer, params, loader_batch_size=None):
         """
         Roughly equivalent to
@@ -64,7 +66,9 @@ class PipelineIterator(GeneratorDataset):
         return len(self.loader)
 
     def __iter__(self):
-        self.iterator = iter(self.loader)
+        # modification
+        # self.iterator = iter(self.loader)
+        self.iterator = iter(self.loader.batch(batch_size=1).create_dict_iterator())
         return self
 
     def loader_batch_item(self):

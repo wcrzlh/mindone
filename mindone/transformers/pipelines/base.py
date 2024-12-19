@@ -757,7 +757,7 @@ PIPELINE_INIT_ARGS = build_pipeline_init_args(
 
 if is_mindspore_available():
     # fixme
-    from transformers.pipelines.pt_utils import (
+    from .pt_utils import (
         PipelineChunkIterator,
         PipelineDataset,
         PipelineIterator,
