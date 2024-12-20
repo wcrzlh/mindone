@@ -1158,9 +1158,7 @@ class Pipeline(_ScikitCompat, PushToHubMixin):
         if self.framework == "ms":
             inference_context = self.get_inference_context()
             with inference_context():
-                model_inputs = self._ensure_tensor_on_device(model_inputs)
                 model_outputs = self._forward(model_inputs, **forward_params)
-                model_outputs = self._ensure_tensor_on_device(model_outputs)
         else:
             raise ValueError(f"Framework {self.framework} is not supported")
         return model_outputs
