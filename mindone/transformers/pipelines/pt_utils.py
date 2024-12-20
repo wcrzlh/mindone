@@ -178,7 +178,7 @@ class PipelineChunkIterator(PipelineIterator):
         super().__init__(loader, infer, params)
 
     def __iter__(self):
-        self.iterator = iter(self.loader)
+        self.iterator = iter(self.loader.batch(batch_size=1).create_dict_iterator())
         self.subiterator = None
         return self
 
