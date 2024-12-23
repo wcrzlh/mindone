@@ -82,8 +82,8 @@ from transformers.pipelines.zero_shot_object_detection import ZeroShotObjectDete
 
 
 if is_mindspore_available():
-    import mindspore
-    from mindspore import ms
+    import mindspore as ms
+    from mindspore import ops
 
     from ..models.auto.modeling_auto import (
         AutoModel,
@@ -856,8 +856,8 @@ def pipeline(
                 'You cannot use both `pipeline(... torch_dtype=..., model_kwargs={"torch_dtype":...})` as those'
                 " arguments might conflict, use only one.)"
             )
-        if isinstance(torch_dtype, str) and hasattr(torch, torch_dtype):
-            torch_dtype = getattr(torch, torch_dtype)
+        if isinstance(torch_dtype, str) and hasattr(ms, torch_dtype):
+            torch_dtype = getattr(ms, torch_dtype)
         model_kwargs["torch_dtype"] = torch_dtype
 
     model_name = model if isinstance(model, str) else None
@@ -1047,9 +1047,6 @@ def pipeline(
                     logger.warning(f"Could not load the `decoder` for {model_name}. Defaulting to raw CTC. Error: {e}")
                     if not is_kenlm_available():
                         logger.warning("Try to install `kenlm`: `pip install kenlm")
-
-                    if not is_pyctcdecode_available():
-                        logger.warning("Try to install `pyctcdecode`: `pip install pyctcdecode")
 
     if load_processor:
         # Try to infer processor from model or config name (if provided as str)
