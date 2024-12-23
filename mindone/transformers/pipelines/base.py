@@ -247,7 +247,7 @@ def infer_framework_load_model(
         all_traceback = {}
         for model_class in class_tuple:
             kwargs = model_kwargs.copy()
-            if framework == "pt" and model.endswith(".h5"):
+            if framework == "ms" and model.endswith(".h5"):
                 kwargs["from_tf"] = True
                 logger.warning(
                     "Model might be a TensorFlow model (ending with `.h5`) but TensorFlow is not available. "
@@ -359,7 +359,7 @@ def get_default_model_and_revision(
            Dictionary representing the given task, that should contain default models
 
         framework (`str`, None)
-           "pt", "tf" or None, representing a specific framework if it was specified, or None if we don't know yet.
+           "ms", "tf" or None, representing a specific framework if it was specified, or None if we don't know yet.
 
         task_options (`Any`, None)
            Any further value required by the task to get fully specified, for instance (SRC, TGT) languages for
@@ -715,7 +715,7 @@ def build_pipeline_init_args(
         modelcard (`str` or [`ModelCard`], *optional*):
             Model card attributed to the model for this pipeline.
         framework (`str`, *optional*):
-            The framework to use, either `"pt"` for PyTorch or `"tf"` for TensorFlow. The specified framework must be
+            The framework to use, either `"ms"` for PyTorch or `"tf"` for TensorFlow. The specified framework must be
             installed.
 
             If no framework is specified, will default to the one currently installed. If no framework is specified and
@@ -888,7 +888,7 @@ class Pipeline(_ScikitCompat, PushToHubMixin):
         self.binary_output = binary_output
         # We shouldn't call `model.to()` for models loaded with accelerate as well as the case that model is already on device
         # if (
-        #     self.framework == "pt"
+        #     self.framework == "ms"
         #     and self.model.device != self.device
         #     and not (isinstance(self.device, int) and self.device < 0)
         #     and hf_device_map is None
@@ -976,7 +976,7 @@ class Pipeline(_ScikitCompat, PushToHubMixin):
                 last_module = module_name.split(".")[-1]
                 # Change classes into their names/full names
                 info["impl"] = f"{last_module}.{info['impl'].__name__}"
-                info["pt"] = tuple(c.__name__ for c in info["pt"])
+                info["ms"] = tuple(c.__name__ for c in info["ms"])
                 info["tf"] = tuple(c.__name__ for c in info["tf"])
 
                 custom_pipelines[task] = info
@@ -1358,10 +1358,10 @@ class PipelineRegistry:
         elif not isinstance(tf_model, tuple):
             tf_model = (tf_model,)
 
-        task_impl = {"impl": pipeline_class, "pt": pt_model, "tf": tf_model}
+        task_impl = {"impl": pipeline_class, "ms": pt_model, "tf": tf_model}
 
         if default is not None:
-            if "model" not in default and ("pt" in default or "tf" in default):
+            if "model" not in default and ("ms" in default or "tf" in default):
                 default = {"model": default}
             task_impl["default"] = default
 
