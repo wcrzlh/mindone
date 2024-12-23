@@ -81,7 +81,7 @@ class FillMaskPipeline(Pipeline):
 
     def get_masked_index(self, input_ids: GenericTensor) -> np.ndarray:
         if self.framework == "ms":
-            masked_index = ops.nonzero(input_ids == self.tokenizer.mask_token_id)
+            masked_index = ops.nonzero(input_ids == ms.Tensor(self.tokenizer.mask_token_id))
         else:
             raise ValueError("Unsupported framework")
         return masked_index
