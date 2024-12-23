@@ -1257,7 +1257,7 @@ class Pipeline(_ScikitCompat, PushToHubMixin):
 
     def run_single(self, inputs, preprocess_params, forward_params, postprocess_params):
         model_inputs = self.preprocess(inputs, **preprocess_params)
-        model_outputs = self.forward(model_inputs, **forward_params)
+        model_outputs = self.construct(model_inputs, **forward_params)
         outputs = self.postprocess(model_outputs, **postprocess_params)
         return outputs
 
@@ -1279,7 +1279,7 @@ class ChunkPipeline(Pipeline):
     def run_single(self, inputs, preprocess_params, forward_params, postprocess_params):
         all_outputs = []
         for model_inputs in self.preprocess(inputs, **preprocess_params):
-            model_outputs = self.forward(model_inputs, **forward_params)
+            model_outputs = self.construct(model_inputs, **forward_params)
             all_outputs.append(model_outputs)
         outputs = self.postprocess(all_outputs, **postprocess_params)
         return outputs
@@ -1302,7 +1302,7 @@ class ChunkPipeline(Pipeline):
         feature_extractor = self.feature_extractor if self.feature_extractor is not None else self.image_processor
         collate_fn = no_collate_fn if batch_size == 1 else pad_collate_fn(self.tokenizer, feature_extractor)
         dataloader = GeneratorDataset(dataset, num_workers=num_workers, batch_size=batch_size, collate_fn=collate_fn)
-        model_iterator = PipelinePackIterator(dataloader, self.forward, forward_params, loader_batch_size=batch_size)
+        model_iterator = PipelinePackIterator(dataloader, self.construct, forward_params, loader_batch_size=batch_size)
         final_iterator = PipelineIterator(model_iterator, self.postprocess, postprocess_params)
         return final_iterator
 
