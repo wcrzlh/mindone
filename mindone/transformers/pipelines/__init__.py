@@ -865,7 +865,7 @@ def pipeline(
     # Load the correct model if possible
     # Infer the framework from the model if not already defined
     if isinstance(model, str) or framework is None:
-        model_classes = {"tf": targeted_task["tf"], "ms": targeted_task["ms"]}
+        model_classes = {"ms": targeted_task["ms"]}
         framework, model = infer_framework_load_model(
             model,
             model_classes=model_classes,
