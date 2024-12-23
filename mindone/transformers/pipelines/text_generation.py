@@ -379,7 +379,7 @@ class TextGenerationPipeline(Pipeline):
         generated_sequence = model_outputs["generated_sequence"][0]
         input_ids = model_outputs["input_ids"]
         prompt_text = model_outputs["prompt_text"]
-        generated_sequence = generated_sequence.numpy().tolist()
+        generated_sequence = generated_sequence.tolist()
         records = []
         for sequence in generated_sequence:
             if return_type == ReturnType.TENSORS:
