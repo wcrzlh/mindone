@@ -2,10 +2,10 @@ import enum
 import warnings
 from typing import Dict
 
-from ..utils import is_mindspore_available
 from transformers.utils import add_end_docstrings
-from .base import Pipeline, build_pipeline_init_args
 
+from ..utils import is_mindspore_available
+from .base import Pipeline, build_pipeline_init_args
 
 if is_mindspore_available():
     from ..models.auto.modeling_auto import MODEL_FOR_CAUSAL_LM_MAPPING_NAMES
@@ -45,7 +45,8 @@ class TextGenerationPipeline(Pipeline):
 
     >>> generator = pipeline(model="openai-community/gpt2")
     >>> generator("I can't believe you did such a ", do_sample=False)
-    [{'generated_text': "I can't believe you did such a icky thing to me. I'm so sorry. I'm so sorry. I'm so sorry. I'm so sorry. I'm so sorry. I'm so sorry. I'm so sorry. I"}]
+    [{'generated_text': "I can't believe you did such a icky thing to me. I'm so sorry. I'm so sorry.
+    I'm so sorry. I'm so sorry. I'm so sorry. I'm so sorry. I'm so sorry. I"}]
 
     >>> # These parameters will return suggestions, and only the newly created text making it easier for prompting suggestions.
     >>> outputs = generator("My tart needs some", num_return_sequences=4, return_full_text=False)
@@ -90,9 +91,7 @@ class TextGenerationPipeline(Pipeline):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.check_model_type(
-            MODEL_FOR_CAUSAL_LM_MAPPING_NAMES
-        )
+        self.check_model_type(MODEL_FOR_CAUSAL_LM_MAPPING_NAMES)
         if "prefix" not in self._preprocess_params:
             # This is very specific. The logic is quite complex and needs to be done
             # as a "default".
