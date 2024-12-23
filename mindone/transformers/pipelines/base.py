@@ -1211,7 +1211,7 @@ class Pipeline(_ScikitCompat, PushToHubMixin):
         postprocess_params = {**self._postprocess_params, **postprocess_params}
 
         self.call_count += 1
-        if self.call_count > 10 and self.framework == "pt" and self.device.type == "cuda":
+        if self.call_count > 10 and self.framework == "ms":
             logger.warning_once(
                 "You seem to be using the pipelines sequentially on GPU. In order to maximize efficiency please use a"
                 " dataset",
@@ -1224,7 +1224,7 @@ class Pipeline(_ScikitCompat, PushToHubMixin):
         is_iterable = is_dataset or is_generator or is_list
 
         # TODO make the get_iterator work also for `tf` (and `flax`).
-        can_use_iterator = self.framework == "pt" and (is_dataset or is_generator or is_list)
+        can_use_iterator = self.framework == "ms" and (is_dataset or is_generator or is_list)
 
         if is_list:
             if can_use_iterator:
@@ -1241,7 +1241,7 @@ class Pipeline(_ScikitCompat, PushToHubMixin):
             )
         elif is_iterable:
             return self.iterate(inputs, preprocess_params, forward_params, postprocess_params)
-        elif self.framework == "pt" and isinstance(self, ChunkPipeline):
+        elif self.framework == "ms" and isinstance(self, ChunkPipeline):
             return next(
                 iter(
                     self.get_iterator(
