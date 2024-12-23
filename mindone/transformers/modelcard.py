@@ -44,17 +44,12 @@ from .models.auto.modeling_auto import (
     MODEL_FOR_TOKEN_CLASSIFICATION_MAPPING_NAMES,
     MODEL_FOR_ZERO_SHOT_IMAGE_CLASSIFICATION_MAPPING_NAMES,
 )
-from .training_args import ParallelMode
+from transformers.training_args import ParallelMode
 from .utils import (
-    MODEL_CARD_NAME,
-    cached_file,
-    is_datasets_available,
-    is_offline_mode,
-    is_tf_available,
-    is_tokenizers_available,
-    is_torch_available,
-    logging,
+    is_mindspore_available,
 )
+
+from transformers.utils import MODEL_CARD_NAME, cached_file, is_datasets_available, is_offline_mode, is_tokenizers_available, logging
 
 TASK_MAPPING = {
     "text-generation": MODEL_FOR_CAUSAL_LM_MAPPING_NAMES,
@@ -526,14 +521,10 @@ class TrainingSummary:
         model_card += "\n### Framework versions\n\n"
         model_card += f"- Transformers {__version__}\n"
 
-        if self.source == "trainer" and is_torch_available():
+        if self.source == "trainer" and is_mindspore_available():
             import torch
 
             model_card += f"- Pytorch {torch.__version__}\n"
-        elif self.source == "keras" and is_tf_available():
-            import tensorflow as tf
-
-            model_card += f"- TensorFlow {tf.__version__}\n"
         if is_datasets_available():
             import datasets
 
@@ -797,7 +788,8 @@ def parse_log_history(log_history):
 
 
 def extract_hyperparameters_from_keras(model):
-    from .modeling_tf_utils import keras
+    # fixme
+    from transformers.modeling_tf_utils import keras
 
     hyperparameters = {}
     if hasattr(model, "optimizer") and model.optimizer is not None:
