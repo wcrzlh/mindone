@@ -27,7 +27,7 @@ import yaml
 from huggingface_hub import model_info
 from huggingface_hub.utils import HFValidationError
 
-from . import __version__
+from transformers import __version__
 from .models.auto.modeling_auto import (
     MODEL_FOR_AUDIO_CLASSIFICATION_MAPPING_NAMES,
     MODEL_FOR_CAUSAL_LM_MAPPING_NAMES,
