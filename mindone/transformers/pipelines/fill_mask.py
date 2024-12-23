@@ -112,7 +112,7 @@ class FillMaskPipeline(Pipeline):
         if tokenizer_kwargs is None:
             tokenizer_kwargs = {}
 
-        model_inputs = self.tokenizer(inputs, return_tensors=return_tensors, **tokenizer_kwargs)
+        model_inputs = self.tokenizer(inputs, return_tensors="np", **tokenizer_kwargs)
         self.ensure_exactly_one_mask_token(model_inputs)
         return model_inputs
 
