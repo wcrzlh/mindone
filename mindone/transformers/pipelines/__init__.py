@@ -53,7 +53,7 @@ from .base import (
 from transformers.pipelines.depth_estimation import DepthEstimationPipeline
 from transformers.pipelines.document_question_answering import DocumentQuestionAnsweringPipeline
 from transformers.pipelines.feature_extraction import FeatureExtractionPipeline
-from transformers.pipelines.fill_mask import FillMaskPipeline
+from .fill_mask import FillMaskPipeline
 from transformers.pipelines.image_classification import ImageClassificationPipeline
 from transformers.pipelines.image_feature_extraction import ImageFeatureExtractionPipeline
 from transformers.pipelines.image_segmentation import ImageSegmentationPipeline
