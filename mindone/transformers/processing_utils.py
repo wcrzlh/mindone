@@ -58,11 +58,13 @@ from transformers.utils import (
 )
 
 from .utils import TensorType, add_model_info_to_auto_map, add_model_info_to_custom_pipelines
+import transformers
 
 logger = logging.get_logger(__name__)
 
 # Dynamically import the Transformers module to grab the attribute classes of the processor form their names.
-transformers_module = direct_transformers_import(Path(__file__).parent)
+# transformers_module = direct_transformers_import(Path(__file__).parent)
+transformers_module = transformers
 
 
 AUTO_TO_BASE_CLASS_MAPPING = {
