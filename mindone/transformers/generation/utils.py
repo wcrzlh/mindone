@@ -81,12 +81,13 @@ NEED_SETUP_CACHE_CLASSES_MAPPING = {
     "hybrid": HybridCache,
     "mamba": MambaCache,
 }
-#QUANT_BACKEND_CLASSES_MAPPING = {"quanto": QuantoQuantizedCache, "HQQ": HQQQuantizedCache}
+# QUANT_BACKEND_CLASSES_MAPPING = {"quanto": QuantoQuantizedCache, "HQQ": HQQQuantizedCache}
 
 
 from .beam_search import BeamScorer, BeamSearchScorer, ConstrainedBeamSearchScorer
 
 logger = logging.get_logger(__name__)
+
 
 @dataclass
 class GenerateDecoderOnlyOutput(ModelOutput):
@@ -315,6 +316,7 @@ GenerateNonBeamOutput = Union[GenerateDecoderOnlyOutput, GenerateEncoderDecoderO
 GenerateBeamOutput = Union[GenerateBeamDecoderOnlyOutput, GenerateBeamEncoderDecoderOutput]
 GenerateOutput = Union[GenerateNonBeamOutput, GenerateBeamOutput]
 
+
 class GenerationMixin:
     """
     A class containing all functions for auto-regressive text generation, to be used as a mixin in [`MSPreTrainedModel`].
@@ -531,9 +533,7 @@ class GenerationMixin:
                 )
             decoder_start_token_id = decoder_start_token_id.view(-1, 1)
         else:
-            decoder_start_token_id = (
-                ops.ones((batch_size, 1), dtype=ms.int64) * decoder_start_token_id
-            )
+            decoder_start_token_id = ops.ones((batch_size, 1), dtype=ms.int64) * decoder_start_token_id
 
         # 3. Encoder-decoder models expect the `decoder_input_ids` to start with a special token. Let's ensure that.
         # no user input -> use decoder_start_token_id as decoder_input_ids
@@ -637,7 +637,8 @@ class GenerationMixin:
             if "attention_mask" in model_kwargs:
                 attention_mask = model_kwargs["attention_mask"]
                 model_kwargs["attention_mask"] = ops.cat(
-                    [attention_mask, attention_mask.new_ones((attention_mask.shape[0], 1), dtype=attention_mask.dtype)], axis=-1
+                    [attention_mask, attention_mask.new_ones((attention_mask.shape[0], 1), dtype=attention_mask.dtype)],
+                    axis=-1,
                 )
         else:
             # update decoder attention mask
@@ -731,9 +732,7 @@ class GenerationMixin:
             # Applied after temperature scaling (see https://github.com/ggerganov/llama.cpp/pull/3841#issuecomment-2073826084)
             warpers.append(MinPLogitsWarper(min_p=generation_config.min_p, min_tokens_to_keep=min_tokens_to_keep))
         if generation_config.typical_p is not None and generation_config.typical_p < 1.0:
-            warpers.append(
-                TypicalLogitsWarper(mass=generation_config.typical_p, min_tokens_to_keep=min_tokens_to_keep)
-            )
+            warpers.append(TypicalLogitsWarper(mass=generation_config.typical_p, min_tokens_to_keep=min_tokens_to_keep))
         if generation_config.epsilon_cutoff is not None and 0.0 < generation_config.epsilon_cutoff < 1.0:
             warpers.append(
                 EpsilonLogitsWarper(epsilon=generation_config.epsilon_cutoff, min_tokens_to_keep=min_tokens_to_keep)
@@ -1732,16 +1731,15 @@ class GenerationMixin:
         # TODO(joao): support static caches in assisted generation. assisted generation needs to roll back caches,
         # which is only supported in dynamic caches atm
         if (
-                assistant_model is not None
-                and generation_config.cache_implementation is not None
-                and self._supports_default_dynamic_cache()
+            assistant_model is not None
+            and generation_config.cache_implementation is not None
+            and self._supports_default_dynamic_cache()
         ):
             logger.warning_once(
                 "An assistant model is provided, using a dynamic cache instead of a cache of type="
                 f"'{generation_config.cache_implementation}'."
             )
             generation_config.cache_implementation = None
-
 
         if generation_config.cache_implementation is not None and (model_kwargs.get(cache_name) is not None):
             raise ValueError(
@@ -1763,7 +1761,7 @@ class GenerationMixin:
                     model_kwargs=model_kwargs,
                 )
             elif generation_config.cache_implementation == "quantized":
-                raise RuntimeError('MindNLP do not support quantized generation.')
+                raise RuntimeError("MindNLP do not support quantized generation.")
                 # if not self._supports_quantized_cache:
                 #     raise ValueError(
                 #         "This model does not support the quantized cache. If you want your model to support quantized "
@@ -1796,7 +1794,7 @@ class GenerationMixin:
         elif generation_config.cache_implementation is None and self._supports_default_dynamic_cache():
             past = model_kwargs.get(cache_name, None)
             requires_cross_attention_cache = (
-                    self.config.is_encoder_decoder or model_kwargs.get("encoder_outputs") is not None
+                self.config.is_encoder_decoder or model_kwargs.get("encoder_outputs") is not None
             )
             if past is None:
                 model_kwargs[cache_name] = (
@@ -1822,7 +1820,6 @@ class GenerationMixin:
             raise ValueError(
                 "`streamer` cannot be used with beam search (yet!). Make sure that `num_beams` is set to 1."
             )
-
 
         # 8. prepare distribution pre_processing samplers
         prepared_logits_processor = self._get_logits_processor(
@@ -1900,11 +1897,7 @@ class GenerationMixin:
                 raise ValueError(
                     f"dola decoding is not supported with stateful models, such as {self.__class__.__name__}"
                 )
-            prepared_logits_warper = (
-                self._get_logits_warper(generation_config)
-                if generation_config.do_sample
-                else None
-            )
+            prepared_logits_warper = self._get_logits_warper(generation_config) if generation_config.do_sample else None
             result = self._dola_decoding(
                 input_ids,
                 dola_layers=generation_config.dola_layers,
@@ -1938,11 +1931,7 @@ class GenerationMixin:
 
         elif generation_mode in (GenerationMode.SAMPLE, GenerationMode.GREEDY_SEARCH):
             # 11. prepare logits warper
-            prepared_logits_warper = (
-                self._get_logits_warper(generation_config)
-                if generation_config.do_sample
-                else None
-            )
+            prepared_logits_warper = self._get_logits_warper(generation_config) if generation_config.do_sample else None
 
             # 12. expand input_ids with `num_return_sequences` additional sequences per batch
             input_ids, model_kwargs = self._expand_inputs_for_generation(
@@ -1967,9 +1956,7 @@ class GenerationMixin:
         elif generation_mode in (GenerationMode.BEAM_SAMPLE, GenerationMode.BEAM_SEARCH):
             # 11. prepare logits warper
             prepared_logits_warper = (
-                self._get_logits_warper(generation_config, device=None)
-                if generation_config.do_sample
-                else None
+                self._get_logits_warper(generation_config, device=None) if generation_config.do_sample else None
             )
 
             # 12. prepare beam search scorer
@@ -2141,9 +2128,7 @@ class GenerationMixin:
             return False
         return True
 
-    def heal_tokens(
-        self, input_ids: ms.Tensor, tokenizer: Optional["PreTrainedTokenizerBase"] = None
-    ) -> ms.Tensor:
+    def heal_tokens(self, input_ids: ms.Tensor, tokenizer: Optional["PreTrainedTokenizerBase"] = None) -> ms.Tensor:
         r"""
         Generates sequences of token ids for models with a language modeling head.
         Parameters:
@@ -2386,9 +2371,7 @@ class GenerationMixin:
 
                 if output_hidden_states:
                     decoder_hidden_states += (
-                        (outputs.decoder_hidden_states,)
-                        if self.config.is_encoder_decoder
-                        else (outputs.hidden_states,)
+                        (outputs.decoder_hidden_states,) if self.config.is_encoder_decoder else (outputs.hidden_states,)
                     )
 
             if do_sample:  # sample
@@ -2509,8 +2492,8 @@ class GenerationMixin:
             # if the first step in the loop, encode all the prefix and obtain: (1) past_key_values;
             # (2) last_hidden_states; (3) logit_for_next_step; (4) update model kwargs for the next step
             if model_kwargs.get("past_key_values") is None or (
-                    isinstance(model_kwargs["past_key_values"], (Cache, EncoderDecoderCache))
-                    and model_kwargs["past_key_values"].get_seq_length() == 0
+                isinstance(model_kwargs["past_key_values"], (Cache, EncoderDecoderCache))
+                and model_kwargs["past_key_values"].get_seq_length() == 0
             ):
                 # prepare inputs
                 model_kwargs["use_cache"] = True
@@ -2584,9 +2567,7 @@ class GenerationMixin:
 
                 if output_hidden_states:
                     decoder_hidden_states += (
-                        (outputs.decoder_hidden_states,)
-                        if self.config.is_encoder_decoder
-                        else (outputs.hidden_states,)
+                        (outputs.decoder_hidden_states,) if self.config.is_encoder_decoder else (outputs.hidden_states,)
                     )
 
             # This is needed to properly delete outputs.logits which may be very large for this first iteration
@@ -2598,7 +2579,7 @@ class GenerationMixin:
                 past = model_kwargs["past_key_values"]
                 # If it is a static cache, modify it in-place layer after layer to save memory
                 if isinstance(past, DynamicCache) or (
-                        isinstance(past, EncoderDecoderCache) and isinstance(past.self_attention_cache, DynamicCache)
+                    isinstance(past, EncoderDecoderCache) and isinstance(past.self_attention_cache, DynamicCache)
                 ):
                     past.batch_repeat_interleave(top_k)
                 else:
@@ -2705,8 +2686,8 @@ class GenerationMixin:
                 _, next_past_key_values = self._extract_past_from_model_output(outputs)
                 # Do it in-place layer per layer to save memory
                 if isinstance(next_past_key_values, DynamicCache) or (
-                        isinstance(next_past_key_values, EncoderDecoderCache)
-                        and isinstance(next_past_key_values.self_attention_cache, DynamicCache)
+                    isinstance(next_past_key_values, EncoderDecoderCache)
+                    and isinstance(next_past_key_values.self_attention_cache, DynamicCache)
                 ):
                     next_past_key_values.batch_select_indices(augmented_idx)
                 else:
@@ -2781,8 +2762,8 @@ class GenerationMixin:
             # `past_key_values` to be consistent with the other decoding methods
             if model_kwargs.get("past_key_values") is not None:
                 if isinstance(model_kwargs["past_key_values"], DynamicCache) or (
-                        isinstance(model_kwargs["past_key_values"], EncoderDecoderCache)
-                        and isinstance(model_kwargs["past_key_values"].self_attention_cache, DynamicCache)
+                    isinstance(model_kwargs["past_key_values"], EncoderDecoderCache)
+                    and isinstance(model_kwargs["past_key_values"].self_attention_cache, DynamicCache)
                 ):
                     model_kwargs["past_key_values"].crop(-1)
                 else:
@@ -2903,9 +2884,7 @@ class GenerationMixin:
 
         s_time = time.time()
 
-        while self._has_unfinished_sequences(
-            this_peer_finished, synced_gpus, cur_len=cur_len, max_length=max_length
-        ):
+        while self._has_unfinished_sequences(this_peer_finished, synced_gpus, cur_len=cur_len, max_length=max_length):
             # prepare model inputs
             model_inputs = self.prepare_inputs_for_generation(input_ids, **model_kwargs)
 
@@ -2943,9 +2922,7 @@ class GenerationMixin:
 
                 if output_hidden_states:
                     decoder_hidden_states += (
-                        (outputs.decoder_hidden_states,)
-                        if self.config.is_encoder_decoder
-                        else (outputs.hidden_states,)
+                        (outputs.decoder_hidden_states,) if self.config.is_encoder_decoder else (outputs.hidden_states,)
                     )
 
             # token selection
@@ -2978,7 +2955,7 @@ class GenerationMixin:
             # Otherwise a reference to outputs is kept which keeps the logits alive in the next iteration
             del outputs
 
-            print("time cost per token(ms): ", (time.time()-s_time)*1000)
+            print("time cost per token(ms): ", (time.time() - s_time) * 1000)
             s_time = time.time()
 
         if streamer is not None:
@@ -3182,9 +3159,7 @@ class GenerationMixin:
             # Clone is needed to avoid keeping a hanging ref to outputs.logits which may be very large for first iteration
             # (the clone itself is always small)
             next_token_logits = outputs.logits[:, -1, :]
-            next_token_scores = ops.log_softmax(
-                next_token_logits, axis=-1
-            )  # (batch_size * num_beams, vocab_size)
+            next_token_scores = ops.log_softmax(next_token_logits, axis=-1)  # (batch_size * num_beams, vocab_size)
 
             next_token_scores_processed = logits_processor(input_ids, next_token_scores)
             if do_sample:
@@ -3207,9 +3182,7 @@ class GenerationMixin:
                         cross_attentions += (outputs.cross_attentions,)
                 if output_hidden_states:
                     decoder_hidden_states += (
-                        (outputs.decoder_hidden_states,)
-                        if self.config.is_encoder_decoder
-                        else (outputs.hidden_states,)
+                        (outputs.decoder_hidden_states,) if self.config.is_encoder_decoder else (outputs.hidden_states,)
                     )
 
             # reshape for beam search
@@ -3459,9 +3432,7 @@ class GenerationMixin:
                 # No need to clone() the logits here as they will not retain outputs.logits at the end of the loop
                 next_token_logits = outputs.logits[batch_group_indices, -1, :]
 
-                next_token_scores = ops.log_softmax(
-                    next_token_logits, axis=-1
-                )  # (batch_size * group_size, vocab_size)
+                next_token_scores = ops.log_softmax(next_token_logits, axis=-1)  # (batch_size * group_size, vocab_size)
                 vocab_size = next_token_scores.shape[-1]
 
                 next_token_scores_processed = logits_processor(
@@ -3534,9 +3505,7 @@ class GenerationMixin:
 
                 if output_hidden_states:
                     decoder_hidden_states += (
-                        (outputs.decoder_hidden_states,)
-                        if self.config.is_encoder_decoder
-                        else (outputs.hidden_states,)
+                        (outputs.decoder_hidden_states,) if self.config.is_encoder_decoder else (outputs.hidden_states,)
                     )
 
             input_ids = ops.cat([input_ids, current_tokens.unsqueeze(-1)], axis=-1)
@@ -3717,9 +3686,7 @@ class GenerationMixin:
             # Clone is needed to avoid keeping a hanging ref to outputs.logits which may be very large for first iteration
             # (the clone itself is always small)
             next_token_logits = outputs.logits[:, -1, :]
-            next_token_scores = ops.log_softmax(
-                next_token_logits, axis=-1
-            )  # (batch_size * num_beams, vocab_size)
+            next_token_scores = ops.log_softmax(next_token_logits, axis=-1)  # (batch_size * num_beams, vocab_size)
 
             next_token_scores_processed = logits_processor(input_ids, next_token_scores)
 
@@ -3744,9 +3711,7 @@ class GenerationMixin:
 
                 if output_hidden_states:
                     decoder_hidden_states += (
-                        (outputs.decoder_hidden_states,)
-                        if self.config.is_encoder_decoder
-                        else (outputs.hidden_states,)
+                        (outputs.decoder_hidden_states,) if self.config.is_encoder_decoder else (outputs.hidden_states,)
                     )
 
             # reshape for beam search
@@ -4130,6 +4095,7 @@ class GenerationMixin:
         else:
             return input_ids
 
+
 def _speculative_sampling(
     candidate_input_ids,
     candidate_logits,
@@ -4185,6 +4151,7 @@ def _speculative_sampling(
 
     return valid_tokens, n_matches
 
+
 def _split_model_outputs(outputs, new_outputs, cur_len, added_len, is_decoder_attention=False):
     """
     Given the (decoder/cross attentions)/(decoder hidden states) for multiple generated tokens, splits it into a tuple
@@ -4210,6 +4177,7 @@ def _split_model_outputs(outputs, new_outputs, cur_len, added_len, is_decoder_at
         outputs += (new_tuple,)
     return outputs
 
+
 def _relative_top_filter(
     scores: ms.Tensor,
     baseline_scores: ms.Tensor,
@@ -4233,6 +4201,7 @@ def _relative_top_filter(
     baseline_scores_normalized[scores_normalized < probs_thresh] = base_filter_value
     scores_normalized[scores_normalized < probs_thresh] = filter_value
     return scores_normalized, baseline_scores_normalized
+
 
 def _dola_select_contrast(
     candidate_premature_layers: List[int],
@@ -4279,6 +4248,7 @@ def _dola_select_contrast(
     final_logits, base_logits = _relative_top_filter(final_logits, base_logits)
     logits = final_logits - base_logits
     return logits
+
 
 def stack_model_outputs(model_outputs: List[ModelOutput]) -> ModelOutput:
     """
@@ -4329,6 +4299,7 @@ def stack_model_outputs(model_outputs: List[ModelOutput]) -> ModelOutput:
     # Return a new object of the inferred class with the concatenated attributes
     return model_output_cls(**concatenated_data)
 
+
 def _ranking_fast(
     context_hidden: ms.Tensor,
     next_hidden: ms.Tensor,
@@ -4351,6 +4322,7 @@ def _ranking_fast(
     _, selected_idx = contrastive_score.max(dim=-1)  # [B]
     return selected_idx
 
+
 def _split(data, full_batch_size: int, split_size: int = None):
     """
     Takes care of three cases:
@@ -4367,7 +4339,7 @@ def _split(data, full_batch_size: int, split_size: int = None):
         return [data[i : i + split_size] for i in range(0, full_batch_size, split_size)]
     # New cache format
     elif isinstance(data, DynamicCache) or (
-            isinstance(data, EncoderDecoderCache) and isinstance(data.self_attention_cache, DynamicCache)
+        isinstance(data, EncoderDecoderCache) and isinstance(data.self_attention_cache, DynamicCache)
     ):
         return data.batch_split(full_batch_size, split_size)
     elif isinstance(data, tuple):

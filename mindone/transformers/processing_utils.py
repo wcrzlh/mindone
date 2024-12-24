@@ -35,6 +35,7 @@ from .image_utils import ChannelDimension, is_valid_image, is_vision_available
 if is_vision_available():
     from .image_utils import PILImageResampling
 
+import transformers
 from transformers.tokenization_utils_base import (
     PaddingStrategy,
     PreTokenizedInput,
@@ -58,7 +59,6 @@ from transformers.utils import (
 )
 
 from .utils import TensorType, add_model_info_to_auto_map, add_model_info_to_custom_pipelines
-import transformers
 
 logger = logging.get_logger(__name__)
 

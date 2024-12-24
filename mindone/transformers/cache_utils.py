@@ -90,8 +90,7 @@ class Cache(nn.Cell):
     @property
     def seen_tokens(self):
         logger.warning_once(
-            "The `seen_tokens` attribute is deprecated.41. Use the `cache_position` "
-            "model input instead."
+            "The `seen_tokens` attribute is deprecated.41. Use the `cache_position` " "model input instead."
         )
         if hasattr(self, "_seen_tokens"):
             return self._seen_tokens
@@ -502,14 +501,9 @@ class QuantizedCache(DynamicCache):
 
             keys_to_return = ops.cat(keys_to_return, axis=-2)
             values_to_return = ops.cat(values_to_return, axis=-2)
-            if (
-                self.key_cache[layer_idx].ndim == 4
-                and self.key_cache[layer_idx].shape[-2] + 1 >= self.residual_length
-            ):
+            if self.key_cache[layer_idx].ndim == 4 and self.key_cache[layer_idx].shape[-2] + 1 >= self.residual_length:
                 self._quantized_key_cache[layer_idx] = self._quantize(keys_to_return, axis=self.axis_key)
-                self._quantized_value_cache[layer_idx] = self._quantize(
-                    values_to_return, axis=self.axis_value
-                )
+                self._quantized_value_cache[layer_idx] = self._quantize(values_to_return, axis=self.axis_value)
                 self.key_cache[layer_idx] = ops.zeros(0, dtype=key_states.dtype)
                 self.value_cache[layer_idx] = ops.zeros(0, dtype=key_states.dtype)
             else:
@@ -858,9 +852,7 @@ class SlidingWindowCache(StaticCache):
                 "config and it's not set to None."
             )
         max_cache_len = min(config.sliding_window, max_cache_len)
-        super().__init__(
-            config=config, max_batch_size=max_batch_size, max_cache_len=max_cache_len, dtype=dtype
-        )
+        super().__init__(config=config, max_batch_size=max_batch_size, max_cache_len=max_cache_len, dtype=dtype)
 
     def update(
         self,
@@ -1013,8 +1005,7 @@ class EncoderDecoderCache(Cache):
 
     def check_dynamic_cache(self, method: str):
         if not (
-            isinstance(self.self_attention_cache, DynamicCache)
-            and isinstance(self.cross_attention_cache, DynamicCache)
+            isinstance(self.self_attention_cache, DynamicCache) and isinstance(self.cross_attention_cache, DynamicCache)
         ):
             raise ValueError(
                 f"`{method}` is only defined for dynamic cache, got {self.self_attention_cache.__str__()} for the self "

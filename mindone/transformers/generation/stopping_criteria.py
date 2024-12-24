@@ -16,6 +16,7 @@ from mindspore.mint.nn import functional as F
 # because they are slow to compute
 STOP_STRING_EMBEDDING_CACHE = OrderedDict()
 
+
 class StoppingCriteria(ABC):
     """Abstract base class for all stopping criteria that can be applied during generation.
 
@@ -25,6 +26,7 @@ class StoppingCriteria(ABC):
 
     def __call__(self, input_ids: ms.int64, scores: ms.Tensor, **kwargs) -> ms.bool_:
         raise NotImplementedError("StoppingCriteria needs to be subclassed")
+
 
 class MaxLengthCriteria(StoppingCriteria):
     """
@@ -42,11 +44,11 @@ class MaxLengthCriteria(StoppingCriteria):
         self.max_length = max_length
         self.max_position_embeddings = max_position_embeddings
 
-
     def __call__(self, input_ids: ms.int64, scores: ms.Tensor, **kwargs) -> ms.bool_:
         cur_len = input_ids.shape[-1]
         is_done = cur_len >= self.max_length
         return ops.full((input_ids.shape[0],), is_done, dtype=ms.bool_)
+
 
 class MaxNewTokensCriteria(StoppingCriteria):
     """
@@ -72,7 +74,6 @@ class MaxNewTokensCriteria(StoppingCriteria):
         self.max_new_tokens = max_new_tokens
         self.max_length = start_length + max_new_tokens
 
-
     def __call__(self, input_ids: ms.int64, scores: ms.Tensor, **kwargs) -> ms.bool_:
         is_done = input_ids.shape[-1] >= self.max_length
         return ops.full((input_ids.shape[0],), is_done, dtype=ms.bool_)
@@ -94,6 +95,7 @@ class StoppingCriteriaList(list):
                 return stopping_criterium.max_length
         return None
 
+
 class EosTokenCriteria(StoppingCriteria):
     """
     This class can be used to stop generation whenever the "end-of-sequence" token is generated.
@@ -110,7 +112,6 @@ class EosTokenCriteria(StoppingCriteria):
                 eos_token_id = [eos_token_id]
             eos_token_id = ms.Tensor(eos_token_id)
         self.eos_token_id = eos_token_id
-
 
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor, **kwargs) -> ms.Tensor:
         self.eos_token_id = self.eos_token_id
@@ -146,7 +147,6 @@ class MaxTimeCriteria(StoppingCriteria):
     def __init__(self, max_time: float, initial_timestamp: Optional[float] = None):
         self.max_time = max_time
         self.initial_timestamp = time.time() if initial_timestamp is None else initial_timestamp
-
 
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor, **kwargs) -> ms.Tensor:
         is_done = time.time() - self.initial_timestamp > self.max_time
@@ -398,14 +398,14 @@ class StopStringCriteria(StoppingCriteria):
             # Since this is lots of very small assignments of lists, we build it with numpy rather
             # than torch for speed + simplicity, then convert to torch at the end
             for token_idx, valid_positions in positions.items():
-                gather_vec[token_idx, max_valid_positions * i : max_valid_positions * i + len(valid_positions)] = (
-                    valid_positions
-                )
+                gather_vec[
+                    token_idx, max_valid_positions * i : max_valid_positions * i + len(valid_positions)
+                ] = valid_positions
             for token_idx, possible_end_lens in end_lens.items():
                 gather_vec[
                     token_idx,
-                    max_valid_positions * len(stop_strings) + max_valid_end_lens * i : max_valid_positions
-                    * len(stop_strings)
+                    max_valid_positions * len(stop_strings)
+                    + max_valid_end_lens * i : max_valid_positions * len(stop_strings)
                     + max_valid_end_lens * i
                     + len(possible_end_lens),
                 ] = possible_end_lens
@@ -415,7 +415,6 @@ class StopStringCriteria(StoppingCriteria):
         gather_vec = ms.Tensor(gather_vec, dtype=ms.int32)
 
         return gather_vec, max_valid_positions, max_valid_end_lens
-
 
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor, **kwargs) -> ms.Tensor:
         self.embedding_vec = self.embedding_vec

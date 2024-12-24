@@ -19,25 +19,69 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from huggingface_hub import model_info
-
 from transformers.configuration_utils import PretrainedConfig
 from transformers.dynamic_module_utils import get_class_from_dynamic_module
+from transformers.models.auto.feature_extraction_auto import FEATURE_EXTRACTOR_MAPPING, AutoFeatureExtractor
+from transformers.models.auto.image_processing_auto import IMAGE_PROCESSOR_MAPPING, AutoImageProcessor
+from transformers.models.auto.processing_auto import PROCESSOR_MAPPING, AutoProcessor
+from transformers.models.auto.tokenization_auto import TOKENIZER_MAPPING, AutoTokenizer
+from transformers.pipelines.audio_classification import AudioClassificationPipeline
+from transformers.pipelines.automatic_speech_recognition import AutomaticSpeechRecognitionPipeline
+from transformers.pipelines.depth_estimation import DepthEstimationPipeline
+from transformers.pipelines.document_question_answering import DocumentQuestionAnsweringPipeline
+from transformers.pipelines.feature_extraction import FeatureExtractionPipeline
+from transformers.pipelines.image_classification import ImageClassificationPipeline
+from transformers.pipelines.image_feature_extraction import ImageFeatureExtractionPipeline
+from transformers.pipelines.image_segmentation import ImageSegmentationPipeline
+from transformers.pipelines.image_to_image import ImageToImagePipeline
+from transformers.pipelines.image_to_text import ImageToTextPipeline
+from transformers.pipelines.mask_generation import MaskGenerationPipeline
+from transformers.pipelines.object_detection import ObjectDetectionPipeline
+from transformers.pipelines.question_answering import QuestionAnsweringArgumentHandler, QuestionAnsweringPipeline
+from transformers.pipelines.table_question_answering import (
+    TableQuestionAnsweringArgumentHandler,
+    TableQuestionAnsweringPipeline,
+)
+from transformers.pipelines.text2text_generation import (
+    SummarizationPipeline,
+    Text2TextGenerationPipeline,
+    TranslationPipeline,
+)
+from transformers.pipelines.text_classification import TextClassificationPipeline
+from transformers.pipelines.text_to_audio import TextToAudioPipeline
+from transformers.pipelines.token_classification import (
+    AggregationStrategy,
+    NerPipeline,
+    TokenClassificationArgumentHandler,
+    TokenClassificationPipeline,
+)
+from transformers.pipelines.video_classification import VideoClassificationPipeline
+from transformers.pipelines.visual_question_answering import VisualQuestionAnsweringPipeline
+from transformers.pipelines.zero_shot_audio_classification import ZeroShotAudioClassificationPipeline
+from transformers.pipelines.zero_shot_classification import (
+    ZeroShotClassificationArgumentHandler,
+    ZeroShotClassificationPipeline,
+)
+from transformers.pipelines.zero_shot_image_classification import ZeroShotImageClassificationPipeline
+from transformers.pipelines.zero_shot_object_detection import ZeroShotObjectDetectionPipeline
+from transformers.tokenization_utils import PreTrainedTokenizer
+from transformers.utils import (
+    CONFIG_NAME,
+    HUGGINGFACE_CO_RESOLVE_ENDPOINT,
+    cached_file,
+    extract_commit_hash,
+    find_adapter_config_file,
+    is_kenlm_available,
+    is_offline_mode,
+    logging,
+)
+
 from ..feature_extraction_utils import PreTrainedFeatureExtractor
 from ..image_processing_utils import BaseImageProcessor
 from ..models.auto.configuration_auto import AutoConfig
-from transformers.models.auto.feature_extraction_auto import FEATURE_EXTRACTOR_MAPPING, AutoFeatureExtractor
-from transformers.models.auto.image_processing_auto import IMAGE_PROCESSOR_MAPPING, AutoImageProcessor
 from ..models.auto.modeling_auto import AutoModelForDepthEstimation, AutoModelForImageToImage
-from transformers.models.auto.processing_auto import PROCESSOR_MAPPING, AutoProcessor
-from transformers.models.auto.tokenization_auto import TOKENIZER_MAPPING, AutoTokenizer
 from ..processing_utils import ProcessorMixin
-from transformers.tokenization_utils import PreTrainedTokenizer
-from ..utils import (
-    is_mindspore_available,
-)
-from transformers.utils import CONFIG_NAME, HUGGINGFACE_CO_RESOLVE_ENDPOINT, cached_file, extract_commit_hash, find_adapter_config_file, is_offline_mode, is_kenlm_available, logging
-from transformers.pipelines.audio_classification import AudioClassificationPipeline
-from transformers.pipelines.automatic_speech_recognition import AutomaticSpeechRecognitionPipeline
+from ..utils import is_mindspore_available
 from .base import (
     ArgumentHandler,
     CsvPipelineDataFormat,
@@ -50,36 +94,8 @@ from .base import (
     get_default_model_and_revision,
     infer_framework_load_model,
 )
-from transformers.pipelines.depth_estimation import DepthEstimationPipeline
-from transformers.pipelines.document_question_answering import DocumentQuestionAnsweringPipeline
-from transformers.pipelines.feature_extraction import FeatureExtractionPipeline
 from .fill_mask import FillMaskPipeline
-from transformers.pipelines.image_classification import ImageClassificationPipeline
-from transformers.pipelines.image_feature_extraction import ImageFeatureExtractionPipeline
-from transformers.pipelines.image_segmentation import ImageSegmentationPipeline
-from transformers.pipelines.image_to_image import ImageToImagePipeline
-from transformers.pipelines.image_to_text import ImageToTextPipeline
-from transformers.pipelines.mask_generation import MaskGenerationPipeline
-from transformers.pipelines.object_detection import ObjectDetectionPipeline
-from transformers.pipelines.question_answering import QuestionAnsweringArgumentHandler, QuestionAnsweringPipeline
-from transformers.pipelines.table_question_answering import TableQuestionAnsweringArgumentHandler, TableQuestionAnsweringPipeline
-from transformers.pipelines.text2text_generation import SummarizationPipeline, Text2TextGenerationPipeline, TranslationPipeline
-from transformers.pipelines.text_classification import TextClassificationPipeline
 from .text_generation import TextGenerationPipeline
-from transformers.pipelines.text_to_audio import TextToAudioPipeline
-from transformers.pipelines.token_classification import (
-    AggregationStrategy,
-    NerPipeline,
-    TokenClassificationArgumentHandler,
-    TokenClassificationPipeline,
-)
-from transformers.pipelines.video_classification import VideoClassificationPipeline
-from transformers.pipelines.visual_question_answering import VisualQuestionAnsweringPipeline
-from transformers.pipelines.zero_shot_audio_classification import ZeroShotAudioClassificationPipeline
-from transformers.pipelines.zero_shot_classification import ZeroShotClassificationArgumentHandler, ZeroShotClassificationPipeline
-from transformers.pipelines.zero_shot_image_classification import ZeroShotImageClassificationPipeline
-from transformers.pipelines.zero_shot_object_detection import ZeroShotObjectDetectionPipeline
-
 
 if is_mindspore_available():
     import mindspore as ms
@@ -114,8 +130,9 @@ if is_mindspore_available():
 
 
 if TYPE_CHECKING:
-    from ..modeling_utils import MSPreTrainedModel
     from transformers.tokenization_utils_fast import PreTrainedTokenizerFast
+
+    from ..modeling_utils import MSPreTrainedModel
 
 
 logger = logging.get_logger(__name__)

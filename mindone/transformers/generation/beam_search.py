@@ -27,7 +27,6 @@ class BeamScorer(ABC):
         raise NotImplementedError("This is an abstract method.")
 
     @abstractmethod
-
     def finalize(
         self,
         input_ids: ms.Tensor,
@@ -112,9 +111,7 @@ class BeamSearchScorer(BeamScorer):
         ]
         # self._done[i*self.num_beam_groups+j] indicates whether the generation of the beam_hyps of the j-th group
         # in the i-th mini-batch is complete.
-        self._done = ms.Tensor(
-            [False for _ in range(batch_size * self.num_beam_groups)], dtype=ms.bool_
-        )
+        self._done = ms.Tensor([False for _ in range(batch_size * self.num_beam_groups)], dtype=ms.bool_)
 
         if not isinstance(num_beams, int) or num_beams <= 1:
             raise ValueError(
@@ -845,6 +842,7 @@ class ConstrainedBeamSearchScorer(BeamScorer):
                 "beam_indices": indices,
             }
         )
+
 
 class BeamHypotheses:
     def __init__(self, num_beams: int, length_penalty: float, early_stopping: bool, max_length: Optional[int] = None):

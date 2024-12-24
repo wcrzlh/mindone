@@ -94,9 +94,7 @@ class AssistedCandidateGenerator(CandidateGenerator):
         assistant_kwargs = {}
         for key, value in model_kwargs.items():  # deepcopy crashes if we attempt to copy encoder outputs with grads
             if key not in ("encoder_outputs", "assistant_encoder_outputs", "past_key_values"):
-                assistant_kwargs[key] = (
-                    value.detach() if isinstance(value, ms.Tensor) else copy.deepcopy(value)
-                )
+                assistant_kwargs[key] = value.detach() if isinstance(value, ms.Tensor) else copy.deepcopy(value)
 
         if "assistant_encoder_outputs" in model_kwargs:
             assistant_kwargs["encoder_outputs"] = model_kwargs["assistant_encoder_outputs"]
@@ -344,6 +342,7 @@ class PromptLookupCandidateGenerator(CandidateGenerator):
         """
         # Currently does nothing
         return
+
 
 def _crop_past_key_values(model, past_key_values, max_length):
     """Crops the past key values up to a certain maximum length."""

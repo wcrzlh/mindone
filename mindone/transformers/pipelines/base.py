@@ -231,15 +231,17 @@ def infer_framework_load_model(
         if model_classes:
             if look_pt:
                 class_tuple = class_tuple + model_classes.get("ms", (AutoModel,))
-        if config.architectures:
-            classes = []
-            for architecture in config.architectures:
-                transformers_module = importlib.import_module("transformers")
-                if look_pt:
-                    _class = getattr(transformers_module, architecture, None)
-                    if _class is not None:
-                        classes.append(_class)
-            class_tuple = class_tuple + tuple(classes)
+        # fixme
+        # don't support config.architectures
+        # if config.architectures:
+        #     classes = []
+        #     for architecture in config.architectures:
+        #         transformers_module = importlib.import_module("transformers")
+        #         if look_pt:
+        #             _class = getattr(transformers_module, architecture, None)
+        #             if _class is not None:
+        #                 classes.append(_class)
+        #     class_tuple = class_tuple + tuple(classes)
 
         if len(class_tuple) == 0:
             raise ValueError(f"Pipeline cannot infer suitable model classes from {model}")

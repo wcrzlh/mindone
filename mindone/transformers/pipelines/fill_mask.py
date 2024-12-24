@@ -1,11 +1,10 @@
 from typing import Dict
 
 import numpy as np
+from transformers.utils import add_end_docstrings, logging
 
 from ..utils import is_mindspore_available
-from transformers.utils import add_end_docstrings, logging
 from .base import GenericTensor, Pipeline, PipelineException, build_pipeline_init_args
-
 
 if is_mindspore_available():
     import mindspore as ms

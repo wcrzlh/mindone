@@ -27,6 +27,7 @@ class LogitsWarper:
             f"{self.__class__} is an abstract class. Only classes inheriting this class can be called."
         )
 
+
 class LogitsProcessorList(list):
     """
     This class can be used to create a list of [`LogitsProcessor`] or [`LogitsWarper`] to subsequently process a
@@ -63,6 +64,7 @@ class LogitsProcessorList(list):
                 scores = processor(input_ids, scores)
 
         return scores
+
 
 class MinLengthLogitsProcessor(LogitsProcessor):
     r"""
@@ -444,7 +446,6 @@ class TopPLogitsWarper(LogitsWarper):
         self.filter_value = filter_value
         self.min_tokens_to_keep = min_tokens_to_keep
 
-
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         sorted_logits, sorted_indices = ops.sort(scores, descending=False)
         cumulative_probs = sorted_logits.softmax(axis=-1).cumsum(axis=-1)
@@ -521,7 +522,6 @@ class TopKLogitsWarper(LogitsWarper):
 
         self.top_k = max(top_k, min_tokens_to_keep)
         self.filter_value = filter_value
-
 
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         top_k = min(self.top_k, scores.shape[-1])  # Safety check
@@ -672,7 +672,6 @@ class TypicalLogitsWarper(LogitsWarper):
         self.mass = mass
         self.min_tokens_to_keep = min_tokens_to_keep
 
-
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         # calculate entropy
         normalized = ms.nn.functional.log_softmax(scores, dim=-1)
@@ -743,14 +742,11 @@ class EpsilonLogitsWarper(LogitsWarper):
 
         min_tokens_to_keep = int(min_tokens_to_keep)
         if min_tokens_to_keep < 1:
-            raise ValueError(
-                f"`min_tokens_to_keep` has to be a strictly positive integer, but is {min_tokens_to_keep}"
-            )
+            raise ValueError(f"`min_tokens_to_keep` has to be a strictly positive integer, but is {min_tokens_to_keep}")
 
         self.epsilon = epsilon
         self.filter_value = filter_value
         self.min_tokens_to_keep = min_tokens_to_keep
-
 
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         # Determine which indices to remove
@@ -826,14 +822,11 @@ class EtaLogitsWarper(LogitsWarper):
 
         min_tokens_to_keep = int(min_tokens_to_keep)
         if min_tokens_to_keep < 1:
-            raise ValueError(
-                f"`min_tokens_to_keep` has to be a strictly positive integer, but is {min_tokens_to_keep}"
-            )
+            raise ValueError(f"`min_tokens_to_keep` has to be a strictly positive integer, but is {min_tokens_to_keep}")
 
         self.epsilon = ms.Tensor(epsilon, device=device)
         self.filter_value = filter_value
         self.min_tokens_to_keep = min_tokens_to_keep
-
 
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         probabilities = scores.softmax(axis=-1)
@@ -963,7 +956,6 @@ class NoRepeatNGramLogitsProcessor(LogitsProcessor):
             raise ValueError(f"`ngram_size` has to be a strictly positive integer, but is {ngram_size}")
         self.ngram_size = ngram_size
 
-
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         num_batch_hypotheses = scores.shape[0]
         cur_len = input_ids.shape[-1]
@@ -1015,15 +1007,12 @@ class EncoderNoRepeatNGramLogitsProcessor(LogitsProcessor):
 
     def __init__(self, encoder_ngram_size: int, encoder_input_ids: ms.Tensor):
         if not isinstance(encoder_ngram_size, int) or encoder_ngram_size <= 0:
-            raise ValueError(
-                f"`encoder_ngram_size` has to be a strictly positive integer, but is {encoder_ngram_size}"
-            )
+            raise ValueError(f"`encoder_ngram_size` has to be a strictly positive integer, but is {encoder_ngram_size}")
         self.ngram_size = encoder_ngram_size
         if len(encoder_input_ids.shape) == 1:
             encoder_input_ids = encoder_input_ids.unsqueeze(0)
         self.batch_size = encoder_input_ids.shape[0]
         self.generated_ngrams = _get_ngrams(encoder_ngram_size, encoder_input_ids, self.batch_size)
-
 
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         # B x num_beams
@@ -1114,7 +1103,6 @@ class SequenceBiasLogitsProcessor(LogitsProcessor):
         # is infered in the first usage, which inhibits initializing here)
         self.length_1_bias = None
         self.prepared_bias_variables = False
-
 
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         # 1 - Prepares the bias tensors. This is only needed the first time the logit processor is called.
@@ -1247,9 +1235,7 @@ class NoBadWordsLogitsProcessor(SequenceBiasLogitsProcessor):
     ```
     """
 
-    def __init__(
-        self, bad_words_ids: List[List[int]], eos_token_id: Optional[Union[int, List[int], ms.Tensor]] = None
-    ):
+    def __init__(self, bad_words_ids: List[List[int]], eos_token_id: Optional[Union[int, List[int], ms.Tensor]] = None):
         self.bad_word_ids = bad_words_ids
         self._validate_arguments()
 
@@ -1333,7 +1319,6 @@ class PrefixConstrainedLogitsProcessor(LogitsProcessor):
     def __init__(self, prefix_allowed_tokens_fn: Callable[[int, ms.Tensor], List[int]], num_beams: int):
         self._prefix_allowed_tokens_fn = prefix_allowed_tokens_fn
         self._num_beams = num_beams
-
 
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         mask = ops.full_like(scores, -math.inf)
@@ -1523,7 +1508,6 @@ class ForcedBOSTokenLogitsProcessor(LogitsProcessor):
     def __init__(self, bos_token_id: int):
         self.bos_token_id = bos_token_id
 
-
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         cur_len = input_ids.shape[-1]
         scores_processed = scores
@@ -1579,7 +1563,6 @@ class ForcedEOSTokenLogitsProcessor(LogitsProcessor):
         if ops.is_floating_point(eos_token_id) or (eos_token_id < 0).any():
             raise ValueError(f"`eos_token_id` has to be a list of positive integers, but is {eos_token_id}")
 
-
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         cur_len = input_ids.shape[-1]
         scores_processed = scores
@@ -1597,7 +1580,6 @@ class InfNanRemoveLogitsProcessor(LogitsProcessor):
     This logits processor has no `generate` example, as there shouldn't be a correct combination of flags that warrants
     its use.
     """
-
 
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         # set all nan values to 0.0
@@ -1696,7 +1678,6 @@ class ExponentialDecayLengthPenalty(LogitsProcessor):
         if ops.is_floating_point(eos_token_id) or (eos_token_id < 0).any():
             raise ValueError(f"`eos_token_id` has to be a list of positive integers, but is {eos_token_id}")
 
-
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         cur_len = input_ids.shape[-1]
         self.eos_token_id = self.eos_token_id.to(scores.device)
@@ -1741,7 +1722,6 @@ class LogitNormalization(LogitsProcessor, LogitsWarper):
     True
     ```
     """
-
 
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         scores_processed = scores.log_softmax(dim=-1)
@@ -1790,7 +1770,6 @@ class SuppressTokensAtBeginLogitsProcessor(LogitsProcessor):
     def set_begin_index(self, begin_index):
         self.begin_index = begin_index
 
-
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         vocab_tensor = ops.arange(scores.shape[-1])
         suppress_token_mask = ops.isin(vocab_tensor, self.begin_suppress_tokens)
@@ -1833,7 +1812,6 @@ class SuppressTokensLogitsProcessor(LogitsProcessor):
     def __init__(self, suppress_tokens, device: str = "cpu"):
         self.suppress_tokens = ms.Tensor(list(suppress_tokens), device=device)
 
-
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         vocab_tensor = ops.arange(scores.shape[-1])
         suppress_token_mask = ops.isin(vocab_tensor, self.suppress_tokens)
@@ -1857,7 +1835,6 @@ class ForceTokensLogitsProcessor(LogitsProcessor):
                 "This `ForceTokensLogitsProcessor` has been deprecated and will be removed in v4.40. Should you need to provide prompt ids for generation, specify `input_ids` to the generate method for decoder-only models, or `decoder_input_ids` for encoder-decoder models.",
                 FutureWarning,
             )
-
 
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         generation_idx = input_ids.shape[-1]
@@ -1954,7 +1931,6 @@ class WhisperTimeStampLogitsProcessor(LogitsProcessor):
     def set_begin_index(self, begin_index):
         self.begin_index = begin_index
 
-
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         # suppress <|notimestamps|> which is handled by without_timestamps
         scores_processed = scores.clone()
@@ -2037,7 +2013,6 @@ class WhisperNoSpeechDetection(LogitsProcessor):
     def set_begin_index(self, begin_index):
         self.begin_index = begin_index
 
-
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         is_scores_logprobs = self.is_scores_logprobs
 
@@ -2109,7 +2084,6 @@ class ClassifierFreeGuidanceLogitsProcessor(LogitsProcessor):
                 "Require guidance scale >1 to use the classifier free guidance processor, got guidance scale "
                 f"{guidance_scale}."
             )
-
 
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         # simple check to make sure we have compatible batch sizes between our
@@ -2319,7 +2293,6 @@ class BarkEosPrioritizerLogitsProcessor(LogitsProcessor):
         if min_eos_p is not None and min_eos_p <= 0:
             raise ValueError(f"`min_eos_p` has to be a positive float, but is {min_eos_p}")
         self.min_eos_p = min_eos_p
-
 
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         scores_processed = scores
