@@ -122,15 +122,15 @@ class FillMaskPipeline(Pipeline):
 
     def _forward(self, model_inputs):
         model_outputs = self.model(**model_inputs)
-        model_outputs += model_inputs["input_ids"]
+        model_outputs += (model_inputs["input_ids"],)
         return model_outputs
 
     def postprocess(self, model_outputs, top_k=5, target_ids=None):
         # Cap top_k if there are targets
         if target_ids is not None and target_ids.shape[0] < top_k:
             top_k = target_ids.shape[0]
-        input_ids = model_outputs[-1][0]
-        outputs = model_outputs[1]
+        input_ids = model_outputs[1][0]
+        outputs = model_outputs[0]
 
         masked_index = ops.nonzero(input_ids == self.tokenizer.mask_token_id).squeeze(-1)
         # Fill mask pipeline supports only one ${mask_token} per sample
