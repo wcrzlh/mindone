@@ -115,7 +115,7 @@ class FillMaskPipeline(Pipeline):
 
         model_inputs = self.tokenizer(inputs, return_tensors="np", **tokenizer_kwargs)
         self.ensure_exactly_one_mask_token(model_inputs)
-        model_inputs = ms.tensor(model_inputs)
+        model_inputs = ms.mutable(model_inputs)
         return model_inputs
 
     def _forward(self, model_inputs):
