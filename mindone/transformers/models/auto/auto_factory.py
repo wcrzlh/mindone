@@ -14,6 +14,10 @@
 # limitations under the License.
 """Factory function to build auto-model classes."""
 
+import os
+import sys
+from pathlib import Path
+
 import copy
 import importlib
 import warnings
@@ -556,7 +560,7 @@ class _BaseAutoModelClass:
         elif type(config) in cls._model_mapping.keys():
             model_class = _get_model_class(config, cls._model_mapping)
             return model_class.from_pretrained(
-                pretrained_model_name_or_path, *model_args, config=config, **hub_kwargs, **kwargs
+                pretrained_model_name_or_path, *model_args, config=config, **hub_kwargs
             )
         raise ValueError(
             f"Unrecognized configuration class {config.__class__} for this kind of AutoModel: {cls.__name__}.\n"
@@ -766,6 +770,13 @@ class _LazyAutoMapping(OrderedDict):
 
     def _load_attr_from_module(self, model_type, attr):
         module_name = model_type_to_module_name(model_type)
+        if "Config" in attr:
+            self._modules[module_name] = importlib.import_module(f".{module_name}", "transformers.models")
+        else:
+            sub_path = os.path.abspath(os.path.dirname(__file__))
+            sub_path = str(Path(sub_path).parent.parent.parent.parent)
+            sys.path.insert(0, sub_path)
+            self._modules[module_name] = importlib.import_module(f"mindone.transformers.models.{model_type}")
         if module_name not in self._modules:
             self._modules[module_name] = importlib.import_module(f".{module_name}", "transformers.models")
         return getattribute_from_module(self._modules[module_name], attr)
