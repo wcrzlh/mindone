@@ -136,7 +136,7 @@ class FillMaskPipeline(Pipeline):
         # Fill mask pipeline supports only one ${mask_token} per sample
 
         logits = outputs[0, masked_index, :]
-        probs = logits.softmax(dim=-1)
+        probs = logits.softmax(axis=-1)
         if target_ids is not None:
             probs = probs[..., target_ids]
 
