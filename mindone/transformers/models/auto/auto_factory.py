@@ -14,14 +14,13 @@
 # limitations under the License.
 """Factory function to build auto-model classes."""
 
-import os
-import sys
-from pathlib import Path
-
 import copy
 import importlib
+import os
+import sys
 import warnings
 from collections import OrderedDict
+from pathlib import Path
 
 from transformers.configuration_utils import PretrainedConfig
 from transformers.dynamic_module_utils import get_class_from_dynamic_module, resolve_trust_remote_code
@@ -559,9 +558,7 @@ class _BaseAutoModelClass:
             )
         elif type(config) in cls._model_mapping.keys():
             model_class = _get_model_class(config, cls._model_mapping)
-            return model_class.from_pretrained(
-                pretrained_model_name_or_path, *model_args, config=config, **hub_kwargs
-            )
+            return model_class.from_pretrained(pretrained_model_name_or_path, *model_args, config=config, **hub_kwargs)
         raise ValueError(
             f"Unrecognized configuration class {config.__class__} for this kind of AutoModel: {cls.__name__}.\n"
             f"Model type should be one of {', '.join(c.__name__ for c in cls._model_mapping.keys())}."

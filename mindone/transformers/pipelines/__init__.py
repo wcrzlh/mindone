@@ -537,7 +537,7 @@ def pipeline(
     revision: Optional[str] = None,
     use_fast: bool = True,
     token: Optional[Union[str, bool]] = None,
-    device: Optional[Union[int, str, "torch.device"]] = None,
+    device: Optional[Union[int, str]] = None,
     device_map=None,
     torch_dtype=None,
     trust_remote_code: Optional[bool] = None,
