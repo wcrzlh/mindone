@@ -20,19 +20,17 @@ import re
 from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
-from mindnlp.transformers import AutoImageProcessor
-from mindnlp.transformers.image_processing_utils import BatchFeature
-from mindnlp.transformers.image_utils import ImageInput
-from mindnlp.transformers.tokenization_utils_base import (
+from ...image_utils import ImageInput
+from transformers.tokenization_utils_base import (
     PaddingStrategy,
     PreTokenizedInput,
     TextInput,
     TruncationStrategy,
 )
-from transformers.utils import TensorType, is_torch_device, is_torch_dtype, requires_backends
+from transformers.utils import TensorType
 
 import mindspore as ms
-from mindspore import Parameter, Tensor, nn, ops
+from mindspore import Tensor, ops
 
 from ...processing_utils import ProcessorMixin
 from .image_processing_minicpmv import MiniCPMVBatchFeature, MiniCPMVImageProcessor

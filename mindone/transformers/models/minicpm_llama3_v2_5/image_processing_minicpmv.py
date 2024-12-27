@@ -5,8 +5,7 @@ import numpy as np
 import PIL
 import PIL.Image
 import PIL.ImageSequence
-from mindnlp.transformers import AutoImageProcessor
-from mindnlp.transformers.image_processing_utils import BaseImageProcessor, BatchFeature
+from ...image_processing_utils import BaseImageProcessor, BatchFeature
 from PIL import Image
 from transformers.image_transforms import to_channel_dimension_format
 from transformers.image_utils import (
@@ -409,6 +408,3 @@ class MiniCPMVImageProcessor(BaseImageProcessor):
             data={"pixel_values": [new_images], "image_sizes": [image_sizes], "tgt_sizes": [tgt_sizes]},
             tensor_type=return_tensors
         )
-
-
-AutoImageProcessor.register("MiniCPMVImageProcessor", MiniCPMVImageProcessor)

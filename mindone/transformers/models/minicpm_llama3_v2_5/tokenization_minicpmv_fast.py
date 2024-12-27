@@ -1,7 +1,7 @@
 import json
 
-from mindnlp.transformers import AutoTokenizer
-from mindnlp.transformers.tokenization_utils_fast import PreTrainedTokenizerFast
+from transformers import AutoTokenizer
+from transformers.tokenization_utils_fast import PreTrainedTokenizerFast
 
 
 class MiniCPMVTokenizerFast(PreTrainedTokenizerFast):

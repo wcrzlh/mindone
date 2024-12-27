@@ -3,7 +3,6 @@ import math
 from copy import deepcopy
 from threading import Thread
 
-from mindnlp.transformers import AutoProcessor
 from PIL import Image
 from transformers import TextIteratorStreamer
 

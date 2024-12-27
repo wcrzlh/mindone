@@ -2,12 +2,9 @@ import os
 import sys
 from collections.abc import Mapping
 
-# from mindnlp.transformers.utils import is_sagemaker_mp_enabled
-# from transformers.integrations import is_deepspeed_zero3_enabled
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
 # import deepspeed
-from mindnlp.engine import Trainer
 from transformers.trainer_pt_utils import nested_detach
 
 import mindspore as ms
@@ -19,6 +16,7 @@ sys.path.insert(0, mindone_lib_path)
 from transformers.utils import logging
 
 from mindone.transformers.modeling_utils import MSPreTrainedModel
+from mindone.transformers.trainer import Trainer
 
 logger = logging.get_logger(__name__)
 
