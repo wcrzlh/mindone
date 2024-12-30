@@ -132,8 +132,8 @@ class AttentionMaskConverter:
 
     @staticmethod
     def _unmask_unattended(
-            expanded_mask: ms.Tensor,
-            min_dtype: float,
+        expanded_mask: ms.Tensor,
+        min_dtype: float,
     ):
         # fmt: off
         """
@@ -181,11 +181,11 @@ class AttentionMaskConverter:
 
     @staticmethod
     def _ignore_causal_mask_sdpa(
-            attention_mask: Optional[ms.Tensor],
-            inputs_embeds: ms.Tensor,
-            past_key_values_length: int,
-            sliding_window: Optional[int] = None,
-            is_training: bool = False,
+        attention_mask: Optional[ms.Tensor],
+        inputs_embeds: ms.Tensor,
+        past_key_values_length: int,
+        sliding_window: Optional[int] = None,
+        is_training: bool = False,
     ) -> bool:
         """
         Detects whether the optional user-specified attention_mask & the automatically created causal mask can be
@@ -214,9 +214,9 @@ class AttentionMaskConverter:
             # Besides, jit.trace can not handle the `q_len > 1` condition for `is_causal`
             # ("TypeError: scaled_dot_product_attention(): argument 'is_causal' must be bool, not Tensor").
             if (
-                    is_training
-                    and (query_length == 1 or key_value_length == query_length)
-                    and (sliding_window is None or key_value_length < sliding_window)
+                is_training
+                and (query_length == 1 or key_value_length == query_length)
+                and (sliding_window is None or key_value_length < sliding_window)
             ):
                 ignore_causal_mask = True
         elif sliding_window is None or key_value_length < sliding_window:
@@ -406,6 +406,7 @@ def _prepare_4d_causal_attention_mask(
 
     return attention_mask
 
+
 def _prepare_4d_causal_attention_mask_for_sdpa(
     attention_mask: Optional[ms.Tensor],
     input_shape: Union[ms.Tensor, Tuple, List],
@@ -473,6 +474,7 @@ def _prepare_4d_attention_mask(mask: ms.Tensor, dtype: ms.Type, tgt_len: Optiona
     """
     return _expand_mask(mask=mask, dtype=dtype, tgt_len=tgt_len)
 
+
 def _prepare_4d_attention_mask_for_sdpa(mask: ms.Tensor, dtype: ms.dtype, tgt_len: Optional[int] = None):
     """
     Creates a non-causal 4D mask of shape `(batch_size, 1, query_length, key_value_length)` from a 2D mask of shape
@@ -494,6 +496,7 @@ def _prepare_4d_attention_mask_for_sdpa(mask: ms.Tensor, dtype: ms.dtype, tgt_le
         return None
     else:
         return AttentionMaskConverter._expand_mask(mask=mask, dtype=dtype, tgt_len=tgt_len)
+
 
 def _create_4d_causal_attention_mask(
     input_shape: Union[Tuple, List],

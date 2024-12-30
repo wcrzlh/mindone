@@ -7,7 +7,7 @@ import numpy as np
 from transformers.utils.logging import get_logger
 
 import mindspore as ms
-from mindspore import Parameter, Tensor, nn, ops
+from mindspore import Tensor, nn, ops
 
 
 class LogitsProcessor:
@@ -141,15 +141,6 @@ LOGITS_PROCESSOR_INPUTS_DOCSTRING = r"""
         `ms.Tensor` of shape `(batch_size, config.vocab_size)`: The processed prediction scores.
 
 """
-
-
-class LogitsWarper:
-    """Abstract base class for all logit warpers that can be applied during generation with multinomial sampling."""
-
-    def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
-        raise NotImplementedError(
-            f"{self.__class__} is an abstract class. Only classes inheriting this class can be called."
-        )
 
 
 class MinNewTokensLengthLogitsProcessor(LogitsProcessor):
@@ -540,7 +531,8 @@ class MinPLogitsWarper(LogitsWarper):
     Often used together with [`TemperatureLogitsWarper`]. Used as an alternative to [`TopPLogitsWarper`] and
     [`TopKLogitsWarper`].
 
-    Created by @menhguin and @kalomaze (github handles). Code adapted from [this external PR](https://github.com/oobabooga/text-generation-webui/pull/4449/files)
+    Created by @menhguin and @kalomaze (github handles).
+    Code adapted from [this external PR](https://github.com/oobabooga/text-generation-webui/pull/4449/files)
 
     Args:
         min_p (`float`):
@@ -674,7 +666,7 @@ class TypicalLogitsWarper(LogitsWarper):
 
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         # calculate entropy
-        normalized = ms.nn.functional.log_softmax(scores, dim=-1)
+        normalized = nn.functional.log_softmax(scores, dim=-1)
         p = ops.exp(normalized)
         ent = -(normalized * p).nansum(-1, keepdim=True)
 
@@ -1402,12 +1394,17 @@ class HammingDiversityLogitsProcessor(LogitsProcessor):
 
     >>> # With `diversity_penalty`, the resulting beams are much more diverse
     >>> print(summary_non_diverse)
-    ['the solar system formed 4.6 billion years ago from the collapse of a giant interstellar molecular cloud. of the objects that orbit the Sun directly, the largest are the eight planets.',
-    'the Solar System formed 4.6 billion years ago from the collapse of a giant interstellar molecular cloud. of the objects that orbit the Sun directly, the largest are the eight planets.']
+    ['the solar system formed 4.6 billion years ago from the collapse of a giant interstellar molecular cloud.
+    of the objects that orbit the Sun directly, the largest are the eight planets.',
+    'the Solar System formed 4.6 billion years ago from the collapse of a giant interstellar molecular cloud.
+    of the objects that orbit the Sun directly, the largest are the eight planets.']
 
     >>> print(summaries_diverse)
-    ['the solar system formed 4.6 billion years ago from the collapse of a giant interstellar molecular cloud. of the objects that orbit the Sun directly, the largest are the eight planets.',
-    'the solar system formed 4.6 billion years ago from the collapse of a giant interstellar molecular cloud. of the objects that orbit the Sun directly, the largest are the eight planets. the rest of the objects are smaller objects, such as the five dwarf planets and small solar system bodies.']
+    ['the solar system formed 4.6 billion years ago from the collapse of a giant interstellar molecular cloud.
+    of the objects that orbit the Sun directly, the largest are the eight planets.',
+    'the solar system formed 4.6 billion years ago from the collapse of a giant interstellar molecular cloud.
+    of the objects that orbit the Sun directly, the largest are the eight planets. the rest of the objects are smaller objects,
+    such as the five dwarf planets and small solar system bodies.']
     ```
     """
 
@@ -1832,7 +1829,10 @@ class ForceTokensLogitsProcessor(LogitsProcessor):
         if not _has_warned:
             # TODO(Sanchit): remove this processor entirely in v4.40
             warnings.warn(
-                "This `ForceTokensLogitsProcessor` has been deprecated and will be removed in v4.40. Should you need to provide prompt ids for generation, specify `input_ids` to the generate method for decoder-only models, or `decoder_input_ids` for encoder-decoder models.",
+                "This `ForceTokensLogitsProcessor` has been deprecated and will be removed in v4.40. "
+                "Should you need to provide prompt ids for generation, "
+                "specify `input_ids` to the generate method for decoder-only models, "
+                "or `decoder_input_ids` for encoder-decoder models.",
                 FutureWarning,
             )
 
@@ -1889,7 +1889,8 @@ class WhisperTimeStampLogitsProcessor(LogitsProcessor):
     >>> generated_ids = model.generate(inputs=input_features, return_timestamps=True)
     >>> transcription = processor.batch_decode(generated_ids, decode_with_timestamps=True)[0]
     >>> print("Transcription:", transcription)
-    Transcription: <|startoftranscript|><|0.00|> He has grave doubts whether Sir Frederick Layton's work is really Greek after all, and can<|6.44|><|6.44|> discover in it but little of rocky Ithaca.<|9.44|><|endoftext|>
+    Transcription: <|startoftranscript|><|0.00|> He has grave doubts whether Sir Frederick Layton's work is really Greek after all,
+    and can<|6.44|><|6.44|> discover in it but little of rocky Ithaca.<|9.44|><|endoftext|>
 
 
     >>> #No timestamps & change EOS:
@@ -1971,7 +1972,7 @@ class WhisperTimeStampLogitsProcessor(LogitsProcessor):
                 scores_processed[:, last_allowed + 1 :] = -float("inf")
 
         # if sum of probability over timestamps is above any other token, sample timestamp
-        logprobs = ms.nn.functional.log_softmax(scores_processed.float(), dim=-1)
+        logprobs = nn.functional.log_softmax(scores_processed.float(), dim=-1)
         for k in range(input_ids.shape[0]):
             timestamp_logprob = logprobs[k, self.timestamp_begin :].logsumexp(dim=-1)
             max_text_token_logprob = logprobs[k, : self.timestamp_begin].max()
@@ -2252,13 +2253,13 @@ class UnbatchedClassifierFreeGuidanceLogitsProcessor(LogitsProcessor):
         return out.logits
 
     def __call__(self, input_ids, scores):
-        scores = ms.nn.functional.log_softmax(scores, dim=-1)
+        scores = nn.functional.log_softmax(scores, dim=-1)
         if self.guidance_scale == 1:
             return scores
 
         logits = self.get_unconditional_logits(input_ids)
 
-        unconditional_logits = ms.nn.functional.log_softmax(logits[:, -1], dim=-1)
+        unconditional_logits = nn.functional.log_softmax(logits[:, -1], dim=-1)
         scores_processed = self.guidance_scale * (scores - unconditional_logits) + unconditional_logits
         return scores_processed
 
@@ -2297,7 +2298,7 @@ class BarkEosPrioritizerLogitsProcessor(LogitsProcessor):
     def __call__(self, input_ids: ms.Tensor, scores: ms.Tensor) -> ms.Tensor:
         scores_processed = scores
         if self.min_eos_p:
-            probs = ms.nn.functional.softmax(scores.float(), axis=-1)
+            probs = nn.functional.softmax(scores.float(), axis=-1)
             # create scores full of -inf except for the eos_token_id
             early_stop_scores = ops.ones_like(scores) * -float("inf")
             early_stop_scores[:, self.eos_token_id] = scores[:, self.eos_token_id]

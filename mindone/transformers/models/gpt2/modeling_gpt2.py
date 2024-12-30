@@ -21,15 +21,24 @@ from dataclasses import dataclass
 from typing import Optional, Tuple, Union
 
 import numpy as np
+from packaging import version
+from transformers.models.gpt2.configuration_gpt2 import GPT2Config
+from transformers.utils import (
+    ModelOutput,
+    add_code_sample_docstrings,
+    add_start_docstrings,
+    add_start_docstrings_to_model_forward,
+    logging,
+    replace_return_docstrings,
+)
 
 import mindspore as ms
-from mindspore import ops, Tensor, Parameter
-from packaging import version
-from mindspore import nn
+from mindspore import nn, ops
 from mindspore.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
 from ...activations import ACT2FN
 from ...generation import GenerationMixin
+from ...mindspore_utils import Conv1D, find_pruneable_heads_and_indices, prune_conv1d_layer
 from ...modeling_attn_mask_utils import _prepare_4d_attention_mask_for_sdpa, _prepare_4d_causal_attention_mask_for_sdpa
 from ...modeling_outputs import (
     BaseModelOutputWithPastAndCrossAttentions,
@@ -39,18 +48,7 @@ from ...modeling_outputs import (
     TokenClassifierOutput,
 )
 from ...modeling_utils import MSPreTrainedModel, SequenceSummary
-from ...mindspore_utils import Conv1D, find_pruneable_heads_and_indices, prune_conv1d_layer
 from ...utils import get_mindspore_version
-from transformers.utils import (
-    ModelOutput,
-    add_code_sample_docstrings,
-    add_start_docstrings,
-    add_start_docstrings_to_model_forward,
-    logging,
-    replace_return_docstrings,
-)
-from transformers.models.gpt2.configuration_gpt2 import GPT2Config
-
 
 logger = logging.get_logger(__name__)
 
@@ -119,7 +117,9 @@ class GPT2Attention(nn.Cell):
         super().__init__()
         self.config = config
         max_positions = config.max_position_embeddings
-        self.bias = ops.tril(ops.ones((max_positions, max_positions), dtype=ms.bool_)).view(1, 1, max_positions, max_positions)
+        self.bias = ops.tril(ops.ones((max_positions, max_positions), dtype=ms.bool_)).view(
+            1, 1, max_positions, max_positions
+        )
         self.masked_bias = ms.tensor(-1e4)
 
         self.embed_dim = config.hidden_size
@@ -172,9 +172,7 @@ class GPT2Attention(nn.Cell):
         attn_weights = ops.matmul(query, key.transpose(-1, -2))
 
         if self.scale_attn_weights:
-            attn_weights = attn_weights / ops.full(
-                [], value.size(-1) ** 0.5, dtype=attn_weights.dtype
-            )
+            attn_weights = attn_weights / ops.full([], value.size(-1) ** 0.5, dtype=attn_weights.dtype)
 
         # Layer-wise attention scaling
         if self.scale_attn_by_inverse_layer_idx:
@@ -570,7 +568,7 @@ class GPT2PreTrainedModel(MSPreTrainedModel):
         # elif isinstance(module, nn.LayerNorm):
         #     module.bias.data.zero_()
         #     module.weight.data.fill_(1.0)
-        # 
+        #
         # # Reinitialize selected weights subject to the OpenAI GPT-2 Paper Scheme:
         # #   > A modified initialization which accounts for the accumulation on the residual path with model depth. Scale
         # #   > the weights of residual layers at initialization by a factor of 1/√N where N is the # of residual layers.
@@ -886,8 +884,6 @@ class GPT2Model(GPT2PreTrainedModel):
         else:
             raise ValueError("You have to specify either input_ids or inputs_embeds")
 
-        device = input_ids.device if input_ids is not None else inputs_embeds.device
-
         if token_type_ids is not None:
             token_type_ids = token_type_ids.view(-1, input_shape[-1])
 
@@ -1192,17 +1188,14 @@ class GPT2LMHeadModel(GPT2PreTrainedModel, GenerationMixin):
         )
 
     @staticmethod
-    def _reorder_cache(
-        past_key_values: Tuple[Tuple[ms.Tensor]], beam_idx: ms.Tensor
-    ) -> Tuple[Tuple[ms.Tensor]]:
+    def _reorder_cache(past_key_values: Tuple[Tuple[ms.Tensor]], beam_idx: ms.Tensor) -> Tuple[Tuple[ms.Tensor]]:
         """
         This function is used to re-order the `past_key_values` cache if [`~PreTrainedModel.beam_search`] or
         [`~PreTrainedModel.beam_sample`] is called. This is required to match `past_key_values` with the correct
         beam_idx at every generation step.
         """
         return tuple(
-            tuple(past_state.index_select(0, beam_idx) for past_state in layer_past)
-            for layer_past in past_key_values
+            tuple(past_state.index_select(0, beam_idx) for past_state in layer_past) for layer_past in past_key_values
         )
 
 
@@ -1387,17 +1380,14 @@ class GPT2DoubleHeadsModel(GPT2PreTrainedModel, GenerationMixin):
         )
 
     @staticmethod
-    def _reorder_cache(
-        past_key_values: Tuple[Tuple[ms.Tensor]], beam_idx: ms.Tensor
-    ) -> Tuple[Tuple[ms.Tensor]]:
+    def _reorder_cache(past_key_values: Tuple[Tuple[ms.Tensor]], beam_idx: ms.Tensor) -> Tuple[Tuple[ms.Tensor]]:
         """
         This function is used to re-order the `past_key_values` cache if [`~PreTrainedModel.beam_search`] or
         [`~PreTrainedModel.beam_sample`] is called. This is required to match `past_key_values` with the correct
         beam_idx at every generation step.
         """
         return tuple(
-            tuple(past_state.index_select(0, beam_idx) for past_state in layer_past)
-            for layer_past in past_key_values
+            tuple(past_state.index_select(0, beam_idx) for past_state in layer_past) for layer_past in past_key_values
         )
 
 

@@ -6,7 +6,7 @@ import numpy as np
 from transformers.generation.beam_constraints import Constraint, ConstraintListState
 
 import mindspore as ms
-from mindspore import Parameter, Tensor, nn, ops
+from mindspore import ops
 
 
 class BeamScorer(ABC):
@@ -157,7 +157,6 @@ class BeamSearchScorer(BeamScorer):
                     f"{self.group_size} is expected by the beam scorer."
                 )
 
-        device = input_ids.device
         next_beam_scores = ops.zeros((batch_size, self.group_size), dtype=next_scores.dtype)
         next_beam_tokens = ops.zeros((batch_size, self.group_size), dtype=next_tokens.dtype)
         next_beam_indices = ops.zeros((batch_size, self.group_size), dtype=next_indices.dtype)
@@ -493,8 +492,6 @@ class ConstrainedBeamSearchScorer(BeamScorer):
                     f"{self.group_size} is expected by the beam scorer."
                 )
 
-        device = input_ids.device
-
         next_beam_scores = ops.zeros((batch_size, self.group_size), dtype=next_scores.dtype)
         next_beam_tokens = ops.zeros((batch_size, self.group_size), dtype=next_tokens.dtype)
         next_beam_indices = ops.zeros((batch_size, self.group_size), dtype=next_indices.dtype)
@@ -607,7 +604,6 @@ class ConstrainedBeamSearchScorer(BeamScorer):
         #     that fulfill our constraints.
 
         orig_len = sent_beam_indices.size(0)
-        device = sent_beam_indices.device
 
         # initialize states
         topk_contraint_states = self.make_constraint_states(orig_len)

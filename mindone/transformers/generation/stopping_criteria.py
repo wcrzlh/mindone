@@ -2,7 +2,6 @@ import time
 import warnings
 from abc import ABC
 from collections import OrderedDict
-from copy import deepcopy
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np

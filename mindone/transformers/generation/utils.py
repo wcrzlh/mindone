@@ -3,18 +3,17 @@ import inspect
 import time
 import warnings
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from transformers.generation.beam_constraints import DisjunctiveConstraint, PhrasalConstraint
 from transformers.generation.configuration_utils import GenerationConfig, GenerationMode
 from transformers.tokenization_utils import ExtensionsTrie
+from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.utils import ModelOutput, logging
 
 import mindspore as ms
-
-# import torch.distributed as dist
-from mindspore import Parameter, Tensor, nn, ops
+from mindspore import Tensor, ops
 from mindspore.mint.nn import functional as F
 
 from ..cache_utils import (
@@ -23,11 +22,12 @@ from ..cache_utils import (
     EncoderDecoderCache,
     HybridCache,
     MambaCache,
-    QuantizedCacheConfig,
     SlidingWindowCache,
     StaticCache,
 )
 from ..modeling_outputs import CausalLMOutputWithPast, Seq2SeqLMOutput
+from ..modeling_utils import MSPreTrainedModel
+from .beam_search import BeamScorer, BeamSearchScorer, ConstrainedBeamSearchScorer
 from .candidate_generator import (
     AssistedCandidateGenerator,
     CandidateGenerator,
@@ -81,10 +81,6 @@ NEED_SETUP_CACHE_CLASSES_MAPPING = {
     "hybrid": HybridCache,
     "mamba": MambaCache,
 }
-# QUANT_BACKEND_CLASSES_MAPPING = {"quanto": QuantoQuantizedCache, "HQQ": HQQQuantizedCache}
-
-
-from .beam_search import BeamScorer, BeamSearchScorer, ConstrainedBeamSearchScorer
 
 logger = logging.get_logger(__name__)
 
@@ -158,7 +154,8 @@ class GenerateEncoderDecoderOutput(ModelOutput):
         cross_attentions (`tuple(tuple(ms.Tensor))`, *optional*, returned when `output_attentions=True` is passed or `config.output_attentions=True`):
             Tuple (one element for each generated token) of tuples (one element for each layer of the decoder) of
             `ms.Tensor` of shape `(batch_size, num_heads, generated_length, sequence_length)`.
-        decoder_hidden_states (`tuple(tuple(ms.Tensor))`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
+        decoder_hidden_states (`tuple(tuple(ms.Tensor))`, *optional*,
+        returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
             Tuple (one element for each generated token) of tuples (one element for each layer of the decoder) of
             `ms.Tensor` of shape `(batch_size, generated_length, hidden_size)`.
         past_key_values (`tuple(tuple(ms.Tensor)))`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -190,7 +187,8 @@ class GenerateBeamDecoderOnlyOutput(ModelOutput):
         sequences (`ms.Tensor` of shape `(batch_size*num_return_sequences, sequence_length)`):
             The generated sequences. The second dimension (sequence_length) is either equal to `max_length` or shorter
             if all batches finished early due to the `eos_token_id`.
-        sequences_scores (`ms.Tensor` of shape `(batch_size*num_return_sequences)`, *optional*, returned when `output_scores=True` is passed or when `config.output_scores=True`):
+        sequences_scores (`ms.Tensor` of shape `(batch_size*num_return_sequences)`, *optional*,
+        returned when `output_scores=True` is passed or when `config.output_scores=True`):
             Final beam scores of the generated `sequences`.
         scores (`tuple(ms.Tensor)` *optional*, returned when `output_scores=True` is passed or when `config.output_scores=True`):
             Beam transition scores for each vocabulary token at each generation step. Beam transition scores consisting
@@ -238,7 +236,8 @@ class GenerateBeamEncoderDecoderOutput(ModelOutput):
         sequences (`ms.Tensor` of shape `(batch_size*num_return_sequences, sequence_length)`):
             The generated sequences. The second dimension (sequence_length) is either equal to `max_length` or shorter
             if all batches finished early due to the `eos_token_id`.
-        sequences_scores (`ms.Tensor` of shape `(batch_size*num_return_sequences)`, *optional*, returned when `output_scores=True` is passed or when `config.output_scores=True`):
+        sequences_scores (`ms.Tensor` of shape `(batch_size*num_return_sequences)`, *optional*,
+        returned when `output_scores=True` is passed or when `config.output_scores=True`):
             Final beam scores of the generated `sequences`.
         scores (`tuple(ms.Tensor)` *optional*, returned when `output_scores=True` is passed or when `config.output_scores=True`):
             Beam transition scores for each vocabulary token at each generation step. Beam transition scores consisting
@@ -265,7 +264,8 @@ class GenerateBeamEncoderDecoderOutput(ModelOutput):
         cross_attentions (`tuple(tuple(ms.Tensor))`, *optional*, returned when `output_attentions=True` is passed or `config.output_attentions=True`):
             Tuple (one element for each generated token) of tuples (one element for each layer of the decoder) of
             `ms.Tensor` of shape `(batch_size, num_heads, generated_length, sequence_length)`.
-        decoder_hidden_states (`tuple(tuple(ms.Tensor))`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
+        decoder_hidden_states (`tuple(tuple(ms.Tensor))`, *optional*,
+        returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
             Tuple (one element for each generated token) of tuples (one element for each layer of the decoder) of
             `ms.Tensor` of shape `(batch_size*num_beams*num_return_sequences, generated_length, hidden_size)`.
         past_key_values (`tuple(tuple(ms.Tensor)))`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -902,7 +902,8 @@ class GenerationMixin:
         if generation_config.forced_decoder_ids is not None:
             # TODO(Sanchit): deprecate in v4.40 by removing this logic
             warnings.warn(
-                "You have explicitly specified `forced_decoder_ids`. This functionality has been deprecated and will throw an error in v4.40. Please remove the `forced_decoder_ids` argument in favour of `input_ids` or `decoder_input_ids` respectively.",
+                "You have explicitly specified `forced_decoder_ids`. This functionality has been deprecated and will throw an error in v4.40. "
+                "Please remove the `forced_decoder_ids` argument in favour of `input_ids` or `decoder_input_ids` respectively.",
                 FutureWarning,
             )
             processors.append(ForceTokensLogitsProcessor(generation_config.forced_decoder_ids, _has_warned=True))
@@ -1542,7 +1543,7 @@ class GenerationMixin:
         prefix_allowed_tokens_fn: Optional[Callable[[int, ms.Tensor], List[int]]] = None,
         synced_gpus: Optional[bool] = None,
         assistant_model: Optional["MSPreTrainedModel"] = None,
-        streamer: Optional["BaseStreamer"] = None,
+        streamer: Optional = None,
         negative_prompt_ids: Optional[ms.Tensor] = None,
         negative_prompt_attention_mask: Optional[ms.Tensor] = None,
         **kwargs,
@@ -2204,7 +2205,7 @@ class GenerationMixin:
         stopping_criteria: StoppingCriteriaList,
         generation_config: GenerationConfig,
         synced_gpus: bool,
-        streamer: "BaseStreamer",
+        streamer,
         logits_warper: Optional[LogitsProcessorList],
         **model_kwargs,
     ) -> Union[GenerateNonBeamOutput, ms.Tensor]:
@@ -2421,7 +2422,7 @@ class GenerationMixin:
         stopping_criteria: StoppingCriteriaList,
         generation_config: GenerationConfig,
         synced_gpus: bool,
-        streamer: Optional["BaseStreamer"],
+        streamer: Optional,
         **model_kwargs,
     ) -> Union[GenerateNonBeamOutput, ms.Tensor]:
         r"""
@@ -2806,7 +2807,7 @@ class GenerationMixin:
         stopping_criteria: StoppingCriteriaList,
         generation_config: GenerationConfig,
         synced_gpus: bool,
-        streamer: Optional["BaseStreamer"],
+        streamer: Optional,
         logits_warper: Optional[LogitsProcessorList],
         **model_kwargs,
     ) -> Union[GenerateNonBeamOutput, ms.Tensor]:
@@ -3349,7 +3350,6 @@ class GenerationMixin:
         num_beam_groups = beam_scorer.num_beam_groups
         num_sub_beams = num_beams // num_beam_groups
         batch_size = len(beam_scorer._beam_hyps) // num_beam_groups
-        device = None
 
         batch_beam_size, cur_len = input_ids.shape
         model_kwargs = self._get_initial_cache_position(input_ids, model_kwargs)
@@ -3822,7 +3822,7 @@ class GenerationMixin:
         stopping_criteria: StoppingCriteriaList,
         generation_config: GenerationConfig,
         synced_gpus: bool,
-        streamer: Optional["BaseStreamer"],
+        streamer: Optional,
         **model_kwargs,
     ) -> Union[GenerateNonBeamOutput, ms.Tensor]:
         r"""
@@ -4187,8 +4187,10 @@ def _relative_top_filter(
     min_tokens_to_keep: int = 1,
 ) -> ms.Tensor:
     """
-    Reference: https://github.com/XiangLi1999/ContrastiveDecoding/blob/170e9142e92159c1237d731e240f5eb14aabf428/transformers/src/transformers/generation_logits_process.py#L235
-    Apply filtering to only keep tokens with a probability above a certain threshold. The threshold is defined as `relative_top` * max probability in the distribution.
+    Reference:
+    https://github.com/XiangLi1999/ContrastiveDecoding/blob/170e9142e92159c1237d731e240f5eb14aabf428/transformers/src/transformers/generation_logits_process.py#L235
+    Apply filtering to only keep tokens with a probability above a certain threshold.
+    The threshold is defined as `relative_top` * max probability in the distribution.
     """
     scores_normalized = scores.log_softmax(dim=-1)
     baseline_scores_normalized = baseline_scores.log_softmax(dim=-1)

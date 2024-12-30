@@ -2049,16 +2049,15 @@ class SequenceSummary(nn.Cell):
         if hasattr(config, "summary_last_dropout") and config.summary_last_dropout > 0:
             self.last_dropout = nn.Dropout(config.summary_last_dropout)
 
-    def construct(
-        self, hidden_states: ms.Tensor, cls_index: Optional[ms.Tensor] = None
-    ) -> ms.Tensor:
+    def construct(self, hidden_states: ms.Tensor, cls_index: Optional[ms.Tensor] = None) -> ms.Tensor:
         """
         Compute a single vector summary of a sequence hidden states.
 
         Args:
             hidden_states (`torch.FloatTensor` of shape `[batch_size, seq_len, hidden_size]`):
                 The hidden states of the last layer.
-            cls_index (`torch.LongTensor` of shape `[batch_size]` or `[batch_size, ...]` where ... are optional leading dimensions of `hidden_states`, *optional*):
+            cls_index (`torch.LongTensor` of shape `[batch_size]` or `[batch_size, ...]`
+            where ... are optional leading dimensions of `hidden_states`, *optional*):
                 Used if `summary_type == "cls_index"` and takes the last token of the sequence as classification token.
 
         Returns:

@@ -1,9 +1,12 @@
 import copy
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
+
+from transformers import GenerationConfig
 
 import mindspore as ms
 from mindspore import ops
 
+from ..modeling_utils import MSPreTrainedModel
 from .logits_process import LogitsProcessorList, MinLengthLogitsProcessor
 
 
@@ -72,7 +75,7 @@ class AssistedCandidateGenerator(CandidateGenerator):
     def __init__(
         self,
         input_ids: ms.Tensor,
-        assistant_model: "MSMSPreTrainedModel",
+        assistant_model: "MSPreTrainedModel",
         generation_config: "GenerationConfig",
         model_kwargs: Dict,
         inputs_tensor: Optional[ms.Tensor] = None,

@@ -17,6 +17,7 @@ Processing saving/loading class for common processors.
 """
 
 import copy
+import importlib
 import inspect
 import json
 import os
@@ -51,7 +52,6 @@ from transformers.utils import (
     PushToHubMixin,
     cached_file,
     copy_func,
-    direct_transformers_import,
     download_url,
     is_offline_mode,
     is_remote_url,
@@ -381,6 +381,12 @@ class ProcessorMixin(PushToHubMixin):
             class_name = AUTO_TO_BASE_CLASS_MAPPING.get(class_name, class_name)
             if isinstance(class_name, tuple):
                 proper_class = tuple(getattr(transformers_module, n) for n in class_name if n is not None)
+            elif "ImageProcessor" in class_name:
+                sub_path = os.path.abspath(os.path.dirname(__file__))
+                sub_path = str(Path(sub_path).parent)
+                sys.path.insert(0, sub_path)
+                module_name = importlib.import_module("mindone.transformers")
+                proper_class = getattr(module_name, class_name)
             else:
                 proper_class = getattr(transformers_module, class_name)
 
@@ -985,6 +991,12 @@ class ProcessorMixin(PushToHubMixin):
                     attribute_class = classes[1]
                 else:
                     attribute_class = classes[0]
+            elif "ImageProcessor" in class_name:
+                sub_path = os.path.abspath(os.path.dirname(__file__))
+                sub_path = str(Path(sub_path).parent)
+                sys.path.insert(0, sub_path)
+                module_name = importlib.import_module("mindone.transformers")
+                attribute_class = getattr(module_name, class_name)
             else:
                 attribute_class = getattr(transformers_module, class_name)
 
