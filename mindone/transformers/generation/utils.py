@@ -26,7 +26,6 @@ from ..cache_utils import (
     StaticCache,
 )
 from ..modeling_outputs import CausalLMOutputWithPast, Seq2SeqLMOutput
-from ..modeling_utils import MSPreTrainedModel
 from .beam_search import BeamScorer, BeamSearchScorer, ConstrainedBeamSearchScorer
 from .candidate_generator import (
     AssistedCandidateGenerator,
@@ -670,7 +669,7 @@ class GenerationMixin:
         generation_config: GenerationConfig,
         input_ids: ms.Tensor,
         inputs_tensor: ms.Tensor,
-        assistant_model: "MSPreTrainedModel",
+        assistant_model,
         logits_processor: LogitsProcessorList,
         model_kwargs: Dict,
     ) -> CandidateGenerator:
@@ -1542,7 +1541,7 @@ class GenerationMixin:
         stopping_criteria: Optional = None,
         prefix_allowed_tokens_fn: Optional[Callable[[int, ms.Tensor], List[int]]] = None,
         synced_gpus: Optional[bool] = None,
-        assistant_model: Optional["MSPreTrainedModel"] = None,
+        assistant_model: Optional = None,
         streamer: Optional = None,
         negative_prompt_ids: Optional[ms.Tensor] = None,
         negative_prompt_attention_mask: Optional[ms.Tensor] = None,
