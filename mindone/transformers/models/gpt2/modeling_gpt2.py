@@ -312,10 +312,10 @@ class GPT2Attention(nn.Cell):
                 )
 
             query = self.q_attn(hidden_states)
-            key, value = self.c_attn(encoder_hidden_states).split(self.split_size, dim=2)
+            key, value = self.c_attn(encoder_hidden_states).split(self.split_size, axis=2)
             attention_mask = encoder_attention_mask
         else:
-            query, key, value = self.c_attn(hidden_states).split(self.split_size, dim=2)
+            query, key, value = self.c_attn(hidden_states).split(self.split_size, axis=2)
 
         query = self._split_heads(query, self.num_heads, self.head_dim)
         key = self._split_heads(key, self.num_heads, self.head_dim)
@@ -977,7 +977,7 @@ class GPT2Model(GPT2PreTrainedModel):
 
         hidden_states = self.drop(hidden_states)
 
-        output_shape = (-1,) + input_shape[1:] + (hidden_states.size(-1),)
+        output_shape = (-1,) + input_shape[1:] + (hidden_states.shape[-1],)
 
         if self.gradient_checkpointing and self.training:
             if use_cache:
