@@ -1061,7 +1061,7 @@ class GPT2LMHeadModel(GPT2PreTrainedModel, GenerationMixin):
     def __init__(self, config):
         super().__init__(config)
         self.transformer = GPT2Model(config)
-        self.lm_head = nn.Dense(config.n_embd, config.vocab_size, bias=False)
+        self.lm_head = nn.Dense(config.n_embd, config.vocab_size, has_bias=False)
 
         # Model parallel
         self.model_parallel = False
