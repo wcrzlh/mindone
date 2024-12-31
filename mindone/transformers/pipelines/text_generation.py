@@ -329,7 +329,7 @@ class TextGenerationPipeline(Pipeline):
                     inputs["attention_mask"] = inputs["attention_mask"][:, -keep_length:]
 
         for key in inputs.keys():
-            if inputs[key].dtype == "numpy.ndarray":
+            if not isinstance(inputs[key], str):
                 inputs[key] = ms.tensor(inputs[key])
 
         return inputs
