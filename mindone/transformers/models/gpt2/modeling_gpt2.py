@@ -50,6 +50,25 @@ from ...modeling_outputs import (
 from ...modeling_utils import MSPreTrainedModel, SequenceSummary
 from ...utils import get_mindspore_version
 
+_MIN_FP16 = ms.tensor(np.finfo(np.float16).min, dtype=ms.float16)
+_MIN_FP32 = ms.tensor(np.finfo(np.float32).min, dtype=ms.float32)
+_MIN_FP64 = ms.tensor(np.finfo(np.float64).min, dtype=ms.float64)
+_MIN_BF16 = ms.tensor(float.fromhex("-0x1.fe00000000000p+127"), dtype=ms.bfloat16)
+
+
+# Copied from mindone.transformers.modeling_attn_mask_utils.dtype_to_min
+def dtype_to_min(dtype):
+    if dtype == ms.float16:
+        return _MIN_FP16
+    if dtype == ms.float32:
+        return _MIN_FP32
+    if dtype == ms.float64:
+        return _MIN_FP64
+    if dtype == ms.bfloat16:
+        return _MIN_BF16
+    else:
+        raise ValueError(f"Only support get minimum value of (bfloat16, float16, float32, float64), but got {dtype}")
+
 logger = logging.get_logger(__name__)
 
 _CHECKPOINT_FOR_DOC = "openai-community/gpt2"
@@ -182,7 +201,7 @@ class GPT2Attention(nn.Cell):
             # if only "normal" attention layer implements causal mask
             query_length, key_length = query.size(-2), key.size(-2)
             causal_mask = self.bias[:, :, key_length - query_length : key_length, :key_length]
-            mask_value = ms.tensor(np.finfo(attn_weights.dtype)).min
+            mask_value = dtype_to_min(attn_weights.dtype)
             # Need to be a tensor, otherwise we get error: `RuntimeError: expected scalar type float but found double`.
             # Need to be on the same device, otherwise `RuntimeError: ..., x and y to be on the same device`
             mask_value = ops.full([], mask_value, dtype=attn_weights.dtype)
@@ -232,7 +251,7 @@ class GPT2Attention(nn.Cell):
             # if only "normal" attention layer implements causal mask
             query_length, key_length = query.size(-2), key.size(-2)
             causal_mask = self.bias[:, :, key_length - query_length : key_length, :key_length]
-            mask_value = ms.tensor(np.finfo(attn_weights.dtype)).min
+            mask_value = dtype_to_min(attn_weights.dtype)
             # Need to be a tensor, otherwise we get error: `RuntimeError: expected scalar type float but found double`.
             # Need to be on the same device, otherwise `RuntimeError: ..., x and y to be on the same device`
             mask_value = ms.tensor(mask_value, dtype=attn_weights.dtype)
@@ -928,7 +947,7 @@ class GPT2Model(GPT2PreTrainedModel):
                 # Since we are adding it to the raw scores before the softmax, this is
                 # effectively the same as removing these entirely.
                 attention_mask = attention_mask.to(dtype=self.dtype)  # fp16 compatibility
-                attention_mask = (1.0 - attention_mask) * ms.tensor(np.finfo(self.dtype)).min
+                attention_mask = (1.0 - attention_mask) * dtype_to_min(self.dtype)
 
         # If a 2D or 3D attention mask is provided for the cross-attention
         # we need to make broadcastable to [batch_size, num_heads, seq_length, seq_length]
