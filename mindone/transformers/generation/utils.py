@@ -71,7 +71,6 @@ from .stopping_criteria import (
     MaxTimeCriteria,
     StoppingCriteria,
     StoppingCriteriaList,
-    StopStringCriteria,
 )
 
 NEED_SETUP_CACHE_CLASSES_MAPPING = {
@@ -942,14 +941,14 @@ class GenerationMixin:
             )
         if generation_config.max_time is not None:
             criteria.append(MaxTimeCriteria(max_time=generation_config.max_time))
-        if generation_config.stop_strings is not None:
-            if tokenizer is None:
-                raise ValueError(
-                    "There are one or more stop strings, either in the arguments to `generate` or in the "
-                    "model's generation config, but we could not locate a tokenizer. When generating with "
-                    "stop strings, you must pass the model's tokenizer to the `tokenizer` argument of `generate`."
-                )
-            criteria.append(StopStringCriteria(stop_strings=generation_config.stop_strings, tokenizer=tokenizer))
+        # if generation_config.stop_strings is not None:
+        #     if tokenizer is None:
+        #         raise ValueError(
+        #             "There are one or more stop strings, either in the arguments to `generate` or in the "
+        #             "model's generation config, but we could not locate a tokenizer. When generating with "
+        #             "stop strings, you must pass the model's tokenizer to the `tokenizer` argument of `generate`."
+        #         )
+        #     criteria.append(StopStringCriteria(stop_strings=generation_config.stop_strings, tokenizer=tokenizer))
         if generation_config._eos_token_tensor is not None:
             criteria.append(EosTokenCriteria(eos_token_id=generation_config._eos_token_tensor))
         criteria = self._merge_criteria_processor_list(criteria, stopping_criteria)
