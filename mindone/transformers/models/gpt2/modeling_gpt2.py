@@ -1209,7 +1209,7 @@ class GPT2LMHeadModel(GPT2PreTrainedModel, GenerationMixin):
         use_cache=False,
         **kwargs,
     ):
-        model_inputs = {"input_ids": input_ids}
+        model_inputs = {"input_ids": input_ids.int()}
 
         model_inputs.update(
             {
