@@ -117,9 +117,9 @@ class GPT2Attention(nn.Cell):
         super().__init__()
         self.config = config
         max_positions = config.max_position_embeddings
-        self.bias = ops.tril(ops.ones((max_positions, max_positions), dtype=ms.bool_)).view(
+        self.bias = ops.tril(ops.ones((max_positions, max_positions))).view(
             1, 1, max_positions, max_positions
-        )
+        ).astype(ms.bool_)
         self.masked_bias = ms.tensor(-1e4)
 
         self.embed_dim = config.hidden_size
