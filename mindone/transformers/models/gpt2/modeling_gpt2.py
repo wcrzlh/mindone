@@ -1206,7 +1206,7 @@ class GPT2LMHeadModel(GPT2PreTrainedModel, GenerationMixin):
         inputs_embeds=None,
         cache_position=None,
         position_ids=None,
-        use_cache=True,
+        use_cache=False,
         **kwargs,
     ):
         model_inputs = {"input_ids": input_ids}
@@ -1214,7 +1214,6 @@ class GPT2LMHeadModel(GPT2PreTrainedModel, GenerationMixin):
         model_inputs.update(
             {
                 "position_ids": position_ids,
-                "cache_position": cache_position,
                 "past_key_values": past_key_values,
                 "use_cache": use_cache,
                 "attention_mask": attention_mask,
