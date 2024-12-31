@@ -1363,9 +1363,9 @@ class GenerationMixin:
         """Calculates `cache_position` for the pre-fill stage based on `input_ids` and optionally past length"""
         # `torch.compile`-friendly `torch.arange` from a shape -- the lines below are equivalent to `torch.arange`
         if "inputs_embeds" in model_kwargs:
-            cache_position = ops.ones_like(model_kwargs["inputs_embeds"][0, :, 0], dtype=ms.int64).cumsum(0) - 1
+            cache_position = ops.ones_like(model_kwargs["inputs_embeds"][0, :, 0], dtype=ms.int32).cumsum(0) - 1
         else:
-            cache_position = ops.ones_like(input_ids[0, :], dtype=ms.int64).cumsum(0) - 1
+            cache_position = ops.ones_like(input_ids[0, :], dtype=ms.int32).cumsum(0) - 1
 
         past_length = 0
         if model_kwargs.get("past_key_values") is not None:
