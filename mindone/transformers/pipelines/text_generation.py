@@ -328,8 +328,8 @@ class TextGenerationPipeline(Pipeline):
                 if "attention_mask" in inputs:
                     inputs["attention_mask"] = inputs["attention_mask"][:, -keep_length:]
 
-        for key in inputs.keys():
-            inputs[key] = ms.tensor(inputs[key])
+        # for key in inputs.keys():
+        #     inputs[key] = ms.tensor(inputs[key])
 
         return inputs
 
