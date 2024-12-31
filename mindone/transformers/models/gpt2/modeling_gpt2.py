@@ -875,7 +875,7 @@ class GPT2Model(GPT2PreTrainedModel):
             raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
         elif input_ids is not None:
             self.warn_if_padding_and_no_attention_mask(input_ids, attention_mask)
-            input_shape = input_ids.size()
+            input_shape = input_ids.shape
             input_ids = input_ids.view(-1, input_shape[-1])
             batch_size = input_ids.shape[0]
         elif inputs_embeds is not None:
