@@ -188,10 +188,10 @@ class GPT2Attention(nn.Cell):
         self.pruned_heads = self.pruned_heads.union(heads)
 
     def _attn(self, query, key, value, attention_mask=None, head_mask=None):
-        attn_weights = ops.matmul(query, key.transpose(-1, -2))
+        attn_weights = ops.matmul(query, key.swapaxes(-1, -2))
 
         if self.scale_attn_weights:
-            attn_weights = attn_weights / ops.full([], value.size(-1) ** 0.5, dtype=attn_weights.dtype)
+            attn_weights = attn_weights / ops.full([], value.shape[-1] ** 0.5, dtype=attn_weights.dtype)
 
         # Layer-wise attention scaling
         if self.scale_attn_by_inverse_layer_idx:
