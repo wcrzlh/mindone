@@ -199,7 +199,7 @@ class GPT2Attention(nn.Cell):
 
         if not self.is_cross_attention:
             # if only "normal" attention layer implements causal mask
-            query_length, key_length = query.size(-2), key.size(-2)
+            query_length, key_length = query.shape[-2], key.shape[-2]
             causal_mask = self.bias[:, :, key_length - query_length : key_length, :key_length]
             mask_value = dtype_to_min(attn_weights.dtype)
             # Need to be a tensor, otherwise we get error: `RuntimeError: expected scalar type float but found double`.
@@ -249,7 +249,7 @@ class GPT2Attention(nn.Cell):
 
         if not self.is_cross_attention:
             # if only "normal" attention layer implements causal mask
-            query_length, key_length = query.size(-2), key.size(-2)
+            query_length, key_length = query.shape[-2], key.shape[-2]
             causal_mask = self.bias[:, :, key_length - query_length : key_length, :key_length]
             mask_value = dtype_to_min(attn_weights.dtype)
             # Need to be a tensor, otherwise we get error: `RuntimeError: expected scalar type float but found double`.
@@ -898,7 +898,7 @@ class GPT2Model(GPT2PreTrainedModel):
             input_ids = input_ids.view(-1, input_shape[-1])
             batch_size = input_ids.shape[0]
         elif inputs_embeds is not None:
-            input_shape = inputs_embeds.size()[:-1]
+            input_shape = inputs_embeds.shape[:-1]
             batch_size = inputs_embeds.shape[0]
         else:
             raise ValueError("You have to specify either input_ids or inputs_embeds")
@@ -910,7 +910,7 @@ class GPT2Model(GPT2PreTrainedModel):
             past_length = 0
             past_key_values = tuple([None] * len(self.h))
         else:
-            past_length = past_key_values[0][0].size(-2)
+            past_length = past_key_values[0][0].shape[-2]
         if position_ids is None:
             position_ids = ops.arange(past_length, input_shape[-1] + past_length, dtype=ms.int64)
             position_ids = position_ids.unsqueeze(0)
@@ -952,7 +952,7 @@ class GPT2Model(GPT2PreTrainedModel):
         # If a 2D or 3D attention mask is provided for the cross-attention
         # we need to make broadcastable to [batch_size, num_heads, seq_length, seq_length]
         if self.config.add_cross_attention and encoder_hidden_states is not None:
-            encoder_batch_size, encoder_sequence_length, _ = encoder_hidden_states.size()
+            encoder_batch_size, encoder_sequence_length, _ = encoder_hidden_states.shape
             encoder_hidden_shape = (encoder_batch_size, encoder_sequence_length)
             if encoder_attention_mask is None:
                 encoder_attention_mask = ops.ones(encoder_hidden_shape)
@@ -1191,7 +1191,7 @@ class GPT2LMHeadModel(GPT2PreTrainedModel, GenerationMixin):
             shift_labels = labels[..., 1:].contiguous()
             # Flatten the tokens
             loss_fct = CrossEntropyLoss()
-            loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
+            loss = loss_fct(shift_logits.view(-1, shift_logits.shape[-1]), shift_labels.view(-1))
 
         if not return_dict:
             output = (lm_logits,) + transformer_outputs[1:]
@@ -1395,14 +1395,14 @@ class GPT2DoubleHeadsModel(GPT2PreTrainedModel, GenerationMixin):
         mc_loss = None
         if mc_labels is not None:
             loss_fct = CrossEntropyLoss()
-            mc_loss = loss_fct(mc_logits.view(-1, mc_logits.size(-1)), mc_labels.view(-1))
+            mc_loss = loss_fct(mc_logits.view(-1, mc_logits.shape[-1]), mc_labels.view(-1))
         lm_loss = None
         if labels is not None:
             labels = labels
             shift_logits = lm_logits[..., :-1, :].contiguous()
             shift_labels = labels[..., 1:].contiguous()
             loss_fct = CrossEntropyLoss()
-            lm_loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
+            lm_loss = loss_fct(shift_logits.view(-1, shift_logits.shape[-1]), shift_labels.view(-1))
 
         if not return_dict:
             output = (lm_logits, mc_logits) + transformer_outputs[1:]
@@ -1753,12 +1753,12 @@ class GPT2ForQuestionAnswering(GPT2PreTrainedModel):
         total_loss = None
         if start_positions is not None and end_positions is not None:
             # If we are on multi-GPU, split add a dimension
-            if len(start_positions.size()) > 1:
+            if len(start_positions.shape) > 1:
                 start_positions = start_positions.squeeze(-1)
-            if len(end_positions.size()) > 1:
+            if len(end_positions.shape) > 1:
                 end_positions = end_positions.squeeze(-1)
             # sometimes the start/end positions are outside our model inputs, we ignore these terms
-            ignored_index = start_logits.size(1)
+            ignored_index = start_logits.shape[1]
             start_positions = start_positions.clamp(0, ignored_index)
             end_positions = end_positions.clamp(0, ignored_index)
 
