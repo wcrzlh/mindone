@@ -1209,8 +1209,18 @@ class GPT2LMHeadModel(GPT2PreTrainedModel, GenerationMixin):
         use_cache=True,
         **kwargs,
     ):
-        return input_ids
+        model_inputs = {"input_ids": input_ids}
 
+        model_inputs.update(
+            {
+                "position_ids": position_ids,
+                "cache_position": cache_position,
+                "past_key_values": past_key_values,
+                "use_cache": use_cache,
+                "attention_mask": attention_mask,
+            }
+        )
+        return model_inputs
 
 @add_start_docstrings(
     """
