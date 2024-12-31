@@ -462,13 +462,13 @@ class GPT2Block(nn.Cell):
         inner_dim = config.n_inner if config.n_inner is not None else 4 * hidden_size
         attention_class = GPT2_ATTENTION_CLASSES[config._attn_implementation]
 
-        self.ln_1 = nn.LayerNorm(hidden_size, epsilon=config.layer_norm_epsilon)
+        self.ln_1 = nn.LayerNorm((hidden_size,), epsilon=config.layer_norm_epsilon)
         self.attn = attention_class(config=config, layer_idx=layer_idx)
-        self.ln_2 = nn.LayerNorm(hidden_size, epsilon=config.layer_norm_epsilon)
+        self.ln_2 = nn.LayerNorm((hidden_size,), epsilon=config.layer_norm_epsilon)
 
         if config.add_cross_attention:
             self.crossattention = attention_class(config=config, is_cross_attention=True, layer_idx=layer_idx)
-            self.ln_cross_attn = nn.LayerNorm(hidden_size, epsilon=config.layer_norm_epsilon)
+            self.ln_cross_attn = nn.LayerNorm((hidden_size,), epsilon=config.layer_norm_epsilon)
 
         self.mlp = GPT2MLP(inner_dim, config)
 
@@ -776,7 +776,7 @@ class GPT2Model(GPT2PreTrainedModel):
 
         self.drop = nn.Dropout(config.embd_pdrop)
         self.h = nn.CellList([GPT2Block(config, layer_idx=i) for i in range(config.num_hidden_layers)])
-        self.ln_f = nn.LayerNorm(self.embed_dim, epsilon=config.layer_norm_epsilon)
+        self.ln_f = nn.LayerNorm((self.embed_dim,), epsilon=config.layer_norm_epsilon)
 
         # Model parallel
         self.model_parallel = False
