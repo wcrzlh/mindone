@@ -1198,6 +1198,19 @@ class GPT2LMHeadModel(GPT2PreTrainedModel, GenerationMixin):
             tuple(past_state.index_select(0, beam_idx) for past_state in layer_past) for layer_past in past_key_values
         )
 
+    def prepare_inputs_for_generation(
+        self,
+        input_ids,
+        past_key_values=None,
+        attention_mask=None,
+        inputs_embeds=None,
+        cache_position=None,
+        position_ids=None,
+        use_cache=True,
+        **kwargs,
+    ):
+        return input_ids
+
 
 @add_start_docstrings(
     """
