@@ -7,6 +7,8 @@ from transformers.utils import add_end_docstrings
 from ..utils import is_mindspore_available
 from .base import Pipeline, build_pipeline_init_args
 
+import mindspore as ms
+
 if is_mindspore_available():
     from ..models.auto.modeling_auto import MODEL_FOR_CAUSAL_LM_MAPPING_NAMES
     from .pt_utils import KeyDataset
@@ -302,7 +304,7 @@ class TextGenerationPipeline(Pipeline):
                 **tokenizer_kwargs,
             )
         else:
-            inputs = self.tokenizer(prefix + prompt_text, return_tensors=self.framework, **tokenizer_kwargs)
+            inputs = self.tokenizer(prefix + prompt_text, return_tensors="np", **tokenizer_kwargs)
 
         inputs["prompt_text"] = prompt_text
 
@@ -325,6 +327,9 @@ class TextGenerationPipeline(Pipeline):
                 inputs["input_ids"] = inputs["input_ids"][:, -keep_length:]
                 if "attention_mask" in inputs:
                     inputs["attention_mask"] = inputs["attention_mask"][:, -keep_length:]
+
+        for key in inputs.keys():
+            inputs[key] = ms.tensor(inputs[key])
 
         return inputs
 
