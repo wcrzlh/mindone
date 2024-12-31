@@ -37,6 +37,7 @@ CONFIG_MAPPING_NAMES = OrderedDict(
         ("clip", "CLIPConfig"),
         ("dpt", "DPTConfig"),
         ("gemma", "GemmaConfig"),
+        ("gpt2", "GPT2Config"),
         ("mt5", "MT5Config"),
         ("t5", "T5Config"),
         ("xlm-roberta", "XLMRobertaConfig"),
