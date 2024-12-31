@@ -75,15 +75,15 @@ def _get_pt2ms_mappings(m):
     for name, cell in m.cells_and_names():
         if isinstance(cell, nn.Conv1d):
             mappings[f"{name}.weight"] = f"{name}.weight", lambda x: ops.expand_dims(x, axis=-2)
-        # elif isinstance(cell, nn.Embedding):
-        #     mappings[f"{name}.weight"] = f"{name}.embedding_table", lambda x: x
-        # elif isinstance(cell, (nn.BatchNorm2d, nn.LayerNorm, nn.GroupNorm)):
-        #     mappings[f"{name}.weight"] = f"{name}.gamma", lambda x: x
-        #     mappings[f"{name}.bias"] = f"{name}.beta", lambda x: x
-        #     if isinstance(cell, (nn.BatchNorm2d,)):
-        #         mappings[f"{name}.running_mean"] = f"{name}.moving_mean", lambda x: x
-        #         mappings[f"{name}.running_var"] = f"{name}.moving_variance", lambda x: x
-        #         mappings[f"{name}.num_batches_tracked"] = None, lambda x: x
+        elif isinstance(cell, nn.Embedding):
+            mappings[f"{name}.weight"] = f"{name}.embedding_table", lambda x: x
+        elif isinstance(cell, (nn.BatchNorm2d, nn.LayerNorm, nn.GroupNorm)):
+            mappings[f"{name}.weight"] = f"{name}.gamma", lambda x: x
+            mappings[f"{name}.bias"] = f"{name}.beta", lambda x: x
+            if isinstance(cell, (nn.BatchNorm2d,)):
+                mappings[f"{name}.running_mean"] = f"{name}.moving_mean", lambda x: x
+                mappings[f"{name}.running_var"] = f"{name}.moving_variance", lambda x: x
+                mappings[f"{name}.num_batches_tracked"] = None, lambda x: x
     return mappings
 
 
@@ -1799,11 +1799,14 @@ class MSPreTrainedModel(nn.Cell, ModuleUtilsMixin, PushToHubMixin, PeftAdapterMi
         dtype=None,
         keep_in_fp32_modules=None,
     ):
+        prefix = model.base_model_prefix
+        if prefix:
+            _prefix = f"{prefix}."
+            loaded_keys = [s[len(_prefix):] if s.startswith(_prefix) else s for s in loaded_keys]
         loaded_keys = [_get_pt2ms_mappings(model).get(k, (k, None))[0] for k in loaded_keys]
         # Retrieve missing & unexpected_keys
         model_state_dict = {k: v for k, v in model.parameters_and_names()}
         expected_keys = list(model_state_dict.keys())
-        prefix = model.base_model_prefix
         original_loaded_keys = loaded_keys
 
         if len(prefix) > 0:
