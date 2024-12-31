@@ -248,13 +248,13 @@ def infer_framework_load_model(
         all_traceback = {}
         for model_class in class_tuple:
             kwargs = model_kwargs.copy()
-            if framework == "ms" and model.endswith(".h5"):
+            if framework == "tf" and model.endswith(".h5"):
                 kwargs["from_tf"] = True
                 logger.warning(
                     "Model might be a TensorFlow model (ending with `.h5`) but TensorFlow is not available. "
                     "Trying to load the model with PyTorch."
                 )
-            elif framework == "tf" and model.endswith(".bin"):
+            elif framework == "ms" and model.endswith(".bin"):
                 kwargs["from_pt"] = True
                 logger.warning(
                     "Model might be a PyTorch model (ending with `.bin`) but PyTorch is not available. "
