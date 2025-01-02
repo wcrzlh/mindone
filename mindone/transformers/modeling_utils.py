@@ -1799,11 +1799,8 @@ class MSPreTrainedModel(nn.Cell, ModuleUtilsMixin, PushToHubMixin, PeftAdapterMi
         dtype=None,
         keep_in_fp32_modules=None,
     ):
-        prefix = model.base_model_prefix
-        if prefix:
-            _prefix = f"{prefix}."
-            loaded_keys = [s[len(_prefix):] if s.startswith(_prefix) else s for s in loaded_keys]
         loaded_keys = [_get_pt2ms_mappings(model).get(k, (k, None))[0] for k in loaded_keys]
+        prefix = model.base_model_prefix
         # Retrieve missing & unexpected_keys
         model_state_dict = {k: v for k, v in model.parameters_and_names()}
         expected_keys = list(model_state_dict.keys())
