@@ -1801,6 +1801,15 @@ class MSPreTrainedModel(nn.Cell, ModuleUtilsMixin, PushToHubMixin, PeftAdapterMi
     ):
         loaded_keys = [_get_pt2ms_mappings(model).get(k, (k, None))[0] for k in loaded_keys]
         prefix = model.base_model_prefix
+
+        if prefix is not None:
+            _prefix = f"{prefix}."
+            for i in range(len(loaded_keys)):
+                if _prefix not in loaded_keys[i]:
+                    data = state_dict.pop(loaded_keys[i])
+                    loaded_keys[i] = _prefix + loaded_keys[i]
+                    state_dict[loaded_keys[i]] = data
+
         # Retrieve missing & unexpected_keys
         model_state_dict = {k: v for k, v in model.parameters_and_names()}
         expected_keys = list(model_state_dict.keys())
