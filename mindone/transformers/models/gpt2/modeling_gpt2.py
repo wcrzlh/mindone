@@ -644,9 +644,9 @@ class GPT2PreTrainedModel(MSPreTrainedModel):
             if module.bias is not None:
                 module.bias.data.zero_()
         elif isinstance(module, nn.Embedding):
-            module.gamma.data.normal_(mean=0.0, std=self.config.initializer_range)
+            module.embedding_table.data.normal_(mean=0.0, std=self.config.initializer_range)
             if module.padding_idx is not None:
-                module.gamma.data[module.padding_idx].zero_()
+                module.embedding_table.data[module.padding_idx].zero_()
         elif isinstance(module, nn.LayerNorm):
             module.beta.data.zero_()
             module.gamma.data.fill_(1.0)
