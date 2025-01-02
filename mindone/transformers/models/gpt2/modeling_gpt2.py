@@ -645,12 +645,12 @@ class GPT2PreTrainedModel(MSPreTrainedModel):
             if module.bias is not None:
                 module.bias.set_data(init.initializer("zeros", module.bias.shape, module.bias.dtype))
         elif isinstance(module, nn.Embedding):
-            module.embedding_table.set_data(init.initializer(init.Normal(self.config.initializer_range), module.weight.shape, module.weight.dtype))
+            module.embedding_table.set_data(init.initializer(init.Normal(self.config.initializer_range), module.embedding_table.shape, module.embedding_table.dtype))
             if module.padding_idx is not None:
-                module.embedding_table.data[module.padding_idx].set_data(init.initializer("zeros", module.bias.shape, module.bias.dtype))
+                module.embedding_table.data[module.padding_idx].set_data(init.initializer("zeros", module.embedding_table.shape, module.embedding_table.dtype))
         elif isinstance(module, nn.LayerNorm):
-            module.beta.set_data(init.initializer("zeros", module.bias.shape, module.bias.dtype))
-            module.gamma.set_data(init.initializer("ones", module.bias.shape, module.bias.dtype))
+            module.beta.set_data(init.initializer("zeros", module.beta.shape, module.beta.dtype))
+            module.gamma.set_data(init.initializer("ones", module.gamma.shape, module.gamma.dtype))
 
         # Reinitialize selected weights subject to the OpenAI GPT-2 Paper Scheme:
         #   > A modified initialization which accounts for the accumulation on the residual path with model depth. Scale
