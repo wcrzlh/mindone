@@ -661,7 +661,7 @@ class GPT2PreTrainedModel(MSPreTrainedModel):
         for name, p in module.parameters_and_names():
             if name == "c_proj.weight":
                 # Special Scaled Initialization --> There are 2 Layer Norms per Transformer Block
-                p.set_data(init.initializer(init.Normal(self.config.initializer_range / math.sqrt(2 * self.config.n_layer), shape = p.shape, dtype = p.dtype)))
+                p.set_data(init.initializer(init.Normal(self.config.initializer_range / math.sqrt(2 * self.config.n_layer)), p.shape, p.dtype))
 
 
 @dataclass
