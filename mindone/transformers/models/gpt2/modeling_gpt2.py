@@ -34,6 +34,7 @@ from transformers.utils import (
 )
 
 import mindspore as ms
+import mindspore.common.initializer as init
 from mindspore import nn, ops
 from mindspore.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
@@ -640,16 +641,16 @@ class GPT2PreTrainedModel(MSPreTrainedModel):
         if isinstance(module, (nn.Dense, Conv1D)):
             # Slightly different from the TF version which uses truncated_normal for initialization
             # cf https://github.com/pytorch/pytorch/pull/5617
-            module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
+            module.weight.set_data(init.initializer(init.Normal(self.config.initializer_range), module.weight.shape, module.weight.dtype))
             if module.bias is not None:
-                module.bias.data.zero_()
+                module.bias.set_data(init.initializer("zeros", module.bias.shape, module.bias.dtype))
         elif isinstance(module, nn.Embedding):
-            module.embedding_table.data.normal_(mean=0.0, std=self.config.initializer_range)
+            module.embedding_table.set_data(init.initializer(init.Normal(self.config.initializer_range), module.weight.shape, module.weight.dtype))
             if module.padding_idx is not None:
-                module.embedding_table.data[module.padding_idx].zero_()
+                module.embedding_table.data[module.padding_idx].set_data(init.initializer("zeros", module.bias.shape, module.bias.dtype))
         elif isinstance(module, nn.LayerNorm):
-            module.beta.data.zero_()
-            module.gamma.data.fill_(1.0)
+            module.beta.set_data(init.initializer("zeros", module.bias.shape, module.bias.dtype))
+            module.gamma.set_data(init.initializer("ones", module.bias.shape, module.bias.dtype))
 
         # Reinitialize selected weights subject to the OpenAI GPT-2 Paper Scheme:
         #   > A modified initialization which accounts for the accumulation on the residual path with model depth. Scale
@@ -660,7 +661,7 @@ class GPT2PreTrainedModel(MSPreTrainedModel):
         for name, p in module.parameters_and_names():
             if name == "c_proj.weight":
                 # Special Scaled Initialization --> There are 2 Layer Norms per Transformer Block
-                p.data.normal_(mean=0.0, std=(self.config.initializer_range / math.sqrt(2 * self.config.n_layer)))
+                p.set_data(init.initializer(init.Normal(self.config.initializer_range / math.sqrt(2 * self.config.n_layer), module.weight.shape, module.weight.dtype)))
 
 
 @dataclass
