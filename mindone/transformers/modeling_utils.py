@@ -819,8 +819,8 @@ class MSPreTrainedModel(nn.Cell, ModuleUtilsMixin, PushToHubMixin, PeftAdapterMi
             output_embeddings.weight = input_embeddings.embedding_table
 
         if getattr(output_embeddings, "bias", None) is not None:
-            output_embeddings.bias.data = ops.pad(
-                output_embeddings.bias.data,
+            output_embeddings.bias = ops.pad(
+                output_embeddings.bias,
                 (
                     0,
                     output_embeddings.weight.shape[0] - output_embeddings.bias.shape[0],
