@@ -717,7 +717,7 @@ class MSPreTrainedModel(nn.Cell, ModuleUtilsMixin, PushToHubMixin, PeftAdapterMi
             # Leading to issues on subsequent calls by different tests or subsequent calls.
             self._dynamic_tied_weights_keys = tied_weights
 
-        for module in self.modules():
+        for name, module in self.cells_and_names():
             if hasattr(module, "_tie_weights"):
                 module._tie_weights()
 
