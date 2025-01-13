@@ -522,7 +522,7 @@ class BeitRelativePositionBias(nn.Cell):
         self.window_size = window_size
         self.num_relative_distance = (2 * window_size[0] - 1) * (2 * window_size[1] - 1) + 3
         self.relative_position_bias_table = Parameter(
-            ops.zeros(self.num_relative_distance, config.num_attention_heads)
+            ops.zeros((self.num_relative_distance, config.num_attention_heads))
         )  # 2*Wh-1 * 2*Ww-1, nH
         # cls to token & token 2 cls & cls to cls
 
