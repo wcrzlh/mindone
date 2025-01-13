@@ -148,7 +148,7 @@ class BeitEmbeddings(nn.Cell):
             self.position_embeddings = Parameter(ops.zeros((1, num_patches + 1, config.hidden_size)))
         else:
             self.position_embeddings = None
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.dropout = nn.Dropout(p=config.hidden_dropout_prob)
 
     # Copied from transformers.models.vit.modeling_vit.ViTEmbeddings.interpolate_pos_encoding
     def interpolate_pos_encoding(self, embeddings: ms.Tensor, height: int, width: int) -> ms.Tensor:
@@ -294,7 +294,7 @@ class BeitSelfAttention(nn.Cell):
         self.key = nn.Linear(config.hidden_size, self.all_head_size, bias=False)
         self.value = nn.Linear(config.hidden_size, self.all_head_size)
 
-        self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
+        self.dropout = nn.Dropout(p=config.attention_probs_dropout_prob)
 
         if window_size:
             self.relative_position_bias = BeitRelativePositionBias(config, window_size=window_size)
@@ -369,7 +369,7 @@ class BeitSelfOutput(nn.Cell):
     def __init__(self, config: BeitConfig) -> None:
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.dropout = nn.Dropout(p=config.hidden_dropout_prob)
 
     def construct(self, hidden_states: ms.Tensor, input_tensor: ms.Tensor, gamma=None) -> ms.Tensor:
         hidden_states = self.dense(hidden_states)
@@ -442,7 +442,7 @@ class BeitOutput(nn.Cell):
     def __init__(self, config: BeitConfig) -> None:
         super().__init__()
         self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.dropout = nn.Dropout(p=config.hidden_dropout_prob)
 
     def construct(self, hidden_states: ms.Tensor) -> ms.Tensor:
         hidden_states = self.dense(hidden_states)
