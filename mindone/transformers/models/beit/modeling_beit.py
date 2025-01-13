@@ -461,9 +461,9 @@ class BeitLayer(nn.Cell):
         self.attention = BeitAttention(config, window_size=window_size)
         self.intermediate = BeitIntermediate(config)
         self.output = BeitOutput(config)
-        self.layernorm_before = nn.LayerNorm(config.hidden_size, epsilon=config.layer_norm_eps)
+        self.layernorm_before = nn.LayerNorm((config.hidden_size,), epsilon=config.layer_norm_eps)
         self.drop_path = BeitDropPath(drop_path_rate) if drop_path_rate > 0.0 else nn.Identity()
-        self.layernorm_after = nn.LayerNorm(config.hidden_size, epsilon=config.layer_norm_eps)
+        self.layernorm_after = nn.LayerNorm((config.hidden_size,), epsilon=config.layer_norm_eps)
 
         init_values = config.layer_scale_init_value
         if init_values > 0:
@@ -766,7 +766,7 @@ class BeitModel(BeitPreTrainedModel):
         self.encoder = BeitEncoder(config, window_size=self.embeddings.patch_embeddings.patch_shape)
 
         self.layernorm = (
-            nn.Identity() if config.use_mean_pooling else nn.LayerNorm(config.hidden_size, epsilon=config.layer_norm_eps)
+            nn.Identity() if config.use_mean_pooling else nn.LayerNorm((config.hidden_size,), epsilon=config.layer_norm_eps)
         )
         self.pooler = BeitPooler(config) if add_pooling_layer else None
 
@@ -853,7 +853,7 @@ class BeitPooler(nn.Cell):
     def __init__(self, config: BeitConfig) -> None:
         super().__init__()
         self.layernorm = (
-            nn.LayerNorm(config.hidden_size, epsilon=config.layer_norm_eps) if config.use_mean_pooling else None
+            nn.LayerNorm((config.hidden_size,), epsilon=config.layer_norm_eps) if config.use_mean_pooling else None
         )
 
     def construct(self, hidden_states: ms.Tensor) -> ms.Tensor:
@@ -883,7 +883,7 @@ class BeitForMaskedImageModeling(BeitPreTrainedModel):
         self.beit = BeitModel(config, add_pooling_layer=False)
 
         # Classifier head
-        self.layernorm = nn.LayerNorm(config.hidden_size, epsilon=config.layer_norm_eps)
+        self.layernorm = nn.LayerNorm((config.hidden_size,), epsilon=config.layer_norm_eps)
         self.lm_head = nn.Dense(config.hidden_size, config.vocab_size)
 
         # Initialize weights and apply final processing
