@@ -1,0 +1,1 @@
+from .modeling_beit import BeitBackbone, BeitForImageClassification, BeitForMaskedImageModeling, BeitForSemanticSegmentation, BeitModel
