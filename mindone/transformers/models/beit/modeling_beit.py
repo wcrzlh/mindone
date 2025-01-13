@@ -290,9 +290,9 @@ class BeitSelfAttention(nn.Cell):
         self.attention_head_size = int(config.hidden_size / config.num_attention_heads)
         self.all_head_size = self.num_attention_heads * self.attention_head_size
 
-        self.query = nn.Linear(config.hidden_size, self.all_head_size)
-        self.key = nn.Linear(config.hidden_size, self.all_head_size, bias=False)
-        self.value = nn.Linear(config.hidden_size, self.all_head_size)
+        self.query = nn.Dense(config.hidden_size, self.all_head_size)
+        self.key = nn.Dense(config.hidden_size, self.all_head_size, has_bias=False)
+        self.value = nn.Dense(config.hidden_size, self.all_head_size)
 
         self.dropout = nn.Dropout(p=config.attention_probs_dropout_prob)
 
@@ -368,7 +368,7 @@ class BeitSelfOutput(nn.Cell):
 
     def __init__(self, config: BeitConfig) -> None:
         super().__init__()
-        self.dense = nn.Linear(config.hidden_size, config.hidden_size)
+        self.dense = nn.Dense(config.hidden_size, config.hidden_size)
         self.dropout = nn.Dropout(p=config.hidden_dropout_prob)
 
     def construct(self, hidden_states: ms.Tensor, input_tensor: ms.Tensor, gamma=None) -> ms.Tensor:
@@ -425,7 +425,7 @@ class BeitAttention(nn.Cell):
 class BeitIntermediate(nn.Cell):
     def __init__(self, config: BeitConfig) -> None:
         super().__init__()
-        self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
+        self.dense = nn.Dense(config.hidden_size, config.intermediate_size)
         if isinstance(config.hidden_act, str):
             self.intermediate_act_fn = ACT2FN[config.hidden_act]
         else:
@@ -441,7 +441,7 @@ class BeitIntermediate(nn.Cell):
 class BeitOutput(nn.Cell):
     def __init__(self, config: BeitConfig) -> None:
         super().__init__()
-        self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
+        self.dense = nn.Dense(config.intermediate_size, config.hidden_size)
         self.dropout = nn.Dropout(p=config.hidden_dropout_prob)
 
     def construct(self, hidden_states: ms.Tensor) -> ms.Tensor:
@@ -766,7 +766,7 @@ class BeitModel(BeitPreTrainedModel):
         self.encoder = BeitEncoder(config, window_size=self.embeddings.patch_embeddings.patch_shape)
 
         self.layernorm = (
-            nn.Identity() if config.use_mean_pooling else nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+            nn.Identity() if config.use_mean_pooling else nn.LayerNorm(config.hidden_size, epsilon=config.layer_norm_eps)
         )
         self.pooler = BeitPooler(config) if add_pooling_layer else None
 
@@ -853,7 +853,7 @@ class BeitPooler(nn.Cell):
     def __init__(self, config: BeitConfig) -> None:
         super().__init__()
         self.layernorm = (
-            nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps) if config.use_mean_pooling else None
+            nn.LayerNorm(config.hidden_size, epsilon=config.layer_norm_eps) if config.use_mean_pooling else None
         )
 
     def construct(self, hidden_states: ms.Tensor) -> ms.Tensor:
@@ -883,8 +883,8 @@ class BeitForMaskedImageModeling(BeitPreTrainedModel):
         self.beit = BeitModel(config, add_pooling_layer=False)
 
         # Classifier head
-        self.layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
-        self.lm_head = nn.Linear(config.hidden_size, config.vocab_size)
+        self.layernorm = nn.LayerNorm(config.hidden_size, epsilon=config.layer_norm_eps)
+        self.lm_head = nn.Dense(config.hidden_size, config.vocab_size)
 
         # Initialize weights and apply final processing
         self.post_init()
@@ -985,7 +985,7 @@ class BeitForImageClassification(BeitPreTrainedModel):
         self.beit = BeitModel(config, add_pooling_layer=True)
 
         # Classifier head
-        self.classifier = nn.Linear(config.hidden_size, config.num_labels) if config.num_labels > 0 else nn.Identity()
+        self.classifier = nn.Dense(config.hidden_size, config.num_labels) if config.num_labels > 0 else nn.Identity()
 
         # Initialize weights and apply final processing
         self.post_init()
