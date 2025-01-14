@@ -17,7 +17,9 @@
 import importlib
 import json
 import os
+import sys
 import warnings
+from pathlib import Path
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Dict, Optional, Tuple, Union
 
@@ -174,7 +176,13 @@ def image_processor_class_from_name(class_name: str):
         if class_name in extractors:
             module_name = model_type_to_module_name(module_name)
 
-            module = importlib.import_module(f".{module_name}", "transformers.models")
+            # fixme how to deal with transformers module
+            # module = importlib.import_module(f".{module_name}", "transformers.models")
+            sub_path = os.path.abspath(os.path.dirname(__file__))
+            sub_path = str(Path(sub_path).parent)
+            sys.path.insert(0, sub_path)
+            module = importlib.import_module(f".{module_name}", "mindone.transformers.models")
+
             try:
                 return getattr(module, class_name)
             except AttributeError:

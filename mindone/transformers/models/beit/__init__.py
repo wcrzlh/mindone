@@ -1,1 +1,3 @@
 from .modeling_beit import BeitBackbone, BeitForImageClassification, BeitForMaskedImageModeling, BeitForSemanticSegmentation, BeitModel
+
+from .image_processing_beit import BeitImageProcessor
