@@ -201,7 +201,7 @@ class BeitEmbeddings(nn.Cell):
         embeddings, (patch_height, patch_width) = self.patch_embeddings(
             pixel_values, self.position_embeddings[:, 1:, :] if self.position_embeddings is not None else None
         )
-        batch_size, seq_len, _ = embeddings.size()
+        batch_size, seq_len, _ = embeddings.shape
 
         if bool_masked_pos is not None:
             mask_tokens = self.mask_token.expand(batch_size, seq_len, -1)
@@ -302,7 +302,7 @@ class BeitSelfAttention(nn.Cell):
             self.relative_position_bias = None
 
     def transpose_for_scores(self, x):
-        new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
+        new_x_shape = x.shape[:-1] + (self.num_attention_heads, self.attention_head_size)
         x = x.view(*new_x_shape)
         return x.permute(0, 2, 1, 3)
 
@@ -352,7 +352,7 @@ class BeitSelfAttention(nn.Cell):
         context_layer = ops.matmul(attention_probs, value_layer)
 
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
-        new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
+        new_context_layer_shape = context_layer.shape[:-2] + (self.all_head_size,)
         context_layer = context_layer.view(*new_context_layer_shape)
 
         outputs = (context_layer, attention_probs) if output_attentions else (context_layer,)
@@ -1147,7 +1147,7 @@ class BeitPyramidPoolingModule(nn.Cell):
         for ppm in self.blocks:
             ppm_out = ppm(x)
             upsampled_ppm_out = ops.interpolate(
-                ppm_out, size=x.size()[2:], mode="bilinear", align_corners=self.align_corners
+                ppm_out, size=x.shape[2:], mode="bilinear", align_corners=self.align_corners
             )
             ppm_outs.append(upsampled_ppm_out)
         return ppm_outs
