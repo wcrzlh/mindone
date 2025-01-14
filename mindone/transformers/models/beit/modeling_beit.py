@@ -204,12 +204,12 @@ class BeitEmbeddings(nn.Cell):
         batch_size, seq_len, _ = embeddings.shape
 
         if bool_masked_pos is not None:
-            mask_tokens = self.mask_token.expand(batch_size, seq_len, -1)
+            mask_tokens = self.mask_token.expand((batch_size, seq_len, -1))
             # replace the masked visual tokens by mask_tokens
             w = bool_masked_pos.unsqueeze(-1).type_as(mask_tokens)
             embeddings = embeddings * (1 - w) + mask_tokens * w
 
-        cls_tokens = self.cls_token.expand(batch_size, -1, -1)
+        cls_tokens = self.cls_token.expand((batch_size, -1, -1))
         if self.position_embeddings is not None:
             if interpolate_pos_encoding:
                 cls_tokens = cls_tokens + self.interpolate_pos_encoding(embeddings, height, width)
