@@ -271,7 +271,7 @@ class BeitPatchEmbeddings(nn.Cell):
             )
             embeddings = embeddings + position_embedding
 
-        embeddings = embeddings.flatten(start_dim=2).transpose(1, 2)
+        embeddings = embeddings.flatten(start_dim=2).swapaxes(1, 2)
 
         return embeddings, (patch_height, patch_width)
 
