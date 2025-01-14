@@ -539,7 +539,7 @@ class BeitRelativePositionBias(nn.Cell):
         window_area = window_size[0] * window_size[1]
         grid = ops.meshgrid(ops.arange(window_size[0]), ops.arange(window_size[1]), indexing="ij")
         coords = ops.stack(grid)  # 2, Wh, Ww
-        coords_flatten = ops.flatten(coords, 1)  # 2, Wh*Ww
+        coords_flatten = ops.flatten(coords, start_dim=1)  # 2, Wh*Ww
         relative_coords = coords_flatten[:, :, None] - coords_flatten[:, None, :]  # 2, Wh*Ww, Wh*Ww
         relative_coords = relative_coords.permute(1, 2, 0).contiguous()  # Wh*Ww, Wh*Ww, 2
         relative_coords[:, :, 0] += window_size[0] - 1  # shift to start from 0
