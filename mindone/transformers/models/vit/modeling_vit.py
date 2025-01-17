@@ -396,8 +396,8 @@ class ViTLayer(nn.Cell):
         self.attention = VIT_ATTENTION_CLASSES[config._attn_implementation](config)
         self.intermediate = ViTIntermediate(config)
         self.output = ViTOutput(config)
-        self.layernorm_before = nn.LayerNorm(config.hidden_size, epsilon=config.layer_norm_eps)
-        self.layernorm_after = nn.LayerNorm(config.hidden_size, epsilon=config.layer_norm_eps)
+        self.layernorm_before = nn.LayerNorm((config.hidden_size,), epsilon=config.layer_norm_eps)
+        self.layernorm_after = nn.LayerNorm((config.hidden_size,), epsilon=config.layer_norm_eps)
 
     def construct(
         self,
@@ -568,7 +568,7 @@ class ViTModel(ViTPreTrainedModel):
         self.embeddings = ViTEmbeddings(config, use_mask_token=use_mask_token)
         self.encoder = ViTEncoder(config)
 
-        self.layernorm = nn.LayerNorm(config.hidden_size, epsilon=config.layer_norm_eps)
+        self.layernorm = nn.LayerNorm((config.hidden_size,), epsilon=config.layer_norm_eps)
         self.pooler = ViTPooler(config) if add_pooling_layer else None
 
         # Initialize weights and apply final processing
