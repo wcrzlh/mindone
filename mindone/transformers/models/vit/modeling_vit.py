@@ -65,7 +65,7 @@ class ViTEmbeddings(nn.Cell):
         self.patch_embeddings = ViTPatchEmbeddings(config)
         num_patches = self.patch_embeddings.num_patches
         self.position_embeddings = Parameter(ops.randn(1, num_patches + 1, config.hidden_size))
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.dropout = nn.Dropout(p=config.hidden_dropout_prob)
         self.patch_size = config.patch_size
         self.config = config
 
@@ -192,11 +192,11 @@ class ViTSelfAttention(nn.Cell):
         self.attention_head_size = int(config.hidden_size / config.num_attention_heads)
         self.all_head_size = self.num_attention_heads * self.attention_head_size
 
-        self.query = nn.Linear(config.hidden_size, self.all_head_size, bias=config.qkv_bias)
-        self.key = nn.Linear(config.hidden_size, self.all_head_size, bias=config.qkv_bias)
-        self.value = nn.Linear(config.hidden_size, self.all_head_size, bias=config.qkv_bias)
+        self.query = nn.Dense(config.hidden_size, self.all_head_size, has_bias=config.qkv_bias)
+        self.key = nn.Dense(config.hidden_size, self.all_head_size, has_bias=config.qkv_bias)
+        self.value = nn.Dense(config.hidden_size, self.all_head_size, has_bias=config.qkv_bias)
 
-        self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
+        self.dropout = nn.Dropout(p=config.attention_probs_dropout_prob)
 
     def transpose_for_scores(self, x: ms.Tensor) -> ms.Tensor:
         new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
@@ -294,8 +294,8 @@ class ViTSelfOutput(nn.Cell):
 
     def __init__(self, config: ViTConfig) -> None:
         super().__init__()
-        self.dense = nn.Linear(config.hidden_size, config.hidden_size)
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.dense = nn.Dense(config.hidden_size, config.hidden_size)
+        self.dropout = nn.Dropout(p=config.hidden_dropout_prob)
 
     def construct(self, hidden_states: ms.Tensor, input_tensor: ms.Tensor) -> ms.Tensor:
         hidden_states = self.dense(hidden_states)
@@ -352,7 +352,7 @@ class ViTSdpaAttention(ViTAttention):
 class ViTIntermediate(nn.Cell):
     def __init__(self, config: ViTConfig) -> None:
         super().__init__()
-        self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
+        self.dense = nn.Dense(config.hidden_size, config.intermediate_size)
         if isinstance(config.hidden_act, str):
             self.intermediate_act_fn = ACT2FN[config.hidden_act]
         else:
@@ -368,8 +368,8 @@ class ViTIntermediate(nn.Cell):
 class ViTOutput(nn.Cell):
     def __init__(self, config: ViTConfig) -> None:
         super().__init__()
-        self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.dense = nn.Dense(config.intermediate_size, config.hidden_size)
+        self.dropout = nn.Dropout(p=config.hidden_dropout_prob)
 
     def construct(self, hidden_states: ms.Tensor, input_tensor: ms.Tensor) -> ms.Tensor:
         hidden_states = self.dense(hidden_states)
@@ -492,31 +492,32 @@ class ViTPreTrainedModel(MSPreTrainedModel):
     _no_split_modules = ["ViTEmbeddings", "ViTLayer"]
     _supports_sdpa = True
 
-    def _init_weights(self, module: Union[nn.Linear, nn.Conv2d, nn.LayerNorm]) -> None:
+    def _init_weights(self, module: Union[nn.Dense, nn.Conv2d, nn.LayerNorm]) -> None:
         """Initialize the weights"""
-        if isinstance(module, (nn.Linear, nn.Conv2d)):
-            # Upcast the input in `fp32` and cast it back to desired `dtype` to avoid
-            # `trunc_normal_cpu` not implemented in `half` issues
-            module.weight.data = nn.init.trunc_normal_(
-                module.weight.data.to(ms.float32), mean=0.0, std=self.config.initializer_range
-            ).to(module.weight.dtype)
-            if module.bias is not None:
-                module.bias.data.zero_()
-        elif isinstance(module, nn.LayerNorm):
-            module.bias.data.zero_()
-            module.weight.data.fill_(1.0)
-        elif isinstance(module, ViTEmbeddings):
-            module.position_embeddings.data = nn.init.trunc_normal_(
-                module.position_embeddings.data.to(ms.float32),
-                mean=0.0,
-                std=self.config.initializer_range,
-            ).to(module.position_embeddings.dtype)
-
-            module.cls_token.data = nn.init.trunc_normal_(
-                module.cls_token.data.to(ms.float32),
-                mean=0.0,
-                std=self.config.initializer_range,
-            ).to(module.cls_token.dtype)
+        # if isinstance(module, (nn.Dense, nn.Conv2d)):
+        #     # Upcast the input in `fp32` and cast it back to desired `dtype` to avoid
+        #     # `trunc_normal_cpu` not implemented in `half` issues
+        #     module.weight.data = nn.init.trunc_normal_(
+        #         module.weight.data.to(ms.float32), mean=0.0, std=self.config.initializer_range
+        #     ).to(module.weight.dtype)
+        #     if module.bias is not None:
+        #         module.bias.data.zero_()
+        # elif isinstance(module, nn.LayerNorm):
+        #     module.bias.data.zero_()
+        #     module.weight.data.fill_(1.0)
+        # elif isinstance(module, ViTEmbeddings):
+        #     module.position_embeddings.data = nn.init.trunc_normal_(
+        #         module.position_embeddings.data.to(ms.float32),
+        #         mean=0.0,
+        #         std=self.config.initializer_range,
+        #     ).to(module.position_embeddings.dtype)
+        #
+        #     module.cls_token.data = nn.init.trunc_normal_(
+        #         module.cls_token.data.to(ms.float32),
+        #         mean=0.0,
+        #         std=self.config.initializer_range,
+        #     ).to(module.cls_token.dtype)
+        pass
 
 
 VIT_START_DOCSTRING = r"""
@@ -657,7 +658,7 @@ class ViTModel(ViTPreTrainedModel):
 class ViTPooler(nn.Cell):
     def __init__(self, config: ViTConfig):
         super().__init__()
-        self.dense = nn.Linear(config.hidden_size, config.hidden_size)
+        self.dense = nn.Dense(config.hidden_size, config.hidden_size)
         self.activation = nn.Tanh()
 
     def construct(self, hidden_states):
@@ -818,7 +819,7 @@ class ViTForImageClassification(ViTPreTrainedModel):
         self.vit = ViTModel(config, add_pooling_layer=False)
 
         # Classifier head
-        self.classifier = nn.Linear(config.hidden_size, config.num_labels) if config.num_labels > 0 else nn.Identity()
+        self.classifier = nn.Dense(config.hidden_size, config.num_labels) if config.num_labels > 0 else nn.Identity()
 
         # Initialize weights and apply final processing
         self.post_init()
