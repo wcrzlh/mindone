@@ -1,1 +1,1 @@
-from timesformer import TimesformerModel, TimesformerForVideoClassification
+from .modeling_timesformer import TimesformerModel, TimesformerForVideoClassification
