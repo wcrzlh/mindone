@@ -213,7 +213,7 @@ class ViTSelfAttention(nn.Cell):
         query_layer = self.transpose_for_scores(mixed_query_layer)
 
         # Take the dot product between "query" and "key" to get the raw attention scores.
-        attention_scores = ops.matmul(query_layer, key_layer.transpose(-1, -2))
+        attention_scores = ops.matmul(query_layer, key_layer.swapaxes(-1, -2))
 
         attention_scores = attention_scores / math.sqrt(self.attention_head_size)
 
