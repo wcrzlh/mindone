@@ -39,6 +39,7 @@ MODEL_MAPPING_NAMES = OrderedDict(
         ("gpt2", "GPT2Model"),
         ("mt5", "MT5Model"),
         ("t5", "T5Model"),
+        ("vit", "ViTModel"),
         ("xlm-roberta", "XLMRobertaModel"),
     ]
 )
@@ -83,6 +84,7 @@ MODEL_FOR_IMAGE_MAPPING_NAMES = OrderedDict(
         ("beit", "BeitModel"),
         ("bit", "BitModel"),
         ("dpt", "DPTModel"),
+        ("vit", "ViTModel"),
     ]
 )
 
