@@ -120,13 +120,13 @@ class ViTEmbeddings(nn.Cell):
 
         if bool_masked_pos is not None:
             seq_length = embeddings.shape[1]
-            mask_tokens = self.mask_token.expand(batch_size, seq_length, -1)
+            mask_tokens = self.mask_token.expand((batch_size, seq_length, -1))
             # replace the masked visual tokens by mask_tokens
             mask = bool_masked_pos.unsqueeze(-1).type_as(mask_tokens)
             embeddings = embeddings * (1.0 - mask) + mask_tokens * mask
 
         # add the [CLS] token to the embedded patch tokens
-        cls_tokens = self.cls_token.expand(batch_size, -1, -1)
+        cls_tokens = self.cls_token.expand((batch_size, -1, -1))
         embeddings = ops.cat((cls_tokens, embeddings), axis=1)
 
         # add positional encoding to each token
