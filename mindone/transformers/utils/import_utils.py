@@ -61,9 +61,11 @@ def _is_package_available(pkg_name: str, return_version: bool = False) -> Union[
     else:
         return package_exists
 
-
+_av_available = _is_package_available("av")
 _scipy_available = _is_package_available("scipy")
 
+def is_av_available():
+    return _av_available
 
 def is_mindspore_available():
     _mindspore_available, _mindspore_version = _is_package_available("mindspore", return_version=True)

@@ -30,6 +30,7 @@ from .generic import (
 )
 from .import_utils import (
     get_mindspore_version,
+    is_av_available,
     is_mindspore_available,
     is_scipy_available,
     is_vision_available,

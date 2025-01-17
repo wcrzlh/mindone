@@ -51,5 +51,6 @@ from .models.t5 import (
     T5Model,
     T5PreTrainedModel,
 )
+from .models.timesformer import TimesformerModel, TimesformerForVideoClassification
 from .models.vit import ViTModel
 from .models.xlm_roberta import XLMRobertaModel, XLMRobertaPreTrainedModel
