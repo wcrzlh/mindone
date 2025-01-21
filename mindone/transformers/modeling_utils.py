@@ -87,13 +87,19 @@ def _get_pt2ms_mappings(m):
     return mappings
 
 
-def _convert_state_dict(m, state_dict_pt):
+def _convert_state_dict(m, state_dict_pt, prefix=""):
     if not state_dict_pt:
         return state_dict_pt
     pt2ms_mappings = _get_pt2ms_mappings(m)
     state_dict_ms = {}
     while state_dict_pt:
         name_pt, data_pt = state_dict_pt.popitem()
+        for name_ms, _ in m.parameters_and_names():
+            length = len(prefix) + 1
+            if name_pt.startswith(prefix) and not name_ms.startswith(prefix):
+                name_pt = name_pt[length:]
+            elif not name_pt.startswith(prefix) and name_ms.startswith(prefix):
+                name_pt = ".".join([prefix, name_pt])
         name_ms, data_mapping = pt2ms_mappings.get(name_pt, (name_pt, lambda x: x))
         data_ms = data_mapping(data_pt)
         if name_ms is not None:
@@ -2048,7 +2054,7 @@ class MSPreTrainedModel(nn.Cell, ModuleUtilsMixin, PushToHubMixin, PeftAdapterMi
 
         if state_dict is not None:
             # Whole checkpoint
-            state_dict = _convert_state_dict(model, state_dict)
+            state_dict = _convert_state_dict(model, state_dict, prefix)
             mismatched_keys = _find_mismatched_keys(
                 state_dict,
                 model_state_dict,
