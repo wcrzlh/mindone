@@ -29,6 +29,7 @@ from .models.clip import (
     CLIPVisionModel,
     CLIPVisionModelWithProjection,
 )
+from .models.depth_anything import DepthAnythingForDepthEstimation
 from .models.dpt import DPTForDepthEstimation
 from .models.gemma import (
     GemmaForCausalLM,

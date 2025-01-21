@@ -27,7 +27,7 @@ from transformers.models.auto.processing_auto import PROCESSOR_MAPPING, AutoProc
 from transformers.models.auto.tokenization_auto import TOKENIZER_MAPPING, AutoTokenizer
 from transformers.pipelines.audio_classification import AudioClassificationPipeline
 from transformers.pipelines.automatic_speech_recognition import AutomaticSpeechRecognitionPipeline
-from transformers.pipelines.depth_estimation import DepthEstimationPipeline
+from .depth_estimation import DepthEstimationPipeline
 from transformers.pipelines.document_question_answering import DocumentQuestionAnsweringPipeline
 from transformers.pipelines.feature_extraction import FeatureExtractionPipeline
 from .image_feature_extraction import ImageFeatureExtractionPipeline
