@@ -96,9 +96,9 @@ def _convert_state_dict(m, state_dict_pt, prefix=""):
         name_pt, data_pt = state_dict_pt.popitem()
         for name_ms, _ in m.parameters_and_names():
             length = len(prefix) + 1
-            if name_pt.startswith(prefix) and not name_ms.startswith(prefix):
+            if name_pt.startswith(prefix) and name_ms.rsplit(".", 1)[0] == name_pt.rsplit(".", 1)[0][length:]:
                 name_pt = name_pt[length:]
-            elif not name_pt.startswith(prefix) and name_ms.startswith(prefix):
+            elif not name_pt.startswith(prefix) and name_pt.rsplit(".", 1)[0] == name_ms.rsplit(".", 1)[0][length:]:
                 name_pt = ".".join([prefix, name_pt])
         name_ms, data_mapping = pt2ms_mappings.get(name_pt, (name_pt, lambda x: x))
         data_ms = data_mapping(data_pt)
