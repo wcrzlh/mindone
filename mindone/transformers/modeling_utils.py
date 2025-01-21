@@ -94,7 +94,8 @@ def _convert_state_dict(m, state_dict_pt, prefix=""):
     state_dict_ms = {}
     while state_dict_pt:
         name_pt, data_pt = state_dict_pt.popitem()
-        for name_ms, _ in m.parameters_and_names():
+        for name, param in m.parameters_and_names():
+            name_ms = param.name
             length = len(prefix) + 1
             if name_pt.startswith(prefix) and name_ms.rsplit(".", 1)[0] == name_pt.rsplit(".", 1)[0][length:]:
                 name_pt = name_pt[length:]
