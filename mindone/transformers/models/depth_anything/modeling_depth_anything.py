@@ -148,7 +148,8 @@ class DepthAnythingPreActResidualLayer(nn.Cell):
             kernel_size=3,
             stride=1,
             padding=1,
-            bias=True,
+            has_bias=True,
+            pad_mode="pad"
         )
 
         self.activation2 = nn.ReLU()
@@ -158,7 +159,8 @@ class DepthAnythingPreActResidualLayer(nn.Cell):
             kernel_size=3,
             stride=1,
             padding=1,
-            bias=True,
+            has_bias=True,
+            pad_mode='pad'
         )
 
     def construct(self, hidden_state: ms.Tensor) -> ms.Tensor:
