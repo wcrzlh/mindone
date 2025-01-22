@@ -59,8 +59,8 @@ class TimesformerPatchEmbeddings(nn.Cell):
         pixel_values = pixel_values.reshape(batch_size * num_frames, num_channels, height, width)
 
         embeddings = self.projection(pixel_values)
-        patch_width = embeddings.size(-1)
-        embeddings = embeddings.flatten(2).transpose(1, 2)
+        patch_width = embeddings.shape[-1]
+        embeddings = embeddings.shape[2].swapaxes(1, 2)
         return embeddings, num_frames, patch_width
 
 
@@ -95,17 +95,17 @@ class TimesformerEmbeddings(nn.Cell):
         # create patch embeddings
         embeddings, num_frames, patch_width = self.patch_embeddings(pixel_values)
 
-        cls_tokens = self.cls_token.expand(embeddings.size(0), -1, -1)
+        cls_tokens = self.cls_token.expand(embeddings.shape[0], -1, -1)
         embeddings = ops.cat((cls_tokens, embeddings), axis=1)
 
         # resizing the positional embeddings in case they don't match the input at inference
-        if embeddings.size(1) != self.position_embeddings.size(1):
+        if embeddings.shape[1] != self.position_embeddings.shape[1]:
             position_embeddings = self.position_embeddings
             cls_pos_embed = position_embeddings[0, 0, :].unsqueeze(0).unsqueeze(1)
             other_pos_embed = position_embeddings[0, 1:, :].unsqueeze(0).transpose(1, 2)
-            patch_num = int(other_pos_embed.size(2) ** 0.5)
-            patch_height = embeddings.size(1) // patch_width
-            other_pos_embed = other_pos_embed.reshape(1, embeddings.size(2), patch_num, patch_num)
+            patch_num = int(other_pos_embed.shape[2] ** 0.5)
+            patch_height = embeddings.shape[1] // patch_width
+            other_pos_embed = other_pos_embed.reshape(1, embeddings.shape[2], patch_num, patch_num)
             new_pos_embed = ops.interpolate(
                 other_pos_embed, size=(patch_height, patch_width), mode="nearest"
             )
@@ -128,7 +128,7 @@ class TimesformerEmbeddings(nn.Cell):
                 .reshape(batch_size * patch_height, num_frames, patch_width)
             )
             # Resizing time embeddings in case they don't match
-            if num_frames != self.time_embeddings.size(1):
+            if num_frames != self.time_embeddings.shape[1]:
                 time_embeddings = self.time_embeddings.transpose(1, 2)
                 new_time_embeddings = nn.functional.interpolate(time_embeddings, size=(num_frames), mode="nearest")
                 new_time_embeddings = new_time_embeddings.transpose(1, 2)
@@ -319,7 +319,7 @@ class TimesformerLayer(nn.Cell):
         num_frames = self.config.num_frames
         num_patch_width = self.config.image_size // self.config.patch_size
         batch_size = hidden_states.shape[0]
-        num_spatial_tokens = (hidden_states.size(1) - 1) // num_frames
+        num_spatial_tokens = (hidden_states.shape[1] - 1) // num_frames
         num_patch_height = num_spatial_tokens // num_patch_width
 
         if self.attention_type in ["space_only", "joint_space_time"]:
