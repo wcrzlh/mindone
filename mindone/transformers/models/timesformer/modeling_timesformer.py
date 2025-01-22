@@ -95,7 +95,7 @@ class TimesformerEmbeddings(nn.Cell):
         # create patch embeddings
         embeddings, num_frames, patch_width = self.patch_embeddings(pixel_values)
 
-        cls_tokens = self.cls_token.expand(embeddings.shape[0], -1, -1)
+        cls_tokens = self.cls_token.expand((embeddings.shape[0], -1, -1))
         embeddings = ops.cat((cls_tokens, embeddings), axis=1)
 
         # resizing the positional embeddings in case they don't match the input at inference
