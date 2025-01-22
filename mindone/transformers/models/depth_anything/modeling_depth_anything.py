@@ -285,7 +285,7 @@ class DepthAnythingNeck(nn.Cell):
 
         self.convs = nn.CellList()
         for channel in config.neck_hidden_sizes:
-            self.convs.append(nn.Conv2d(channel, config.fusion_hidden_size, kernel_size=3, padding=1, has_bias=False))
+            self.convs.append(nn.Conv2d(channel, config.fusion_hidden_size, kernel_size=3, padding=1, has_bias=False, pad_mode="same"))
 
         # fusion
         self.fusion_stage = DepthAnythingFeatureFusionStage(config)
