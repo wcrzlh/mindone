@@ -60,7 +60,7 @@ class TimesformerPatchEmbeddings(nn.Cell):
 
         embeddings = self.projection(pixel_values)
         patch_width = embeddings.shape[-1]
-        embeddings = embeddings.shape[2].swapaxes(1, 2)
+        embeddings = embeddings.flatten(start_dim=2).swapaxes(1, 2)
         return embeddings, num_frames, patch_width
 
 
@@ -130,7 +130,7 @@ class TimesformerEmbeddings(nn.Cell):
             # Resizing time embeddings in case they don't match
             if num_frames != self.time_embeddings.shape[1]:
                 time_embeddings = self.time_embeddings.transpose(1, 2)
-                new_time_embeddings = nn.functional.interpolate(time_embeddings, size=(num_frames), mode="nearest")
+                new_time_embeddings = ops.interpolate(time_embeddings, size=(num_frames), mode="nearest")
                 new_time_embeddings = new_time_embeddings.transpose(1, 2)
                 embeddings = embeddings + new_time_embeddings
             else:
