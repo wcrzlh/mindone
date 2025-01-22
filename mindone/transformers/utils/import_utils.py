@@ -61,7 +61,7 @@ def _is_package_available(pkg_name: str, return_version: bool = False) -> Union[
     else:
         return package_exists
 
-_av_available = _is_package_available("av")
+_av_available = importlib.util.find_spec("av") is not None
 _scipy_available = _is_package_available("scipy")
 
 def is_av_available():
