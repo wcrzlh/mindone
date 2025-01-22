@@ -54,7 +54,6 @@ from transformers.pipelines.token_classification import (
     TokenClassificationArgumentHandler,
     TokenClassificationPipeline,
 )
-from transformers.pipelines.video_classification import VideoClassificationPipeline
 from transformers.pipelines.visual_question_answering import VisualQuestionAnsweringPipeline
 from transformers.pipelines.zero_shot_audio_classification import ZeroShotAudioClassificationPipeline
 from transformers.pipelines.zero_shot_classification import (
@@ -96,6 +95,7 @@ from .base import (
 from .fill_mask import FillMaskPipeline
 from .text_generation import TextGenerationPipeline
 from .image_classification import ImageClassificationPipeline
+from .video_classification import VideoClassificationPipeline
 
 if is_mindspore_available():
     import mindspore as ms
