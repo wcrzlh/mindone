@@ -362,7 +362,7 @@ class TimesformerLayer(nn.Cell):
 
             # Spatial
             init_cls_token = hidden_states[:, 0, :].unsqueeze(1)
-            cls_token = init_cls_token.repeat((1, num_frames, 1))
+            cls_token = init_cls_token.tile((1, num_frames, 1))
             cls_token = cls_token.reshape(batch_size * num_frames, 1, cls_token.shape[2])
             spatial_embedding = temporal_embedding
             spatial_embedding = (
