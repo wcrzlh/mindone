@@ -71,12 +71,12 @@ class DepthAnythingReassembleLayer(nn.Cell):
 
         # up/down sampling depending on factor
         if factor > 1:
-            self.resize = nn.ConvTranspose2d(channels, channels, kernel_size=factor, stride=factor, padding=0)
+            self.resize = nn.Conv2dTranspose(channels, channels, kernel_size=factor, stride=factor, padding=0)
         elif factor == 1:
             self.resize = nn.Identity()
         elif factor < 1:
             # so should downsample
-            self.resize = nn.Conv2d(channels, channels, kernel_size=3, stride=int(1 / factor), padding=1)
+            self.resize = nn.Conv2d(channels, channels, kernel_size=3, stride=int(1 / factor), padding=1, pad_mode="pad")
 
     # Copied from transformers.models.dpt.modeling_dpt.DPTReassembleLayer.forward
     def construct(self, hidden_state):
