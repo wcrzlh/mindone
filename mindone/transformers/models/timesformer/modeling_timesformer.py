@@ -204,7 +204,7 @@ class TimesformerSelfAttention(nn.Cell):
         )
         query, key, value = qkv[0], qkv[1], qkv[2]
 
-        attention_probs = (query @ key.transpose(-2, -1)) * self.scale
+        attention_probs = (query @ key.swapaxes(-2, -1)) * self.scale
         attention_probs = attention_probs.softmax(dim=-1)
         attention_probs = self.attn_drop(attention_probs)
 
