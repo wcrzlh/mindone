@@ -154,7 +154,7 @@ class VideoClassificationPipeline(Pipeline):
         if top_k > self.model.config.num_labels:
             top_k = self.model.config.num_labels
 
-        if self.framework == "pt":
+        if self.framework == "ms":
             if function_to_apply == "softmax":
                 probs = model_outputs.logits[0].softmax(-1)
             elif function_to_apply == "sigmoid":
