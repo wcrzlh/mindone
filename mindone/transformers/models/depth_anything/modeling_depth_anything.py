@@ -17,7 +17,7 @@
 from typing import List, Optional, Tuple, Union
 
 import mindspore as ms
-from mindspore import nn
+from mindspore import nn, ops
 
 from transformers.file_utils import (
     add_start_docstrings,
@@ -182,7 +182,7 @@ class DepthAnythingFeatureFusionLayer(nn.Cell):
     def __init__(self, config):
         super().__init__()
 
-        self.projection = nn.Conv2d(config.fusion_hidden_size, config.fusion_hidden_size, kernel_size=1, bias=True)
+        self.projection = nn.Conv2d(config.fusion_hidden_size, config.fusion_hidden_size, kernel_size=1, has_bias=True)
 
         self.residual_layer1 = DepthAnythingPreActResidualLayer(config)
         self.residual_layer2 = DepthAnythingPreActResidualLayer(config)
@@ -190,7 +190,7 @@ class DepthAnythingFeatureFusionLayer(nn.Cell):
     def construct(self, hidden_state, residual=None, size=None):
         if residual is not None:
             if hidden_state.shape != residual.shape:
-                residual = nn.functional.interpolate(
+                residual = ops.interpolate(
                     residual, size=(hidden_state.shape[2], hidden_state.shape[3]), mode="bilinear", align_corners=False
                 )
             hidden_state = hidden_state + self.residual_layer1(residual)
@@ -199,7 +199,7 @@ class DepthAnythingFeatureFusionLayer(nn.Cell):
 
         modifier = {"scale_factor": 2} if size is None else {"size": size}
 
-        hidden_state = nn.functional.interpolate(
+        hidden_state = ops.interpolate(
             hidden_state,
             **modifier,
             mode="bilinear",
@@ -328,8 +328,8 @@ class DepthAnythingDepthEstimationHead(nn.Cell):
         self.patch_size = config.patch_size
 
         features = config.fusion_hidden_size
-        self.conv1 = nn.Conv2d(features, features // 2, kernel_size=3, stride=1, padding=1)
-        self.conv2 = nn.Conv2d(features // 2, config.head_hidden_size, kernel_size=3, stride=1, padding=1)
+        self.conv1 = nn.Conv2d(features, features // 2, kernel_size=3, stride=1, padding=1, pad_mode="pad")
+        self.conv2 = nn.Conv2d(features // 2, config.head_hidden_size, kernel_size=3, stride=1, padding=1, pad_mode="pad")
         self.activation1 = nn.ReLU()
         self.conv3 = nn.Conv2d(config.head_hidden_size, 1, kernel_size=1, stride=1, padding=0)
         if config.depth_estimation_type == "relative":
@@ -344,7 +344,7 @@ class DepthAnythingDepthEstimationHead(nn.Cell):
         hidden_states = hidden_states[self.head_in_index]
 
         predicted_depth = self.conv1(hidden_states)
-        predicted_depth = nn.functional.interpolate(
+        predicted_depth = ops.interpolate(
             predicted_depth,
             (int(patch_height * self.patch_size), int(patch_width * self.patch_size)),
             mode="bilinear",
