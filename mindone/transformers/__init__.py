@@ -1,4 +1,11 @@
 from .modeling_utils import MSPreTrainedModel
+from .models.bart import (
+    BartForSequenceClassification,
+    BartForQuestionAnswering,
+    BartForConditionalGeneration,
+    BartForCausalLM,
+    BartModel,
+)
 from .models.bert import (
     BertForMaskedLM,
     BertForMultipleChoice,
