@@ -56,7 +56,7 @@ from transformers.pipelines.token_classification import (
 )
 from transformers.pipelines.visual_question_answering import VisualQuestionAnsweringPipeline
 from transformers.pipelines.zero_shot_audio_classification import ZeroShotAudioClassificationPipeline
-from transformers.pipelines.zero_shot_classification import (
+from .zero_shot_classification import (
     ZeroShotClassificationArgumentHandler,
     ZeroShotClassificationPipeline,
 )
