@@ -106,7 +106,7 @@ class BartLearnedPositionalEmbedding(nn.Embedding):
             past_key_values_length, past_key_values_length + seq_len, dtype=ms.int64
         ).expand((bsz, -1))
 
-        return super().forward(positions + self.offset)
+        return super().construct(positions + self.offset)
 
 
 class BartScaledWordEmbedding(nn.Embedding):
@@ -119,7 +119,7 @@ class BartScaledWordEmbedding(nn.Embedding):
         self.embed_scale = embed_scale
 
     def construct(self, input_ids: ms.Tensor):
-        return super().forward(input_ids) * self.embed_scale
+        return super().construct(input_ids) * self.embed_scale
 
 
 class BartAttention(nn.Cell):
@@ -297,7 +297,7 @@ class BartSdpaAttention(BartAttention):
                 "BartModel is using BartSdpaAttention, but `torch.nn.functional.scaled_dot_product_attention` does not support `output_attentions=True` or `layer_head_mask` not None. Falling back to the manual attention"
                 ' implementation, but specifying the manual implementation will be required from Transformers version v5.0.0 onwards. This warning can be removed using the argument `attn_implementation="eager"` when loading the model.'
             )
-            return super().forward(
+            return super().construct(
                 hidden_states,
                 key_value_states=key_value_states,
                 past_key_value=past_key_value,
