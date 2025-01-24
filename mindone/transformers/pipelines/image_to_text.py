@@ -17,13 +17,11 @@ import warnings
 from typing import List, Union
 
 from ..utils import (
-    add_end_docstrings,
-    is_tf_available,
-    is_torch_available,
+    is_mindspore_available,
     is_vision_available,
-    logging,
     requires_backends,
 )
+from transformers.utils import add_end_docstrings, logging
 from .base import Pipeline, build_pipeline_init_args
 
 
@@ -32,11 +30,8 @@ if is_vision_available():
 
     from ..image_utils import load_image
 
-if is_tf_available():
-    from ..models.auto.modeling_tf_auto import TF_MODEL_FOR_VISION_2_SEQ_MAPPING_NAMES
-
-if is_torch_available():
-    import torch
+if is_mindspore_available():
+    import mindspore as ms
 
     from ..models.auto.modeling_auto import MODEL_FOR_VISION_2_SEQ_MAPPING_NAMES
 
@@ -71,7 +66,7 @@ class ImageToTextPipeline(Pipeline):
         super().__init__(*args, **kwargs)
         requires_backends(self, "vision")
         self.check_model_type(
-            TF_MODEL_FOR_VISION_2_SEQ_MAPPING_NAMES if self.framework == "tf" else MODEL_FOR_VISION_2_SEQ_MAPPING_NAMES
+            MODEL_FOR_VISION_2_SEQ_MAPPING_NAMES
         )
 
     def _sanitize_parameters(self, max_new_tokens=None, generate_kwargs=None, prompt=None, timeout=None):
@@ -148,7 +143,7 @@ class ImageToTextPipeline(Pipeline):
                     model_inputs = model_inputs.to(self.torch_dtype)
                 input_ids = self.tokenizer(text=prompt, add_special_tokens=False).input_ids
                 input_ids = [self.tokenizer.cls_token_id] + input_ids
-                input_ids = torch.tensor(input_ids).unsqueeze(0)
+                input_ids = ms.tensor(input_ids).unsqueeze(0)
                 model_inputs.update({"input_ids": input_ids})
 
             elif model_type == "pix2struct":
