@@ -45,6 +45,16 @@ from .models.gemma import (
     GemmaModel,
     GemmaPreTrainedModel,
 )
+from .models.gpt2 import (
+    GPT2LMHeadModel
+)
+from .models.gpt_neo import (
+    GPTNeoForTokenClassification,
+    GPTNeoForSequenceClassification,
+    GPTNeoModel,
+    GPTNeoForQuestionAnswering,
+    GPTNeoForCausalLM,
+)
 from .models.mistral import (
     MistralModel,
     MistralForQuestionAnswering,
