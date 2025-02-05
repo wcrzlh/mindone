@@ -27,6 +27,7 @@ from .generic import (
     torch_int,
     transpose,
     working_or_temp_dir,
+    ModelOutput,
 )
 from .import_utils import (
     get_mindspore_version,

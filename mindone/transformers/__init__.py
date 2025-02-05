@@ -55,6 +55,11 @@ from .models.gpt_neo import (
     GPTNeoForQuestionAnswering,
     GPTNeoForCausalLM,
 )
+from .models.longformer import (
+    LongformerForSequenceClassification,
+    LongformerForQuestionAnswering,
+    LongformerForMaskedLM,
+)
 from .models.mistral import (
     MistralModel,
     MistralForQuestionAnswering,
