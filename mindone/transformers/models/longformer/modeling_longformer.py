@@ -466,7 +466,7 @@ class LongformerEmbeddings(nn.Cell):
         if position_ids is None:
             if input_ids is not None:
                 # Create the position ids from the input token ids. Any padded tokens remain padded.
-                position_ids = create_position_ids_from_input_ids(input_ids, self.padding_idx).to(input_ids.device)
+                position_ids = create_position_ids_from_input_ids(input_ids, self.padding_idx)
             else:
                 position_ids = self.create_position_ids_from_inputs_embeds(inputs_embeds)
 
@@ -1414,10 +1414,7 @@ class LongformerLMHead(nn.Cell):
     def _tie_weights(self):
         # To tie those two weights if they get disconnected (on TPU or when the bias is resized)
         # For accelerate compatibility and to not break backward compatibility
-        if self.decoder.bias.device.type == "meta":
-            self.decoder.bias = self.bias
-        else:
-            self.bias = self.decoder.bias
+        self.bias = self.decoder.bias
 
 
 class LongformerPreTrainedModel(MSPreTrainedModel):
@@ -1719,7 +1716,7 @@ class LongformerModel(LongformerPreTrainedModel):
         else:
             raise ValueError("You have to specify either input_ids or inputs_embeds")
 
-        device = input_ids.device if input_ids is not None else inputs_embeds.device
+        device = None
 
         if attention_mask is None:
             attention_mask = ops.ones(input_shape)
@@ -1865,7 +1862,7 @@ class LongformerForMaskedLM(LongformerPreTrainedModel):
         if labels is not None:
             loss_fct = CrossEntropyLoss()
 
-            labels = labels.to(prediction_scores.device)
+            labels = labels
             masked_lm_loss = loss_fct(prediction_scores.view(-1, self.config.vocab_size), labels.view(-1))
 
         if not return_dict:
@@ -1953,7 +1950,7 @@ class LongformerForSequenceClassification(LongformerPreTrainedModel):
 
         loss = None
         if labels is not None:
-            labels = labels.to(logits.device)
+            labels = labels
 
             if self.config.problem_type is None:
                 if self.num_labels == 1:
@@ -2217,7 +2214,7 @@ class LongformerForTokenClassification(LongformerPreTrainedModel):
         if labels is not None:
             loss_fct = CrossEntropyLoss()
 
-            labels = labels.to(logits.device)
+            labels = labels
             loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
 
         if not return_dict:
@@ -2331,7 +2328,7 @@ class LongformerForMultipleChoice(LongformerPreTrainedModel):
         if labels is not None:
             loss_fct = CrossEntropyLoss()
 
-            labels = labels.to(reshaped_logits.device)
+            labels = labels
             loss = loss_fct(reshaped_logits, labels)
 
         if not return_dict:
