@@ -1289,7 +1289,7 @@ class PegasusForConditionalGeneration(PegasusPreTrainedModel, GenerationMixin):
     def __init__(self, config: PegasusConfig):
         super().__init__(config)
         self.model = PegasusModel(config)
-        self.register_buffer("final_logits_bias", ops.zeros((1, self.model.shared.num_embeddings)))
+        self.final_logits_bias = ops.zeros((1, self.model.shared.num_embeddings))
         self.lm_head = nn.Dense(config.d_model, self.model.shared.num_embeddings, has_bias=False)
 
         # Initialize weights and apply final processing
@@ -1313,7 +1313,7 @@ class PegasusForConditionalGeneration(PegasusPreTrainedModel, GenerationMixin):
         else:
             extra_bias = ops.zeros((1, new_num_tokens - old_num_tokens))
             new_bias = ops.cat([self.final_logits_bias, extra_bias], axis=1)
-        self.register_buffer("final_logits_bias", new_bias)
+        self.final_logits_bias = new_bias
 
     def get_output_embeddings(self):
         return self.lm_head
