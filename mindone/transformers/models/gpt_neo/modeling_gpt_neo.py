@@ -215,7 +215,7 @@ class GPTNeoSelfAttention(nn.Cell):
         # Apply sliding window masking for local attention layers
         query_length, key_length = query.shape[-2], key.shape[-2]
         causal_mask = self.bias[:, :, key_length - query_length : key_length, :key_length]
-        mask_value = dtype_to_min(attn_weights.dtype).min
+        mask_value = dtype_to_min(attn_weights.dtype)
         # Need to be a tensor, otherwise we get error: `RuntimeError: expected scalar type float but found double`.
         # Need to be on the same device, otherwise `RuntimeError: ..., x and y to be on the same device`
         mask_value = ms.tensor(mask_value, dtype=attn_weights.dtype)
@@ -746,7 +746,7 @@ class GPTNeoModel(GPTNeoPreTrainedModel):
             # Attend to all tokens in fully masked rows in the causal_mask, for example the relevant first rows when
             # using left padding. This is required by F.scaled_dot_product_attention memory-efficient attention path.
             # Details: https://github.com/pytorch/pytorch/issues/110213
-            min_dtype = dtype_to_min(dtype).min
+            min_dtype = dtype_to_min(dtype)
             causal_mask = AttentionMaskConverter._unmask_unattended(causal_mask, min_dtype)
 
         return causal_mask
@@ -789,7 +789,7 @@ class GPTNeoModel(GPTNeoPreTrainedModel):
             # In this case we assume that the mask comes already in inverted form and requires no inversion or slicing.
             causal_mask = attention_mask
         else:
-            min_dtype = dtype_to_min(dtype).min
+            min_dtype = dtype_to_min(dtype)
             causal_mask = ops.full(
                 (sequence_length, target_length), fill_value=min_dtype, dtype=dtype
             )
