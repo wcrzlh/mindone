@@ -1,4 +1,9 @@
 from .modeling_utils import MSPreTrainedModel
+from .models.auto import (
+    AutoModelForMaskedLM,
+    AutoModelForCausalLM,
+    AutoModel,
+)
 from .models.bart import (
     BartForSequenceClassification,
     BartForQuestionAnswering,
