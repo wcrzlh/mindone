@@ -26,17 +26,11 @@ from typing import TYPE_CHECKING, Dict, Optional, Tuple, Union
 # Build the list of all image processors
 from transformers import PretrainedConfig
 from transformers.dynamic_module_utils import get_class_from_dynamic_module, resolve_trust_remote_code
+from transformers.utils import CONFIG_NAME, get_file_from_repo
+
 from ...image_processing_utils import BaseImageProcessor, ImageProcessingMixin
 from ...image_processing_utils_fast import BaseImageProcessorFast
-from ...utils import (
-    IMAGE_PROCESSOR_NAME,
-    is_vision_available,
-    logging,
-)
-from transformers.utils import (
-    CONFIG_NAME,
-    get_file_from_repo,
-)
+from ...utils import IMAGE_PROCESSOR_NAME, is_vision_available, logging
 from .auto_factory import _LazyAutoMapping
 from .configuration_auto import (
     CONFIG_MAPPING_NAMES,
@@ -44,7 +38,6 @@ from .configuration_auto import (
     model_type_to_module_name,
     replace_list_option_in_docstrings,
 )
-
 
 logger = logging.get_logger(__name__)
 
@@ -526,7 +519,8 @@ class AutoImageProcessor:
             if slow_image_processor_class is not None:
                 raise ValueError("Cannot specify both image_processor_class and slow_image_processor_class")
             warnings.warn(
-                "The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead",
+                "The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, "
+                "or `fast_image_processor_class` instead",
                 FutureWarning,
             )
             slow_image_processor_class = image_processor_class
