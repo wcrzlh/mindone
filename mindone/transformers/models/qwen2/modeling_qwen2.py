@@ -28,7 +28,7 @@ from mindspore import Parameter, mint, nn, ops
 from mindspore.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
 from mindone.transformers.cache_utils import Cache, DynamicCache, StaticCache
-from mindone.transformers.modeling_attn_mask_utils import AttentionMaskConverter, dtype_to_min
+from mindone.transformers.modeling_attn_mask_utils import AttentionMaskConverter, dtype_to_min, _MIN_FP16
 from mindone.transformers.modeling_outputs import (
     BaseModelOutputWithPast,
     CausalLMOutputWithPast,
@@ -36,6 +36,7 @@ from mindone.transformers.modeling_outputs import (
     TokenClassifierOutput,
 )
 from mindone.transformers.modeling_utils import MSPreTrainedModel
+from mindone.transformers.mindspore_adapter.attention import FlashAttention2
 
 logger = logging.get_logger(__name__)
 
@@ -330,7 +331,7 @@ class Qwen2Attention(nn.Cell):
             attn_weights = attn_weights + causal_mask
 
         # upcast attention to fp32
-        attn_weights = mint.softmax(attn_weights, axis=-1, dtype=ms.float32).to(query_states.dtype)
+        attn_weights = mint.softmax(attn_weights, dim=-1, dtype=ms.float32).to(query_states.dtype)
         attn_weights = ops.dropout(attn_weights, p=self.attention_dropout, training=self.training)
         attn_output = mint.matmul(attn_weights, value_states)
 
@@ -350,9 +351,85 @@ class Qwen2Attention(nn.Cell):
 
         return attn_output, attn_weights, past_key_value
 
+class Qwen2FlashAttention2(Qwen2Attention):
+    """
+    Llama flash attention module. This module inherits from `LlamaAttention` as the weights of the module stays
+    untouched. The only required change would be on the forward pass where it needs to correctly call the public API of
+    flash attention and deal with padding tokens in case the input contains any of them.
+    """
+
+    def __init__(self, config: Qwen2Config, layer_idx: Optional[int] = None):
+        super().__init__(config, layer_idx)
+
+        self.flash_attention = FlashAttention2(
+            self.head_dim, self.num_heads, self.attention_dropout, input_layout="BNSD", dtype=ms.float16
+        )
+
+    def convert_mask_to_fa_format(self, attention_mask):
+        if attention_mask is not None:
+            if attention_mask.dtype == ms.bool_:
+                # flip mask, since ms FA treats 1 as discard, 0 as retain.
+                attention_mask = 1 - attention_mask
+                attention_mask = attention_mask.to(ms.uint8)
+            else:
+                attention_mask = attention_mask.to(ms.float16)
+                attention_mask = ops.select(
+                    ops.equal(attention_mask, _MIN_FP16),
+                    ops.ones((), ms.uint8),
+                    ops.zeros((), ms.uint8),
+                )
+
+        return attention_mask
+
+    def construct(
+        self,
+        hidden_states: ms.Tensor,
+        attention_mask: Optional[ms.Tensor] = None,
+        position_ids: Optional[ms.Tensor] = None,
+        past_key_value: Optional[Tuple[ms.Tensor, ms.Tensor]] = None,
+        output_attentions: bool = False,
+        use_cache: bool = False,
+        cache_position: Optional[ms.Tensor] = None,
+        **kwargs,
+    ):
+
+        bsz, q_len, _ = hidden_states.shape
+
+        query_states = self.q_proj(hidden_states)
+        key_states = self.k_proj(hidden_states)
+        value_states = self.v_proj(hidden_states)
+
+        query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).swapdims(1, 2)
+        key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).swapdims(1, 2)
+        value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).swapdims(1, 2)
+
+        kv_seq_len = key_states.shape[-2]
+        # Because the input can be padded, the absolute sequence length depends on the max position id.
+        rotary_seq_len = max(kv_seq_len, position_ids[:, -1].max().item()) + 1
+        cos, sin = self.rotary_emb(value_states, seq_len=rotary_seq_len)
+
+        query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)
+
+        key_states = repeat_kv(key_states, self.num_key_value_groups)
+        value_states = repeat_kv(value_states, self.num_key_value_groups)
+
+        # 1. flash attention
+        if attention_mask is not None:  # no matter the length, we just slice it
+            attention_mask = attention_mask[:, :, :, : key_states.shape[-2]]
+        attention_mask = self.convert_mask_to_fa_format(attention_mask)
+        attn_output = self.flash_attention(query_states, key_states, value_states, attention_mask)
+
+        attn_output = attn_output.swapdims(1, 2)
+        attn_output = attn_output.reshape(bsz, q_len, -1)
+
+        attn_output = self.o_proj(attn_output)
+
+        return attn_output, None, past_key_value
+
 
 QWEN2_ATTENTION_CLASSES = {
     "eager": Qwen2Attention,
+    "flash_attention_2": Qwen2FlashAttention2,
 }
 
 
