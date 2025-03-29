@@ -317,12 +317,12 @@ class Qwen2Attention(nn.Cell):
                 past_len = 0
                 key_states = key_states
                 value_states = value_states
-                past_key_value = (ops.concat((key_states, past_key_value[0][:,:,q_len:]), axis=2), ops.concat((value_states, past_key_value[1][:,:,q_len]), axis=2))
+                past_key_value = (ops.concat((key_states, past_key_value[0][:,:,q_len:]), axis=2), ops.concat((value_states, past_key_value[1][:,:,q_len:]), axis=2))
             else:
                 past_len = int(cache_position.max()) + 1
                 key_states = ops.concat((past_key_value[0][:, :, :past_len], key_states), axis=2)
                 value_states = ops.concat((past_key_value[1][:, :, :past_len], value_states), axis=2)
-                past_key_value = (ops.concat((key_states, past_key_value[0][:,:,q_len:]), axis=2), ops.concat((value_states, past_key_value[1][:,:,q_len]), axis=2))
+                past_key_value = (ops.concat((key_states, past_key_value[0][:,:,q_len:]), axis=2), ops.concat((value_states, past_key_value[1][:,:,q_len:]), axis=2))
 
         # repeat k/v heads if n_kv_heads < n_heads
         key_states = repeat_kv(key_states, self.num_key_value_groups)
@@ -431,12 +431,12 @@ class Qwen2FlashAttention2(Qwen2Attention):
                 past_len = 0
                 key_states = key_states
                 value_states = value_states
-                past_key_value = (ops.concat((key_states, past_key_value[0][:,:,q_len:]), axis=2), ops.concat((value_states, past_key_value[1][:,:,q_len]), axis=2))
+                past_key_value = (ops.concat((key_states, past_key_value[0][:,:,q_len:]), axis=2), ops.concat((value_states, past_key_value[1][:,:,q_len:]), axis=2))
             else:
                 past_len = int(cache_position.max()) + 1
                 key_states = ops.concat((past_key_value[0][:, :, :past_len], key_states), axis=2)
                 value_states = ops.concat((past_key_value[1][:, :, :past_len], value_states), axis=2)
-                past_key_value = (ops.concat((key_states, past_key_value[0][:,:,q_len:]), axis=2), ops.concat((value_states, past_key_value[1][:,:,q_len]), axis=2))
+                past_key_value = (ops.concat((key_states, past_key_value[0][:,:,q_len:]), axis=2), ops.concat((value_states, past_key_value[1][:,:,q_len:]), axis=2))
 
         key_states = repeat_kv(key_states, self.num_key_value_groups)
         value_states = repeat_kv(value_states, self.num_key_value_groups)
