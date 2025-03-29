@@ -25,11 +25,11 @@ from transformers import Qwen2Config, logging
 
 import mindspore as ms
 import mindspore.mint.nn.functional as F
-from mindspore import Parameter, mint, nn, ops
+from mindspore import Parameter, mint, nn, ops, Tensor
 from mindspore.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
-from mindone.transformers.cache_utils import Cache, DynamicCache, StaticCache
-from mindone.transformers.modeling_attn_mask_utils import AttentionMaskConverter, dtype_to_min
+from mindone.transformers.cache_utils import Cache, DynamicCache, StaticCache, get_seq_length, get_max_length, update
+from mindone.transformers.modeling_attn_mask_utils import AttentionMaskConverter, dtype_to_min, _MIN_FP16
 from mindone.transformers.modeling_outputs import (
     BaseModelOutputWithPast,
     CausalLMOutputWithPast,
@@ -37,6 +37,7 @@ from mindone.transformers.modeling_outputs import (
     TokenClassifierOutput,
 )
 from mindone.transformers.modeling_utils import MSPreTrainedModel
+from mindone.transformers.mindspore_adapter.attention import FlashAttention2
 
 logger = logging.get_logger(__name__)
 
@@ -158,8 +159,8 @@ class Qwen2RotaryEmbedding(nn.Cell):
 
     def construct(self, x, seq_len=None):
         # x: [bs, num_attention_heads, seq_len, head_size]
-        if seq_len > self.max_seq_len_cached:
-            self._set_cos_sin_cache(seq_len=seq_len, device=None, dtype=x.dtype)
+        # if seq_len > self.max_seq_len_cached:
+        #     self._set_cos_sin_cache(seq_len=seq_len, device=None, dtype=x.dtype)
 
         return (
             self.cos_cached[:seq_len].to(dtype=x.dtype),
@@ -259,11 +260,11 @@ class Qwen2Attention(nn.Cell):
         self.is_causal = True
         self.attention_dropout = config.attention_dropout
 
-        if (self.head_dim * self.num_heads) != self.hidden_size:
-            raise ValueError(
-                f"hidden_size must be divisible by num_heads (got `hidden_size`: {self.hidden_size}"
-                f" and `num_heads`: {self.num_heads})."
-            )
+        # if (self.head_dim * self.num_heads) != self.hidden_size:
+        #     raise ValueError(
+        #         f"hidden_size must be divisible by num_heads (got `hidden_size`: {self.hidden_size}"
+        #         f" and `num_heads`: {self.num_heads})."
+        #     )
         self.q_proj = mint.nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=True)
         self.k_proj = mint.nn.Linear(self.hidden_size, self.num_key_value_heads * self.head_dim, bias=True)
         self.v_proj = mint.nn.Linear(self.hidden_size, self.num_key_value_heads * self.head_dim, bias=True)
@@ -299,19 +300,29 @@ class Qwen2Attention(nn.Cell):
 
         kv_seq_len = key_states.shape[-2]
         if past_key_value is not None:
-            if self.layer_idx is None:
-                raise ValueError(
-                    f"The cache structure has changed since version v4.36. If you are using {self.__class__.__name__} "
-                    "for auto-regressive decoding with k/v caching, please make sure to initialize the attention class "
-                    "with a layer index."
-                )
-            kv_seq_len += past_key_value.get_usable_length(kv_seq_len, self.layer_idx)
+            # if self.layer_idx is None:
+            #     raise ValueError(
+            #         f"The cache structure has changed since version v4.36. If you are using {self.__class__.__name__} "
+            #         "for auto-regressive decoding with k/v caching, please make sure to initialize the attention class "
+            #         "with a layer index."
+            #     )
+            # kv_seq_len += past_key_value.get_usable_length(kv_seq_len, self.layer_idx)
+            kv_seq_len = past_key_value[0].shape[-2]
         cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
         query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)
 
         if past_key_value is not None:
-            cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}  # Specific to RoPE models
-            key_states, value_states = past_key_value.update(key_states, value_states, self.layer_idx, cache_kwargs)
+            is_first = (q_len == (int(cache_position.max())+1))
+            if is_first:
+                past_len = 0
+                key_states = key_states
+                value_states = value_states
+                past_key_value = (ops.concat((key_states, past_key_value[0][:,:,q_len]), axis=2), ops.concat((key_states, past_key_value[1][:,:,q_len]), axis=2))
+            else:
+                past_len = int(cache_position.max()) + 1
+                key_states = ops.concat((past_key_value[0][:, :, :past_len], key_states), axis=2)
+                value_states = ops.concat((past_key_value[1][:, :, :past_len], value_states), axis=2)
+                past_key_value = (ops.concat((key_states, past_key_value[0][:,:,q_len]), axis=2), ops.concat((key_states, past_key_value[1][:,:,q_len]), axis=2))
 
         # repeat k/v heads if n_kv_heads < n_heads
         key_states = repeat_kv(key_states, self.num_key_value_groups)
@@ -319,11 +330,11 @@ class Qwen2Attention(nn.Cell):
 
         attn_weights = mint.matmul(query_states, key_states.swapaxes(2, 3)) / mint.sqrt(ms.tensor(self.head_dim))
 
-        if attn_weights.shape != (bsz, self.num_heads, q_len, kv_seq_len):
-            raise ValueError(
-                f"Attention weights should be of size {(bsz, self.num_heads, q_len, kv_seq_len)}, but is"
-                f" {attn_weights.shape}"
-            )
+        # if attn_weights.shape != (bsz, self.num_heads, q_len, kv_seq_len):
+        #     raise ValueError(
+        #         f"Attention weights should be of size {(bsz, self.num_heads, q_len, kv_seq_len)}, but is"
+        #         f" {attn_weights.shape}"
+        #     )
 
         if attention_mask is not None:  # no matter the length, we just slice it
             causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
@@ -334,11 +345,11 @@ class Qwen2Attention(nn.Cell):
         attn_weights = ops.dropout(attn_weights, p=self.attention_dropout, training=self.training)
         attn_output = mint.matmul(attn_weights, value_states)
 
-        if attn_output.shape != (bsz, self.num_heads, q_len, self.head_dim):
-            raise ValueError(
-                f"`attn_output` should be of size {(bsz, self.num_heads, q_len, self.head_dim)}, but is"
-                f" {attn_output.shape}"
-            )
+        # if attn_output.shape != (bsz, self.num_heads, q_len, self.head_dim):
+        #     raise ValueError(
+        #         f"`attn_output` should be of size {(bsz, self.num_heads, q_len, self.head_dim)}, but is"
+        #         f" {attn_output.shape}"
+        #     )
 
         attn_output = attn_output.swapaxes(1, 2)
         attn_output = attn_output.reshape(bsz, q_len, self.hidden_size)
@@ -350,10 +361,105 @@ class Qwen2Attention(nn.Cell):
 
         return attn_output, attn_weights, past_key_value
 
+class Qwen2FlashAttention2(Qwen2Attention):
+    """
+    Llama flash attention module. This module inherits from `LlamaAttention` as the weights of the module stays
+    untouched. The only required change would be on the forward pass where it needs to correctly call the public API of
+    flash attention and deal with padding tokens in case the input contains any of them.
+    """
+
+    def __init__(self, config: Qwen2Config, layer_idx: Optional[int] = None):
+        super().__init__(config, layer_idx)
+
+        self.flash_attention = FlashAttention2(
+            self.head_dim, self.num_heads, self.attention_dropout, input_layout="BNSD", dtype=ms.float16
+        )
+
+    def convert_mask_to_fa_format(self, attention_mask):
+        if attention_mask is not None:
+            if attention_mask.dtype == ms.bool_:
+                # flip mask, since ms FA treats 1 as discard, 0 as retain.
+                attention_mask = 1 - attention_mask
+                attention_mask = attention_mask.to(ms.uint8)
+            else:
+                attention_mask = attention_mask.to(ms.float16)
+                attention_mask = ops.select(
+                    ops.equal(attention_mask, _MIN_FP16),
+                    ops.ones((), ms.uint8),
+                    ops.zeros((), ms.uint8),
+                )
+
+        return attention_mask
+
+    def construct(
+        self,
+        hidden_states: ms.Tensor,
+        attention_mask: Optional[ms.Tensor] = None,
+        position_ids: Optional[ms.Tensor] = None,
+        past_key_value: Optional[Tuple[ms.Tensor, ms.Tensor]] = None,
+        output_attentions: bool = False,
+        use_cache: bool = False,
+        cache_position: Optional[ms.Tensor] = None,
+        **kwargs,
+    ):
+
+        bsz, q_len, _ = hidden_states.shape
+
+        query_states = self.q_proj(hidden_states)
+        key_states = self.k_proj(hidden_states)
+        value_states = self.v_proj(hidden_states)
+
+        query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).swapdims(1, 2)
+        key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).swapdims(1, 2)
+        value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).swapdims(1, 2)
+
+        kv_seq_len = key_states.shape[-2]
+        # Because the input can be padded, the absolute sequence length depends on the max position id.
+        rotary_seq_len = max(kv_seq_len, position_ids[:, -1].max().item()) + 1
+        cos, sin = self.rotary_emb(value_states, seq_len=rotary_seq_len)
+
+        # query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)
+        # using ops.rotary_embedding
+        cos = cos.unsqueeze(0).unsqueeze(0)
+        sin = sin.unsqueeze(0).unsqueeze(0)
+        query_states = ops.rotary_position_embedding(query_states, cos, sin)
+        key_states = ops.rotary_position_embedding(key_states, cos, sin)
+
+        if past_key_value is not None:
+            is_first = (q_len == (int(cache_position.max())+1))
+            if is_first:
+                past_len = 0
+                key_states = key_states
+                value_states = value_states
+                past_key_value = (ops.concat((key_states, past_key_value[0][:,:,q_len]), axis=2), ops.concat((key_states, past_key_value[1][:,:,q_len]), axis=2))
+            else:
+                past_len = int(cache_position.max()) + 1
+                key_states = ops.concat((past_key_value[0][:, :, :past_len], key_states), axis=2)
+                value_states = ops.concat((past_key_value[1][:, :, :past_len], value_states), axis=2)
+                past_key_value = (ops.concat((key_states, past_key_value[0][:,:,q_len]), axis=2), ops.concat((key_states, past_key_value[1][:,:,q_len]), axis=2))
+
+        key_states = repeat_kv(key_states, self.num_key_value_groups)
+        value_states = repeat_kv(value_states, self.num_key_value_groups)
+
+        # 1. flash attention
+        if attention_mask is not None:  # no matter the length, we just slice it
+            attention_mask = attention_mask[:, :, :, : key_states.shape[-2]]
+        attention_mask = self.convert_mask_to_fa_format(attention_mask)
+        attn_output = self.flash_attention(query_states, key_states, value_states, attention_mask)
+
+        attn_output = attn_output.swapdims(1, 2)
+        attn_output = attn_output.reshape(bsz, q_len, -1)
+
+        attn_output = self.o_proj(attn_output)
+
+        return attn_output, None, past_key_value
+
 
 QWEN2_ATTENTION_CLASSES = {
     "eager": Qwen2Attention,
+    "flash_attention_2": Qwen2FlashAttention2,
 }
+
 
 
 class Qwen2DecoderLayer(nn.Cell):
@@ -606,27 +712,29 @@ class Qwen2Model(Qwen2PreTrainedModel):
         #         "You cannot specify both input_ids and inputs_embeds at the same time, and must specify either one"
         #     )
 
-        if self.gradient_checkpointing and self.training:
-            if use_cache:
-                logger.warning_once(
-                    "`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`..."
-                )
-                use_cache = False
-
-        use_legacy_cache = False
-        if use_cache and not isinstance(past_key_values, Cache) and not self.training:
-            use_legacy_cache = True
-            past_key_values = DynamicCache.from_legacy_cache(past_key_values)
-            logger.warning_once(
-                "We detected that you are passing `past_key_values` as a tuple and this is deprecated and will be removed in v4.43. "
-                "Please use an appropriate `Cache` class (https://huggingface.co/docs/transformers/v4.41.3/en/internal/generation_utils#transformers.Cache)"
-            )
+        # if self.gradient_checkpointing and self.training:
+        #     if use_cache:
+        #         logger.warning_once(
+        #             "`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`..."
+        #         )
+        #         use_cache = False
+        #
+        # use_legacy_cache = False
+        # if use_cache and not isinstance(past_key_values, Cache) and not self.training:
+        #     use_legacy_cache = True
+        #     past_key_values = DynamicCache.from_legacy_cache(past_key_values)
+        #     logger.warning_once(
+        #         "We detected that you are passing `past_key_values` as a tuple and this is deprecated and will be removed in v4.43. "
+        #         "Please use an appropriate `Cache` class (https://huggingface.co/docs/transformers/v4.41.3/en/internal/generation_utils#transformers.Cache)"
+        #     )
+        if self.training:
+            use_cache = False
 
         if inputs_embeds is None:
             inputs_embeds = self.embed_tokens(input_ids)
 
         if cache_position is None:
-            past_seen_tokens = past_key_values.get_seq_length() if past_key_values is not None else 0
+            past_seen_tokens = get_max_length(past_key_values) if past_key_values is not None else 0
             cache_position = ops.arange(past_seen_tokens, past_seen_tokens + inputs_embeds.shape[1])
         if position_ids is None:
             position_ids = cache_position.unsqueeze(0)
@@ -640,41 +748,27 @@ class Qwen2Model(Qwen2PreTrainedModel):
         # decoder layers
         all_hidden_states = () if output_hidden_states else None
         all_self_attns = () if output_attentions else None
-        next_decoder_cache = None
+        next_caches = () if use_cache else None
 
-        for decoder_layer in self.layers:
+        for layer_idx, decoder_layer in enumerate(self.layers):
             if output_hidden_states:
                 all_hidden_states += (hidden_states,)
 
-            if self.gradient_checkpointing and self.training:
-                layer_outputs = self._gradient_checkpointing_func(
-                    decoder_layer.__call__,
-                    hidden_states,
-                    causal_mask,
-                    position_ids,
-                    past_key_values,
-                    output_attentions,
-                    use_cache,
-                    cache_position,
-                )
-            else:
-                layer_outputs = decoder_layer(
-                    hidden_states,
-                    attention_mask=causal_mask,
-                    position_ids=position_ids,
-                    past_key_value=past_key_values,
-                    output_attentions=output_attentions,
-                    use_cache=use_cache,
-                    cache_position=cache_position,
-                )
+
+            layer_outputs = decoder_layer(
+                hidden_states,
+                attention_mask=causal_mask,
+                position_ids=position_ids,
+                past_key_value=past_key_values[layer_idx] if past_key_values is not None else None,
+                output_attentions=output_attentions,
+                use_cache=use_cache,
+                cache_position=cache_position,
+            )
 
             hidden_states = layer_outputs[0]
 
             if use_cache:
-                next_decoder_cache = layer_outputs[2 if output_attentions else 1]
-
-            if output_attentions:
-                all_self_attns += (layer_outputs[1],)
+                next_caches += (layer_outputs[2 if output_attentions else 1],)
 
         hidden_states = self.norm(hidden_states)
 
@@ -682,15 +776,15 @@ class Qwen2Model(Qwen2PreTrainedModel):
         if output_hidden_states:
             all_hidden_states += (hidden_states,)
 
-        next_cache = None
-        if use_cache:
-            next_cache = next_decoder_cache.to_legacy_cache() if use_legacy_cache else next_decoder_cache
+        # next_cache = None
+        # if use_cache:
+        #     next_cache = next_decoder_cache.to_legacy_cache() if use_legacy_cache else next_decoder_cache
 
         if not return_dict:
-            return tuple(v for v in [hidden_states, next_cache, all_hidden_states, all_self_attns] if v is not None)
+            return tuple(v for v in [hidden_states, next_caches, all_hidden_states, all_self_attns] if v is not None)
         return BaseModelOutputWithPast(
             last_hidden_state=hidden_states,
-            past_key_values=next_cache,
+            past_key_values=next_caches,
             hidden_states=all_hidden_states,
             attentions=all_self_attns,
         )
@@ -701,40 +795,41 @@ class Qwen2Model(Qwen2PreTrainedModel):
         attention_mask: ms.Tensor,
         input_tensor: ms.Tensor,
         cache_position: ms.Tensor,
-        past_key_values: Cache,
+        past_key_values: Tuple[Tuple[ms.Tensor, ms.Tensor]],
         output_attentions: bool,
     ):
-        # TODO: As of torch==2.2.0, the `attention_mask` passed to the model in `generate` is 2D and of dynamic length even when the static
-        # KV cache is used. This is an issue for torch.compile which then recaptures cudagraphs at each decode steps due to the dynamic shapes.
-        # (`recording cudagraph tree for symint key 13`, etc.), which is VERY slow. A workaround is `@torch.compiler.disable`, but this prevents using
-        # `fullgraph=True`. See more context in https://github.com/huggingface/transformers/pull/29114
-
-        if self.config._attn_implementation == "flash_attention_2":
-            if attention_mask is not None and 0.0 in attention_mask:
-                return attention_mask
-            return None
-
-        # For SDPA, when possible, we will rely on its `is_causal` argument instead of its `attn_mask` argument, in
-        # order to dispatch on Flash Attention 2. This feature is not compatible with static cache, as SDPA will fail
-        # to infer the attention mask.
-        past_seen_tokens = past_key_values.get_seq_length() if past_key_values is not None else 0
-        using_static_cache = isinstance(past_key_values, StaticCache)
-
-        # When output attentions is True, sdpa implementation's forward method calls the eager implementation's forward
-        if self.config._attn_implementation == "sdpa" and not using_static_cache and not output_attentions:
-            if AttentionMaskConverter._ignore_causal_mask_sdpa(
-                attention_mask,
-                inputs_embeds=input_tensor,
-                past_key_values_length=past_seen_tokens,
-                is_training=self.training,
-            ):
-                return None
+        # # TODO: As of torch==2.2.0, the `attention_mask` passed to the model in `generate` is 2D and of dynamic length even when the static
+        # # KV cache is used. This is an issue for torch.compile which then recaptures cudagraphs at each decode steps due to the dynamic shapes.
+        # # (`recording cudagraph tree for symint key 13`, etc.), which is VERY slow. A workaround is `@torch.compiler.disable`, but this prevents using
+        # # `fullgraph=True`. See more context in https://github.com/huggingface/transformers/pull/29114
+        #
+        # if self.config._attn_implementation == "flash_attention_2":
+        #     if attention_mask is not None and 0.0 in attention_mask:
+        #         return attention_mask
+        #     return None
+        #
+        # # For SDPA, when possible, we will rely on its `is_causal` argument instead of its `attn_mask` argument, in
+        # # order to dispatch on Flash Attention 2. This feature is not compatible with static cache, as SDPA will fail
+        # # to infer the attention mask.
+        # past_seen_tokens = past_key_values.get_seq_length() if past_key_values is not None else 0
+        # using_static_cache = isinstance(past_key_values, StaticCache)
+        #
+        # # When output attentions is True, sdpa implementation's forward method calls the eager implementation's forward
+        # if self.config._attn_implementation == "sdpa" and not using_static_cache and not output_attentions:
+        #     if AttentionMaskConverter._ignore_causal_mask_sdpa(
+        #         attention_mask,
+        #         inputs_embeds=input_tensor,
+        #         past_key_values_length=past_seen_tokens,
+        #         is_training=self.training,
+        #     ):
+        #         return None
+        past_seen_tokens = get_seq_length(past_key_values) if past_key_values is not None else 0
 
         dtype, device = input_tensor.dtype, None
         min_dtype = dtype_to_min(dtype)
         sequence_length = input_tensor.shape[1]
-        if using_static_cache:
-            target_length = past_key_values.get_max_length()
+        if past_key_values is not None:
+            target_length = get_max_length(past_key_values)
         else:
             target_length = (
                 attention_mask.shape[-1]
@@ -753,12 +848,6 @@ class Qwen2Model(Qwen2PreTrainedModel):
             cache_position=cache_position,
             batch_size=input_tensor.shape[0],
         )
-
-        if self.config._attn_implementation == "sdpa" and attention_mask is not None and not output_attentions:
-            # Attend to all tokens in fully masked rows in the causal_mask, for example the relevant first rows when
-            # using left padding. This is required by F.scaled_dot_product_attention memory-efficient attention path.
-            # Details: https://github.com/pytorch/pytorch/issues/110213
-            causal_mask = AttentionMaskConverter._unmask_unattended(causal_mask, min_dtype)
 
         return causal_mask
 
@@ -818,7 +907,7 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel):
         input_ids: ms.Tensor = None,
         attention_mask: Optional[ms.Tensor] = None,
         position_ids: Optional[ms.Tensor] = None,
-        past_key_values: Optional[List[ms.Tensor]] = None,
+        past_key_values: Optional[Tuple[Tuple[ms.Tensor, ms.Tensor]]] = None,
         inputs_embeds: Optional[ms.Tensor] = None,
         labels: Optional[ms.Tensor] = None,
         use_cache: Optional[bool] = None,
@@ -912,73 +1001,74 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel):
         use_cache=True,
         **kwargs,
     ):
-        # If we have cache: let's slice `input_ids` through `cache_position`, to keep only the unprocessed tokens
-        # Exception 1: when passing input_embeds, input_ids may be missing entries
-        # Exception 2: some generation methods do special slicing of input_ids, so we don't need to do it here
-        # FIXME generation scling method
+        past_length = 0
         if past_key_values is not None:
-            # if inputs_embeds is not None and input_ids is None:  # Exception 1
-            #     # input_ids = input_ids[:, -cache_position.shape[0]:]
-            #     input_ids = input_ids
-            # elif input_ids.shape[1] != cache_position.shape[0]:  # Default case (the "else", a no op, is Exception 2)
-            #     input_ids = input_ids[:, :cache_position.shape[0]]
-            if inputs_embeds is not None:  # Exception 1
-                if 0 not in input_ids.shape:
-                    input_ids = input_ids[:, -cache_position.shape[0] :]
-            elif input_ids.shape[1] != cache_position.shape[0]:  # Default case (the "else", a no op, is Exception 2)
-                input_ids = ops.index_select(input_ids, -1, cache_position)
+            # Past key values are always initialized with a `Cache` object -> no need for if-else anymore
+            past_length = cache_position[0] if cache_position is not None else get_seq_length(past_key_values)
+            max_cache_length = get_max_length(past_key_values) if get_max_length(past_key_values) is not None else None
+            cache_length = past_length if max_cache_length is None else ops.minimum(max_cache_length, past_length)
 
+            # Keep only the unprocessed tokens:
+            # 1 - If the length of the attention_mask exceeds the length of input_ids, then we are in a setting where
+            # some of the inputs are exclusively passed as part of the cache (e.g. when passing input_embeds as input)
+
+            if attention_mask is not None and int(attention_mask.sum(-1).max()) > input_ids.shape[1]:
+                input_ids = input_ids[:, -(int(attention_mask.sum(-1).max()) - int(past_length)):]
+            # 2 - If the past_length is smaller than input_ids', then input_ids holds all input tokens. We can discard
+            # input_ids based on the past_length.
+            elif past_length < input_ids.shape[1]:
+                input_ids = input_ids[:, int(past_length):]
+            # 3 - Otherwise (past_length >= input_ids.shape[1]), let's assume input_ids only has unprocessed tokens.
+
+            # If we are about to go beyond the maximum cache length, we need to crop the input attention mask.
+            if (
+                    max_cache_length is not None
+                    and attention_mask is not None
+                    and cache_length + input_ids.shape[1] > max_cache_length
+            ):
+                attention_mask = attention_mask[:, -max_cache_length:]
+
+        position_ids = kwargs.get("position_ids", None)
         if attention_mask is not None and position_ids is None:
             # create position_ids on the fly for batch generation
-            position_ids = attention_mask.to(ms.int32).cumsum(-1) - 1  # FIXME
+            position_ids = attention_mask.to(ms.int32).cumsum(-1) - 1
             position_ids = position_ids.masked_fill(attention_mask == 0, 1)
-            if past_key_values:
-                position_ids = position_ids[:, -input_ids.shape[1] :]
-
-                # This `clone` call is needed to avoid recapturing cuda graphs with
-                # `torch.compile`'s  `mode="reduce-overhead`, as otherwise the input `position_ids` would have various stride
-                # during the decoding. Here, simply using `.contiguous()` is not sufficient as in the batch size = 1 case,
-                # `position_ids` is already contiguous but with varying stride which retriggers a capture.
-                position_ids = position_ids
+            if past_key_values and past_length > 0:
+                cur_len = attention_mask.sum(-1).max()
+                position_ids = position_ids[:, cur_len - input_ids.shape[1]: cur_len]
 
         # if `inputs_embeds` are passed, we only want to use them in the 1st generation step
-        if inputs_embeds is not None and cache_position[0] == 0:
+        if inputs_embeds is not None and past_length == 0:
             model_inputs = {"inputs_embeds": inputs_embeds}
         else:
+            # TODO: use `next_tokens` directly instead.
+            if not isinstance(input_ids, Tensor):
+                input_ids = Tensor(input_ids, dtype=ms.int32)
+
             # Padding to max_len when no cache
             if past_key_values is None:
                 pad_len = max(0, attention_mask.shape[1] - input_ids.shape[1])
-                input_ids = F.pad(input_ids, (0, pad_len), value=0)
+                input_ids = ops.pad(input_ids, (0, pad_len), value=0)
 
             model_inputs = {"input_ids": input_ids}
 
-        if isinstance(past_key_values, StaticCache) and attention_mask.ndim == 2:
-            if inputs_embeds is not None:
-                batch_size, sequence_length = inputs_embeds.shape
-                device = None
+        input_length = position_ids.shape[-1] if position_ids is not None else input_ids.shape[-1]
+
+        if cache_position is None:
+            cache_position = ops.arange(past_length, past_length + input_length)
+        elif use_cache:
+            if input_length < cache_position.shape[0]:
+                assert cache_position.shape[0] == attention_mask.shape[-1]
+                cur_len = int(attention_mask.sum(-1).max())
+                cache_position = cache_position[cur_len - input_length: cur_len]
             else:
-                batch_size, sequence_length = input_ids.shape
-                device = None
-
-            dtype = self.lm_head.weight.dtype
-            min_dtype = dtype_to_min(dtype)
-
-            attention_mask = _prepare_4d_causal_attention_mask_with_cache_position(
-                attention_mask,
-                sequence_length=sequence_length,
-                target_length=past_key_values.get_max_length(),
-                dtype=dtype,
-                device=device,
-                min_dtype=min_dtype,
-                cache_position=cache_position,
-                batch_size=batch_size,
-            )
+                cache_position = cache_position[-input_length:]
 
         model_inputs.update(
             {
                 "position_ids": position_ids,
                 "cache_position": cache_position,
-                "past_key_values": past_key_values,
+                "past_key_values": ms.mutable(past_key_values) if past_key_values is not None else None,
                 "use_cache": use_cache,
                 "attention_mask": attention_mask,
             }
@@ -1046,8 +1136,8 @@ class Qwen2ForSequenceClassification(Qwen2PreTrainedModel):
         else:
             batch_size = inputs_embeds.shape[0]
 
-        if self.config.pad_token_id is None and batch_size != 1:
-            raise ValueError("Cannot handle batch sizes > 1 if no padding token is defined.")
+        # if self.config.pad_token_id is None and batch_size != 1:
+        #     raise ValueError("Cannot handle batch sizes > 1 if no padding token is defined.")
         if self.config.pad_token_id is None:
             sequence_lengths = -1
         else:
