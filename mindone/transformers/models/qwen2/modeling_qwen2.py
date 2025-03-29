@@ -317,12 +317,12 @@ class Qwen2Attention(nn.Cell):
                 past_len = 0
                 key_states = key_states
                 value_states = value_states
-                past_key_value = (ops.concat((key_states, past_key_value[0][:,:,q_len]), axis=2), ops.concat((key_states, past_key_value[1][:,:,q_len]), axis=2))
+                past_key_value = (ops.concat((key_states, past_key_value[0][:,:,q_len:]), axis=2), ops.concat((value_states, past_key_value[1][:,:,q_len]), axis=2))
             else:
                 past_len = int(cache_position.max()) + 1
                 key_states = ops.concat((past_key_value[0][:, :, :past_len], key_states), axis=2)
                 value_states = ops.concat((past_key_value[1][:, :, :past_len], value_states), axis=2)
-                past_key_value = (ops.concat((key_states, past_key_value[0][:,:,q_len]), axis=2), ops.concat((key_states, past_key_value[1][:,:,q_len]), axis=2))
+                past_key_value = (ops.concat((key_states, past_key_value[0][:,:,q_len:]), axis=2), ops.concat((value_states, past_key_value[1][:,:,q_len]), axis=2))
 
         # repeat k/v heads if n_kv_heads < n_heads
         key_states = repeat_kv(key_states, self.num_key_value_groups)
@@ -415,8 +415,8 @@ class Qwen2FlashAttention2(Qwen2Attention):
 
         kv_seq_len = key_states.shape[-2]
         # Because the input can be padded, the absolute sequence length depends on the max position id.
-        rotary_seq_len = max(kv_seq_len, position_ids[:, -1].max().item()) + 1
-        cos, sin = self.rotary_emb(value_states, seq_len=rotary_seq_len)
+        # rotary_seq_len = max(kv_seq_len, position_ids[:, -1].max().item()) + 1
+        cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
 
         # query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)
         # using ops.rotary_embedding
@@ -431,12 +431,12 @@ class Qwen2FlashAttention2(Qwen2Attention):
                 past_len = 0
                 key_states = key_states
                 value_states = value_states
-                past_key_value = (ops.concat((key_states, past_key_value[0][:,:,q_len]), axis=2), ops.concat((key_states, past_key_value[1][:,:,q_len]), axis=2))
+                past_key_value = (ops.concat((key_states, past_key_value[0][:,:,q_len:]), axis=2), ops.concat((value_states, past_key_value[1][:,:,q_len]), axis=2))
             else:
                 past_len = int(cache_position.max()) + 1
                 key_states = ops.concat((past_key_value[0][:, :, :past_len], key_states), axis=2)
                 value_states = ops.concat((past_key_value[1][:, :, :past_len], value_states), axis=2)
-                past_key_value = (ops.concat((key_states, past_key_value[0][:,:,q_len]), axis=2), ops.concat((key_states, past_key_value[1][:,:,q_len]), axis=2))
+                past_key_value = (ops.concat((key_states, past_key_value[0][:,:,q_len:]), axis=2), ops.concat((value_states, past_key_value[1][:,:,q_len]), axis=2))
 
         key_states = repeat_kv(key_states, self.num_key_value_groups)
         value_states = repeat_kv(value_states, self.num_key_value_groups)
@@ -734,7 +734,7 @@ class Qwen2Model(Qwen2PreTrainedModel):
             inputs_embeds = self.embed_tokens(input_ids)
 
         if cache_position is None:
-            past_seen_tokens = get_max_length(past_key_values) if past_key_values is not None else 0
+            past_seen_tokens = get_seq_length(past_key_values) if past_key_values is not None else 0
             cache_position = ops.arange(past_seen_tokens, past_seen_tokens + inputs_embeds.shape[1])
         if position_ids is None:
             position_ids = cache_position.unsqueeze(0)
@@ -997,7 +997,6 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel):
         attention_mask=None,
         inputs_embeds=None,
         cache_position=None,
-        position_ids=None,
         use_cache=True,
         **kwargs,
     ):
