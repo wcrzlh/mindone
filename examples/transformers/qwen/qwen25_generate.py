@@ -10,11 +10,12 @@ from mindone.transformers import Qwen2ForCausalLM
 import mindspore as ms
 from mindspore import Tensor
 
+ms.set_context(mode=0)
+
 model_name = "/home/mikecheung/model/Qwen2.5-14B-Instruct"
 model = Qwen2ForCausalLM.from_pretrained(
     model_name,
     mindspore_dtype = ms.bfloat16,
-    use_flash_attention_2=True
 )
 
 # infer boost
@@ -25,9 +26,22 @@ model.set_jit_config(jitconfig)
 input_ids = Tensor(shape=[1,None], dtype=ms.int32)
 position_ids = Tensor(shape=[1,None], dtype=ms.int32)
 attention_mask = Tensor(shape=[1,None], dtype=ms.int32)
+past_key_values = None
+inputs_embeds = None
+labels = None
+use_cache = False
+output_attentions = False
+output_hidden_states = False
+return_dict = False
 cache_position = Tensor(shape=[None,], dtype=ms.int32)
+block_tables = Tensor(shape=[None, None], dtype=ms.int32)
+slot_mapping = Tensor(shape=[None], dtype=ms.int32)
+freqs_cis = None
+mask = None
+batch_valid_length = ms.mutable(Tensor(shape=[], dtype=ms.int32))
 
-model.set_inputs(input_ids = input_ids, position_ids=position_ids, attention_mask=attention_mask, cache_position=cache_position)
+model.set_inputs(input_ids, attention_mask, position_ids, past_key_values, inputs_embeds, labels, use_cache, output_attentions,
+                 output_hidden_states, return_dict, cache_position, block_tables, slot_mapping, freqs_cis, mask, batch_valid_length)
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 

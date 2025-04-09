@@ -5,6 +5,8 @@ import warnings
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
+import numpy as np
+
 from transformers import logging
 from transformers.generation.configuration_utils import GenerationConfig, GenerationMode
 from transformers.tokenization_utils import ExtensionsTrie
@@ -12,7 +14,7 @@ from transformers.utils.generic import ModelOutput
 
 import mindspore as ms
 import mindspore.numpy as mnp
-from mindspore import ops
+from mindspore import ops, Tensor
 
 from mindone.transformers.cache_utils import (
     Cache,
@@ -42,6 +44,7 @@ from mindone.transformers.generation.stopping_criteria import (
 )
 from mindone.transformers.mindspore_adapter.select_operator import get_multinomial_op
 from mindone.transformers.modeling_outputs import CausalLMOutputWithPast
+from mindone.transformers.mindspore_adapter.block_tables import BlockTables
 
 if TYPE_CHECKING:
     from transformers.generation.streamers import BaseStreamer
@@ -904,10 +907,14 @@ class GenerationMixin:
             #         model_kwargs["attention_mask"] = ops.cat(
             #             [attention_mask, ops.ones((attention_mask.shape[0], 1), dtype=attention_mask.dtype)], axis=-1
             #         )
+
+            # for PA
+            # attention_mask = model_kwargs["attention_mask"]
+            # model_kwargs["attention_mask"] = ops.cat(
+            #     [attention_mask, ops.ones((attention_mask.shape[0], 1), dtype=attention_mask.dtype)], axis=-1
+            # )
             attention_mask = model_kwargs["attention_mask"]
-            model_kwargs["attention_mask"] = ops.cat(
-                [attention_mask, ops.ones((attention_mask.shape[0], 1), dtype=attention_mask.dtype)], axis=-1
-            )
+            model_kwargs["attention_mask"] = ops.ones((attention_mask.shape[0], 1), dtype=attention_mask.dtype)
         else:
             # update decoder attention mask
             if "decoder_attention_mask" in model_kwargs:
@@ -1735,9 +1742,39 @@ class GenerationMixin:
         s_time = time.time()
         graph_compiled_time_buffer = []
 
+        # TODO get block table and slot mapping function
+        # InferAttention Preprocess
+        self.block_mgr = BlockTables(1024, 32, 32768)
+        self.block_mgr.init_cache_engine(1)
+
         while self._has_unfinished_sequences(this_peer_finished, synced_gpus):
             # prepare model inputs
             model_inputs = self.prepare_inputs_for_generation(input_ids, **model_kwargs)
+
+            # get block table and slot mapping
+            bs, seq_len = input_ids.shape
+            if step == 0:
+                max_input_length = 32768
+                valid_length_each_example = ms.tensor(seq_len).reshape(bs)
+                block_tables, slot_mapping = self.block_mgr.assemble_pa_full_inputs(
+                    max_input_length,
+                    valid_length_each_example,
+                    [False]
+                )
+                slot_mapping = np.delete(slot_mapping, np.where(slot_mapping == -1))
+            else:
+                valid_length_each_example += 1
+                block_tables, slot_mapping = self.block_mgr.assemble_pa_inc_inputs(
+                    valid_length_each_example,
+                    [False]
+                )
+            slot_mapping = ms.tensor(slot_mapping)
+            block_tables = ms.tensor(block_tables)
+
+            if step == 0:
+                batch_valid_length = ms.tensor(seq_len).to(ms.int32).reshape(bs)
+            else:
+                batch_valid_length += 1
 
             # forward pass to get next token
             outputs = self(
@@ -1745,7 +1782,18 @@ class GenerationMixin:
                 return_dict=False if ms.get_context("mode") == ms.GRAPH_MODE else True,
                 output_attentions=output_attentions,
                 output_hidden_states=output_hidden_states,
+                block_tables = block_tables,
+                slot_mapping = slot_mapping,
+                freqs_cis = None,
+                mask = None,
+                batch_valid_length = ms.mutable(batch_valid_length)
             )
+
+            if step == 0:
+                for name, cell in self.cells_and_names():
+                    if "model" in name:
+                        if getattr(cell, "is_first_iteration", ms.Parameter(ms.tensor(False))):
+                            ops.assign(cell.is_first_iteration, ms.Parameter(ms.tensor(False)))
 
             if synced_gpus and this_peer_finished:
                 continue  # don't waste resources running the code we don't need
@@ -1821,8 +1869,16 @@ class GenerationMixin:
                 next_tokens = next_tokens * unfinished_sequences + pad_token_id * (1 - unfinished_sequences)
             next_tokens = next_tokens.to(ms.int32)
 
-            # update generated ids, model inputs, and length for next step
-            input_ids = ops.cat([input_ids, next_tokens[:, None]], axis=-1)
+            # # update generated ids, model inputs, and length for next step
+            # input_ids = ops.cat([input_ids, next_tokens[:, None]], axis=-1)
+
+            # For PA
+            input_ids = next_tokens[:, None]
+            if step == 1:
+                input_ids_for_ge = ops.cat([input_ids, next_tokens[:, None]], axis=-1)
+            else:
+                input_ids_for_ge = ops.cat([input_ids_for_ge, next_tokens[:, None]], axis=-1)
+
             if streamer is not None:
                 streamer.put(next_tokens.asnumpy())
 
@@ -1832,7 +1888,9 @@ class GenerationMixin:
                 is_encoder_decoder=self.config.is_encoder_decoder,
             )
 
-            unfinished_sequences = unfinished_sequences & ~ms.Tensor(stopping_criteria(input_ids, scores), ms.bool_)
+            # unfinished_sequences = unfinished_sequences & ~ms.Tensor(stopping_criteria(input_ids, scores), ms.bool_)
+            # For PA
+            unfinished_sequences = unfinished_sequences & ~ms.Tensor(stopping_criteria(input_ids_for_ge, scores), ms.bool_)
             this_peer_finished = unfinished_sequences.max() == 0
 
         if streamer is not None:
