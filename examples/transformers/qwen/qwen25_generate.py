@@ -3,9 +3,8 @@ import time
 from functools import partial
 
 import numpy as np
-from transformers import AutoTokenizer, Qwen2Config
+from transformers import AutoTokenizer
 
-from mindone.trainers.zero import prepare_network
 from mindone.transformers import Qwen2ForCausalLM
 import mindspore as ms
 from mindspore import Tensor
