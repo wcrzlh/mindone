@@ -38,7 +38,7 @@ block_tables = Tensor(shape=[None, None], dtype=ms.int32)
 slot_mapping = Tensor(shape=[None], dtype=ms.int32)
 freqs_cis = None
 mask = None
-batch_valid_length = ms.mutable(Tensor(shape=[], dtype=ms.int32))
+batch_valid_length = ms.mutable(Tensor(shape=[None], dtype=ms.int32))
 
 model.set_inputs(input_ids, attention_mask, position_ids, past_key_values, inputs_embeds, labels, use_cache, output_attentions,
                  output_hidden_states, return_dict, cache_position, block_tables, slot_mapping, freqs_cis, mask, batch_valid_length)
