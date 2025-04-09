@@ -1,3 +1,5 @@
+export DEVICE_ID=2
+
 cpus='cat /proc/cpuinfo| grep "processor"| wc -l'
 avg='expr $cpus \/ 8'
 gap='expr $avg \- 1'
