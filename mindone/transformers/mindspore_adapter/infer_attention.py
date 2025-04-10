@@ -181,16 +181,16 @@ class InferAttention(Cell):
         self.input_layout = "BSH"
         self.use_attention_mask = False
 
-        if self.use_flash_attention:
-            self.flash_attention = FlashAttention(head_num=self.n_head,
-                                                  pre_tokens=self.pre_tokens,
-                                                  next_tokens=self.next_tokens,
-                                                  keep_prob=self.keep_prob,
-                                                  scale_value=self.scale_value,
-                                                  sparse_mode=self.sparse_mode,
-                                                  use_attention_mask=self.use_attention_mask,
-                                                  use_alibi_mask=self.use_alibi_mask,
-                                                  input_layout=self.input_layout)
+        # if self.use_flash_attention:
+        self.flash_attention = FlashAttention(head_num=self.n_head,
+                                              pre_tokens=self.pre_tokens,
+                                              next_tokens=self.next_tokens,
+                                              keep_prob=self.keep_prob,
+                                              scale_value=self.scale_value,
+                                              sparse_mode=self.sparse_mode,
+                                              use_attention_mask=self.use_attention_mask,
+                                              use_alibi_mask=self.use_alibi_mask,
+                                              input_layout=self.input_layout)
 
         kv_shape = (self.num_blocks, self.block_size, self.n_kv_head, self.head_dim)
         self.paged_attention_mgr = PagedAttentionMgr(self.pa_n_head_split,
