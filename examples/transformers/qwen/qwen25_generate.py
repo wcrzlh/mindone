@@ -63,7 +63,7 @@ generated_ids = model.generate(
     **model_inputs,
     max_new_tokens=512,
     do_sample=False,
-    use_cache=True,
+    use_cache=False,
 )
 
 generated_ids = generated_ids.asnumpy()
