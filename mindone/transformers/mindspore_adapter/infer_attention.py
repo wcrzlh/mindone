@@ -177,12 +177,9 @@ class InferAttention(Cell):
             self.add_alibi = P.Add()
         self.use_attention_mask = True
         self.is_dynamic = is_dynamic
-        if self.is_dynamic:
-            self.input_layout = "TH"
-            self.use_attention_mask = not self.use_alibi_mask
-        else:
-            self.input_layout = "BSH"
-            self.use_attention_mask = False
+
+        self.input_layout = "BSH"
+        self.use_attention_mask = False
 
         if self.use_flash_attention:
             self.flash_attention = FlashAttention(head_num=self.n_head,
