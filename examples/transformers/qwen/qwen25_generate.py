@@ -32,7 +32,7 @@ use_cache = False
 output_attentions = False
 output_hidden_states = False
 return_dict = False
-cache_position = Tensor(shape=[None], dtype=ms.int32)
+cache_position = Tensor(shape=[None], dtype=ms.int64)
 block_tables = Tensor(shape=[None, None], dtype=ms.int32)
 slot_mapping = Tensor(shape=[None], dtype=ms.int32)
 freqs_cis = None
