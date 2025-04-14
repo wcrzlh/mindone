@@ -1,33 +1,31 @@
-import random
-import time
-from functools import partial
+import os
 
-import numpy as np
-from transformers import AutoTokenizer, Qwen2Config
+from transformers import AutoTokenizer
 
-from mindone.trainers.zero import prepare_network
 from mindone.transformers import Qwen2ForCausalLM
 import mindspore as ms
-from mindspore import Tensor
 
-model_name = "/home/mikecheung/model/Qwen2.5-14B-Instruct"
+# set env
+os.environ["SHLVL"] = "2"
+os.environ["CRC32SC_SW_MODE"] = "auto"
+os.environ["CUSTOM_MATMUL_SHUFFLE"] = "on"
+os.environ["LCCL_DETERMINISTIC"] = "0"
+os.environ["MS_ENABLE_GRACEFUL_EXIT"] = "0"
+os.environ["MS_ALLOC_CONF"] = "enable_vmm:False"
+
+ms.set_context(mode=0)
+
+model_name = "/mnt/disk2/wcr/Qwen2.5-14B-Instruct"
 model = Qwen2ForCausalLM.from_pretrained(
     model_name,
     mindspore_dtype = ms.bfloat16,
-    use_flash_attention_2=True
+    attn_implementation = "page_attention",
 )
 
 # infer boost
 from mindspore import JitConfig
 jitconfig = JitConfig(jit_level="O0", infer_boost="on")
 model.set_jit_config(jitconfig)
-
-input_ids = Tensor(shape=[1,None], dtype=ms.int32)
-position_ids = Tensor(shape=[1,None], dtype=ms.int32)
-attention_mask = Tensor(shape=[1,None], dtype=ms.int32)
-cache_position = Tensor(shape=[None,], dtype=ms.int32)
-
-model.set_inputs(input_ids = input_ids, position_ids=position_ids, attention_mask=attention_mask, cache_position=cache_position)
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
@@ -50,7 +48,7 @@ generated_ids = model.generate(
     **model_inputs,
     max_new_tokens=512,
     do_sample=False,
-    use_cache=True,
+    use_cache=False,
 )
 
 generated_ids = generated_ids.asnumpy()

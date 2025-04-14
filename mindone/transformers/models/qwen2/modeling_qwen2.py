@@ -19,7 +19,9 @@
 # limitations under the License.
 """Mindspore Qwen2 model."""
 
+import math
 from typing import List, Optional, Tuple, Union
+import numpy as np
 
 from transformers import Qwen2Config, logging
 
@@ -38,6 +40,10 @@ from mindone.transformers.modeling_outputs import (
 )
 from mindone.transformers.modeling_utils import MSPreTrainedModel
 from mindone.transformers.mindspore_adapter.attention import FlashAttention2
+from mindone.transformers.mindspore_adapter.infer_attention import InferAttention
+from mindone.transformers.mindspore_adapter.linear import FastLinear
+from mindone.transformers.mindspore_adapter.freqs import FreqsMgr
+from mindone.transformers.mindspore_adapter.block_tables import BlockTables
 
 logger = logging.get_logger(__name__)
 
@@ -211,9 +217,9 @@ class Qwen2MLP(nn.Cell):
         super().__init__()
         self.hidden_size = config.hidden_size
         self.intermediate_size = config.intermediate_size
-        self.gate_proj = mint.nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
-        self.up_proj = mint.nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
-        self.down_proj = mint.nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
+        self.gate_proj = FastLinear(self.hidden_size, self.intermediate_size, has_bias=False, compute_dtype=config.mindspore_dtype, param_init_type=config.mindspore_dtype)
+        self.up_proj = FastLinear(self.hidden_size, self.intermediate_size, has_bias=False, compute_dtype=config.mindspore_dtype, param_init_type=config.mindspore_dtype)
+        self.down_proj = FastLinear(self.intermediate_size, self.hidden_size, has_bias=False, compute_dtype=config.mindspore_dtype, param_init_type=config.mindspore_dtype)
         self.act_fn = mint.nn.SiLU()
 
     def construct(self, hidden_state):
@@ -265,10 +271,10 @@ class Qwen2Attention(nn.Cell):
         #         f"hidden_size must be divisible by num_heads (got `hidden_size`: {self.hidden_size}"
         #         f" and `num_heads`: {self.num_heads})."
         #     )
-        self.q_proj = mint.nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=True)
-        self.k_proj = mint.nn.Linear(self.hidden_size, self.num_key_value_heads * self.head_dim, bias=True)
-        self.v_proj = mint.nn.Linear(self.hidden_size, self.num_key_value_heads * self.head_dim, bias=True)
-        self.o_proj = mint.nn.Linear(self.num_heads * self.head_dim, self.hidden_size, bias=False)
+        self.q_proj = FastLinear(self.hidden_size, self.num_heads * self.head_dim, has_bias=True, compute_dtype=config.mindspore_dtype, param_init_type=config.mindspore_dtype)
+        self.k_proj = FastLinear(self.hidden_size, self.num_key_value_heads * self.head_dim, has_bias=True, compute_dtype=config.mindspore_dtype, param_init_type=config.mindspore_dtype)
+        self.v_proj = FastLinear(self.hidden_size, self.num_key_value_heads * self.head_dim, has_bias=True, compute_dtype=config.mindspore_dtype, param_init_type=config.mindspore_dtype)
+        self.o_proj = FastLinear(self.num_heads * self.head_dim, self.hidden_size, has_bias=False, compute_dtype=config.mindspore_dtype, param_init_type=config.mindspore_dtype)
 
         self.rotary_emb = Qwen2RotaryEmbedding(
             self.head_dim,
@@ -454,10 +460,70 @@ class Qwen2FlashAttention2(Qwen2Attention):
 
         return attn_output, None, past_key_value
 
+class Qwen2PageAttention(Qwen2Attention):
+    """
+    Llama flash attention module. This module inherits from `LlamaAttention` as the weights of the module stays
+    untouched. The only required change would be on the forward pass where it needs to correctly call the public API of
+    flash attention and deal with padding tokens in case the input contains any of them.
+    """
+
+    def __init__(self, config: Qwen2Config, layer_idx: Optional[int] = None):
+        super().__init__(config, layer_idx)
+
+        self.infer_attention = InferAttention(
+            config.num_attention_heads,
+            config.hidden_size // config.num_attention_heads,
+            config.num_key_value_heads,
+            seq_length = config.max_position_embeddings,
+            pa_n_head_split = config.num_attention_heads,
+            pa_n_kv_head_split = config.hidden_size // config.num_attention_heads,
+            scale_value = 1./(math.sqrt(config.hidden_size // config.num_attention_heads)),
+            pre_tokens = 2147483647,
+            next_tokens = 0,
+            block_size = 32,
+            num_blocks = 1024,
+            is_dynamic = True,
+            use_flash_attention = False,
+            rotary_cos_format= 2,
+            compute_dtype = config.mindspore_dtype,
+        )
+
+        self.is_first_iteration = ms.Parameter(Tensor(True))
+
+    def construct(
+        self,
+        hidden_states: ms.Tensor,
+        attention_mask: Optional[ms.Tensor] = None,
+        position_ids: Optional[ms.Tensor] = None,
+        past_key_value: Optional[Tuple[ms.Tensor, ms.Tensor]] = None,
+        output_attentions: bool = False,
+        use_cache: bool = False,
+        cache_position: Optional[ms.Tensor] = None,
+        block_tables: Optional = None,
+        slot_mapping: Optional = None,
+        freqs_cis: Optional = None,
+        mask: Optional = None,
+        batch_valid_length: Optional = None,
+        **kwargs,
+    ):
+
+        bsz, q_len, _ = hidden_states.shape
+
+        query_states = self.q_proj(hidden_states)
+        key_states = self.k_proj(hidden_states)
+        value_states = self.v_proj(hidden_states)
+
+        attn_output = self.infer_attention(query_states, key_states, value_states, batch_valid_length, block_tables, slot_mapping,
+                                           freqs_cis, None, q_seq_lens=None)
+
+        attn_output = self.o_proj(attn_output)
+
+        return attn_output, None, past_key_value
 
 QWEN2_ATTENTION_CLASSES = {
     "eager": Qwen2Attention,
     "flash_attention_2": Qwen2FlashAttention2,
+    "page_attention": Qwen2PageAttention,
 }
 
 
@@ -478,6 +544,8 @@ class Qwen2DecoderLayer(nn.Cell):
         self.input_layernorm = Qwen2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = Qwen2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+        self.is_first_iteration = True
+
     def construct(
         self,
         hidden_states: ms.Tensor,
@@ -487,6 +555,11 @@ class Qwen2DecoderLayer(nn.Cell):
         output_attentions: Optional[bool] = False,
         use_cache: Optional[bool] = False,
         cache_position: Optional[ms.Tensor] = None,
+        block_tables: Optional = None,
+        slot_mapping: Optional = None,
+        freqs_cis: Optional = None,
+        mask: Optional = None,
+        batch_valid_length: Optional = None,
         **kwargs,
     ) -> Tuple[ms.Tensor, Optional[Tuple[ms.Tensor, ms.Tensor]]]:
         """
@@ -521,6 +594,11 @@ class Qwen2DecoderLayer(nn.Cell):
             output_attentions=output_attentions,
             use_cache=use_cache,
             cache_position=cache_position,
+            block_tables=block_tables,
+            slot_mapping=slot_mapping,
+            freqs_cis=freqs_cis,
+            mask=mask,
+            batch_valid_length=batch_valid_length,
         )
         hidden_states = residual + hidden_states
 
@@ -675,6 +753,8 @@ class Qwen2Model(Qwen2PreTrainedModel):
         self._attn_implementation = config._attn_implementation
         self.norm = Qwen2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+        self.is_first_iteration = True
+
         self.gradient_checkpointing = False
         # Initialize weights and apply final processing
         self.post_init()
@@ -697,6 +777,11 @@ class Qwen2Model(Qwen2PreTrainedModel):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
         cache_position: Optional[ms.Tensor] = None,
+        block_tables: Optional = None,
+        slot_mapping: Optional = None,
+        freqs_cis: Optional = None,
+        mask: Optional = None,
+        batch_valid_length: Optional = None,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -739,9 +824,13 @@ class Qwen2Model(Qwen2PreTrainedModel):
         if position_ids is None:
             position_ids = cache_position.unsqueeze(0)
 
-        causal_mask = self._update_causal_mask(
-            attention_mask, inputs_embeds, cache_position, past_key_values, output_attentions
-        )
+        # wcr test for PA
+        if block_tables is None:
+            causal_mask = self._update_causal_mask(
+                attention_mask, inputs_embeds, cache_position, past_key_values, output_attentions
+            )
+        else:
+            causal_mask = attention_mask
 
         hidden_states = inputs_embeds
 
@@ -763,6 +852,11 @@ class Qwen2Model(Qwen2PreTrainedModel):
                 output_attentions=output_attentions,
                 use_cache=use_cache,
                 cache_position=cache_position,
+                block_tables=block_tables,
+                slot_mapping=slot_mapping,
+                freqs_cis=freqs_cis,
+                mask=mask,
+                batch_valid_length=batch_valid_length,
             )
 
             hidden_states = layer_outputs[0]
@@ -879,7 +973,19 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel):
         super().__init__(config)
         self.model = Qwen2Model(config)
         self.vocab_size = config.vocab_size
-        self.lm_head = mint.nn.Linear(config.hidden_size, config.vocab_size, bias=False)
+        self.lm_head = FastLinear(config.hidden_size, config.vocab_size, has_bias=False, compute_dtype=config.mindspore_dtype, param_init_type=config.mindspore_dtype)
+
+        if self.config._attn_implementation == "page_attention":
+            self.freqs_mgr = FreqsMgr(
+                head_dim = config.hidden_size // config.num_attention_heads,
+                seq_length=config.max_position_embeddings,
+                max_position_embedding=config.max_position_embeddings,
+                rotary_dtype=config.mindspore_dtype,
+                theta=config.rope_theta,
+                is_dynamic=True
+            )
+
+        self.is_first_iteration = True
 
         # Initialize weights and apply final processing
         self.post_init()
@@ -902,6 +1008,34 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel):
     def get_decoder(self):
         return self.model
 
+    def add_flags_custom(self, is_first_iteration):
+        """Add customized attributes for specific cells in the model."""
+        self.add_flags(is_first_iteration=is_first_iteration)
+        self.model.add_flags(is_first_iteration=is_first_iteration)
+        for layer in self.model.layers:
+            layer.add_flags(is_first_iteration=is_first_iteration)
+            layer.self_attn.infer_attention.add_flags(is_first_iteration=is_first_iteration)
+            layer.self_attn.infer_attention.paged_attention_mgr.add_flags(is_first_iteration=is_first_iteration)
+
+    def enable_dynamic_shape(self):
+        input_ids = Tensor(shape=[None, None], dtype=ms.int32)
+        position_ids = Tensor(shape=[None, None], dtype=ms.int32)
+        attention_mask = Tensor(shape=[None, None], dtype=ms.int32)
+        past_key_values = None
+        inputs_embeds = None
+        labels = None
+        use_cache = False
+        output_attentions = False
+        output_hidden_states = False
+        return_dict = False
+        cache_position = Tensor(shape=[None], dtype=ms.int64)
+        block_tables = Tensor(shape=[None, None], dtype=ms.int32)
+        slot_mapping = Tensor(shape=[None], dtype=ms.int32)
+        batch_valid_length = ms.mutable(Tensor(shape=[None], dtype=ms.int32))
+
+        self.set_inputs(input_ids, attention_mask, position_ids, past_key_values, inputs_embeds, labels, use_cache, output_attentions,
+                        output_hidden_states, return_dict, cache_position, block_tables, slot_mapping, batch_valid_length)
+
     def construct(
         self,
         input_ids: ms.Tensor = None,
@@ -915,6 +1049,9 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
         cache_position: Optional[ms.Tensor] = None,
+        block_tables: Optional = None,
+        slot_mapping: Optional = None,
+        batch_valid_length: Optional = None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         r"""
         Args:
@@ -941,6 +1078,16 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel):
         >>> tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
         "Hey, are you conscious? Can you talk to me?\nI'm not conscious, but I can talk to you."
         ```"""
+        if block_tables is not None:
+            bs, seq_len = input_ids.shape
+            mask = None
+            if self.is_first_iteration:
+                freqs_cis = self.freqs_mgr.prefill(bs, seq_len)
+            else:
+                freqs_cis = self.freqs_mgr.increment(batch_valid_length)
+        else:
+            freqs_cis = None
+            mask = None
 
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -960,6 +1107,11 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
             cache_position=cache_position,
+            block_tables = block_tables,
+            slot_mapping = slot_mapping,
+            freqs_cis = freqs_cis,
+            mask = mask,
+            batch_valid_length = batch_valid_length,
         )
 
         hidden_states = outputs[0]
@@ -1072,6 +1224,53 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel):
                 "attention_mask": attention_mask,
             }
         )
+        if self.config._attn_implementation == "page_attention":
+            bs, seq_len = input_ids.shape
+            if self.is_first_iteration:
+                self.enable_dynamic_shape()
+
+                # init block tables
+                self.block_mgr = BlockTables(1024, 32, self.config.max_position_embeddings)
+                self.block_mgr.init_cache_engine(bs)
+
+                # get slot mapping and block tables
+                max_input_length = self.config.max_position_embeddings
+                self.valid_length_each_example = ms.tensor(seq_len).reshape(bs)
+                block_tables, slot_mapping = self.block_mgr.assemble_pa_full_inputs(
+                    max_input_length,
+                    self.valid_length_each_example,
+                    [False]
+                )
+                slot_mapping = np.delete(slot_mapping, np.where(slot_mapping == -1))
+
+                # set batch valid length
+                self.batch_valid_length = ms.tensor(seq_len).to(ms.int32).reshape(bs)
+            else:
+                model_inputs.update(
+                    {
+                        "input_ids": input_ids[:, -1].reshape(bs, 1)
+                    }
+                )
+
+                # get slot mapping and block tables
+                self.valid_length_each_example += 1
+                block_tables, slot_mapping = self.block_mgr.assemble_pa_inc_inputs(
+                    self.valid_length_each_example,
+                    [False]
+                )
+
+                # set batch valid length
+                self.batch_valid_length += 1
+            slot_mapping = ms.tensor(slot_mapping)
+            block_tables = ms.tensor(block_tables)
+            model_inputs.update(
+                {
+                    "block_tables": block_tables,
+                    "slot_mapping": slot_mapping,
+                    "batch_valid_length": self.batch_valid_length,
+                }
+            )
+
         return model_inputs
 
     # FIXME
