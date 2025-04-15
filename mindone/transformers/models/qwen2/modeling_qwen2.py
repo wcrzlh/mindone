@@ -43,6 +43,7 @@ from mindone.transformers.mindspore_adapter.attention import FlashAttention2
 from mindone.transformers.mindspore_adapter.infer_attention import InferAttention
 from mindone.transformers.mindspore_adapter.freqs import FreqsMgr
 from mindone.transformers.mindspore_adapter.block_tables import BlockTables
+from mindone.transformers.mindspore_adapter.mask import LowerTriangularMaskWithDynamic
 
 logger = logging.get_logger(__name__)
 
@@ -513,7 +514,7 @@ class Qwen2PageAttention(Qwen2Attention):
         value_states = self.v_proj(hidden_states)
 
         attn_output = self.infer_attention(query_states, key_states, value_states, batch_valid_length, block_tables, slot_mapping,
-                                           freqs_cis, None, q_seq_lens=None)
+                                           freqs_cis, mask, q_seq_lens=None)
 
         attn_output = self.o_proj(attn_output)
 
@@ -984,7 +985,20 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel):
                 is_dynamic=True
             )
 
-        self.is_first_iteration = True
+            self.casual_mask = LowerTriangularMaskWithDynamic(
+                seq_length=config.max_position_embeddings,
+                batch_size=1,
+                compute_type=config.mindspore_dtype,
+                is_dynamic=True,
+                pad_token_id=config.pad_token_id,
+                use_flash_attention=True,
+                use_attn_mask_compression=False,
+                use_past=True,
+                seq_split_num=1,
+                chunk_prefill=False,
+            )
+
+            self.is_first_iteration = True
 
         # Initialize weights and apply final processing
         self.post_init()
@@ -1082,6 +1096,7 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel):
             mask = None
             if self.is_first_iteration:
                 freqs_cis = self.freqs_mgr.prefill(bs, seq_len)
+                mask = self.casual_mask.prefill()
             else:
                 freqs_cis = self.freqs_mgr.increment(batch_valid_length)
         else:
@@ -1226,7 +1241,7 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel):
         )
         if self.config._attn_implementation == "page_attention":
             bs, seq_len = input_ids.shape
-            if self.is_first_iteration:
+            if step == 0:
                 self.enable_dynamic_shape()
 
                 # init block tables
