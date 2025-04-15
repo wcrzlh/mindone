@@ -1149,6 +1149,7 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel):
         inputs_embeds=None,
         cache_position=None,
         use_cache=True,
+        step=0,
         **kwargs,
     ):
         past_length = 0
@@ -1247,7 +1248,6 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel):
 
                 self.phase = "prefill"
                 self.add_flags_custom(True)
-                self.global_step == 0
             else:
                 model_inputs.update(
                     {
@@ -1265,10 +1265,9 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel):
                 # set batch valid length
                 self.batch_valid_length += 1
 
-                if self.global_step == 0:
+                if step == 1:
                     self.phase = "increment"
                     self.add_flags_custom(False)
-                    self.global_step += 1
             slot_mapping = ms.tensor(slot_mapping)
             block_tables = ms.tensor(block_tables)
             model_inputs.update(
