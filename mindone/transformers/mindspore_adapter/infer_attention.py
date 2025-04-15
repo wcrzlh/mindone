@@ -205,8 +205,12 @@ class InferAttention(Cell):
         self.use_attention_mask = True
         self.is_dynamic = is_dynamic
 
-        self.input_layout = "BSH"
-        self.use_attention_mask = False
+        if self.is_dynamic:
+            self.input_layout = "TH"
+            self.use_attention_mask = not self.use_alibi_mask
+        else:
+            self.input_layout = "BSH"
+            self.use_attention_mask = False
 
         self.flash_attention = FlashAttention(head_num=self.n_head,
                                               pre_tokens=self.pre_tokens,
@@ -338,9 +342,27 @@ class InferAttention(Cell):
         """
         prefill attention
         """
+        if self.input_layout == "TH":
+            if self.use_flash_attention:
+                # [1, actual_seq_len, H]
+                bs, seq_len, _ = query.shape
+                # [1, actual_seq_len, H] -> [actual_seq_len, H]
+                query = self.reshape(query, (-1, self.n_head * self.head_dim))
+                key = self.reshape(key, (-1, self.n_kv_head * self.head_dim))
+                value = self.reshape(value, (-1, self.n_kv_head * self.head_dim))
+                # [actual_seq_len, H]
+                output = self.flash_attention(query, key, value, attn_mask, alibi_mask, None, None, actual_seq_qlen,
+                                              actual_seq_kvlen)
+                # [actual_seq_len, H] -> [1, actual_seq_len, H]
+                output = self.reshape(output, (bs, seq_len, self.n_head * self.head_dim))
+                return output
+            return self._core_attention_th(query, key, value, attn_mask, alibi_mask)
+
         if self.input_layout == "BSH":
-            # query shape:(B, S, H), key shape:(B, S, H), value shape:(B, S, H)
-            return self.flash_attention(query, key, value, attn_mask, alibi_mask)
+            if self.use_flash_attention:
+                # query shape:(B, S, H), key shape:(B, S, H), value shape:(B, S, H)
+                return self.flash_attention(query, key, value, attn_mask, alibi_mask)
+            return self._core_attention_bsh(query, key, value, attn_mask, alibi_mask)
 
         raise ValueError("FlashAttention input layout:{} is not supported.".format(self.input_layout))
 
