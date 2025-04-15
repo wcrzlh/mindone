@@ -483,7 +483,7 @@ class Qwen2PageAttention(Qwen2Attention):
             block_size = 32,
             num_blocks = 1024,
             is_dynamic = True,
-            use_flash_attention = False,
+            use_flash_attention = True,
             rotary_cos_format= 2,
             compute_dtype = config.mindspore_dtype,
         )
