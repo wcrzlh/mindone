@@ -41,7 +41,6 @@ from mindone.transformers.modeling_outputs import (
 from mindone.transformers.modeling_utils import MSPreTrainedModel
 from mindone.transformers.mindspore_adapter.attention import FlashAttention2
 from mindone.transformers.mindspore_adapter.infer_attention import InferAttention
-from mindone.transformers.mindspore_adapter.linear import FastLinear
 from mindone.transformers.mindspore_adapter.freqs import FreqsMgr
 from mindone.transformers.mindspore_adapter.block_tables import BlockTables
 
@@ -217,9 +216,9 @@ class Qwen2MLP(nn.Cell):
         super().__init__()
         self.hidden_size = config.hidden_size
         self.intermediate_size = config.intermediate_size
-        self.gate_proj = FastLinear(self.hidden_size, self.intermediate_size, has_bias=False, compute_dtype=config.mindspore_dtype, param_init_type=config.mindspore_dtype)
-        self.up_proj = FastLinear(self.hidden_size, self.intermediate_size, has_bias=False, compute_dtype=config.mindspore_dtype, param_init_type=config.mindspore_dtype)
-        self.down_proj = FastLinear(self.intermediate_size, self.hidden_size, has_bias=False, compute_dtype=config.mindspore_dtype, param_init_type=config.mindspore_dtype)
+        self.gate_proj = nn.Dense(self.hidden_size, self.intermediate_size, has_bias=False)
+        self.up_proj = nn.Dense(self.hidden_size, self.intermediate_size, has_bias=False)
+        self.down_proj = nn.Dense(self.intermediate_size, self.hidden_size, has_bias=False)
         self.act_fn = mint.nn.SiLU()
 
     def construct(self, hidden_state):
@@ -271,10 +270,10 @@ class Qwen2Attention(nn.Cell):
         #         f"hidden_size must be divisible by num_heads (got `hidden_size`: {self.hidden_size}"
         #         f" and `num_heads`: {self.num_heads})."
         #     )
-        self.q_proj = FastLinear(self.hidden_size, self.num_heads * self.head_dim, has_bias=True, compute_dtype=config.mindspore_dtype, param_init_type=config.mindspore_dtype)
-        self.k_proj = FastLinear(self.hidden_size, self.num_key_value_heads * self.head_dim, has_bias=True, compute_dtype=config.mindspore_dtype, param_init_type=config.mindspore_dtype)
-        self.v_proj = FastLinear(self.hidden_size, self.num_key_value_heads * self.head_dim, has_bias=True, compute_dtype=config.mindspore_dtype, param_init_type=config.mindspore_dtype)
-        self.o_proj = FastLinear(self.num_heads * self.head_dim, self.hidden_size, has_bias=False, compute_dtype=config.mindspore_dtype, param_init_type=config.mindspore_dtype)
+        self.q_proj = nn.Dense(self.hidden_size, self.num_heads * self.head_dim, has_bias=True)
+        self.k_proj = nn.Dense(self.hidden_size, self.num_key_value_heads * self.head_dim, has_bias=True)
+        self.v_proj = nn.Dense(self.hidden_size, self.num_key_value_heads * self.head_dim, has_bias=True)
+        self.o_proj = nn.Dense(self.num_heads * self.head_dim, self.hidden_size, has_bias=False)
 
         self.rotary_emb = Qwen2RotaryEmbedding(
             self.head_dim,
@@ -973,7 +972,7 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel):
         super().__init__(config)
         self.model = Qwen2Model(config)
         self.vocab_size = config.vocab_size
-        self.lm_head = FastLinear(config.hidden_size, config.vocab_size, has_bias=False, compute_dtype=config.mindspore_dtype, param_init_type=config.mindspore_dtype)
+        self.lm_head = nn.Dense(config.hidden_size, config.vocab_size, has_bias=False)
 
         if self.config._attn_implementation == "page_attention":
             self.freqs_mgr = FreqsMgr(
@@ -1245,6 +1244,10 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel):
 
                 # set batch valid length
                 self.batch_valid_length = ms.tensor(seq_len).to(ms.int32).reshape(bs)
+
+                self.phase = "prefill"
+                self.add_flags_custom(True)
+                self.global_step == 0
             else:
                 model_inputs.update(
                     {
@@ -1261,6 +1264,11 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel):
 
                 # set batch valid length
                 self.batch_valid_length += 1
+
+                if self.global_step == 0:
+                    self.phase = "increment"
+                    self.add_flags_custom(False)
+                    self.global_step += 1
             slot_mapping = ms.tensor(slot_mapping)
             block_tables = ms.tensor(block_tables)
             model_inputs.update(

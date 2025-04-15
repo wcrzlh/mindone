@@ -1736,11 +1736,6 @@ class GenerationMixin:
         s_time = time.time()
         graph_compiled_time_buffer = []
 
-        # compile
-        if self.config._attn_implementation == "page_attention":
-            self.phase = "prefill"
-            self.add_flags_custom(True)
-
         while self._has_unfinished_sequences(this_peer_finished, synced_gpus):
             # prepare model inputs
             model_inputs = self.prepare_inputs_for_generation(input_ids, **model_kwargs)
@@ -1752,11 +1747,6 @@ class GenerationMixin:
                 output_attentions=output_attentions,
                 output_hidden_states=output_hidden_states,
             )
-
-            # re-compile
-            if self.config._attn_implementation == "page_attention" and step == 0:
-                self.phase = "increment"
-                self.add_flags_custom(False)
 
             if synced_gpus and this_peer_finished:
                 continue  # don't waste resources running the code we don't need
