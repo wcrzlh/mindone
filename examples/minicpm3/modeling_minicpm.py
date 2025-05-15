@@ -10,7 +10,6 @@ import mindspore.mint.nn.functional as F
 from mindspore.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 from mindspore.ops.operations.nn_ops import FlashAttentionScore
 
-from mindone.transformers.mindspore_adapter.utils import _MIN_FP16
 from mindone.transformers.activations import ACT2FN
 from mindone.transformers.cache_utils import Cache, DynamicCache, get_max_length, get_seq_length, init_static_cache, update
 from mindone.transformers.modeling_attn_mask_utils import (
@@ -391,6 +390,7 @@ class MiniCPMAttention(nn.Cell):
             past_key_value: Optional[Cache] = None,
             output_attentions: bool = False,
             use_cache: bool = False,
+            cache_position: Optional[ms.Tensor] = None,
             **kwargs,
     ) -> Tuple[ms.Tensor, Optional[ms.Tensor], Optional[Tuple[ms.Tensor]]]:
         if "padding_mask" in kwargs:
@@ -422,13 +422,14 @@ class MiniCPMAttention(nn.Cell):
         )
         kv_seq_len = value_states.shape[-2]
         if past_key_value is not None:
-            if self.layer_idx is None:
-                raise ValueError(
-                    f"The cache structure has changed since version v4.36. If you are using {self.__class__.__name__} "
-                    "for auto-regressive decoding with k/v caching, please make sure to initialize the attention class "
-                    "with a layer index."
-                )
-            kv_seq_len += past_key_value.get_usable_length(kv_seq_len, self.layer_idx)
+            # if self.layer_idx is None:
+            #     raise ValueError(
+            #         f"The cache structure has changed since version v4.36. If you are using {self.__class__.__name__} "
+            #         "for auto-regressive decoding with k/v caching, please make sure to initialize the attention class "
+            #         "with a layer index."
+            #     )
+            # kv_seq_len += past_key_value.get_usable_length(kv_seq_len, self.layer_idx)
+            kv_seq_len = past_key_value[0].shape[-2]
         cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
 
         q_pe, k_pe = apply_rotary_pos_emb(q_pe, k_pe, cos, sin, position_ids)
@@ -444,11 +445,10 @@ class MiniCPMAttention(nn.Cell):
         # key_states[:, :, :, self.qk_nope_head_dim:] = k_pe
         k_pe = k_pe.tile((1, self.num_heads, 1, 1))
         key_states = ops.cat((k_nope, k_pe), axis=-1)
-        if past_key_value is not None:
-            cache_kwargs = {"sin": sin, "cos": cos}  # Specific to RoPE models
-            key_states, value_states = past_key_value.update(
-                key_states, value_states, self.layer_idx, cache_kwargs
-            )
+
+        if past_key_value is not None and use_cache:
+            key_states, value_states = update(past_key_value, key_states, value_states, cache_position)
+            past_key_value = (key_states, value_states)
 
         attn_weights = (
                 mint.matmul(query_states, key_states.swapaxes(2, 3)) * self.softmax_scale
@@ -522,6 +522,7 @@ class MiniCPMFlashAttention2(MiniCPMAttention):
             past_key_value: Optional[Cache] = None,
             output_attentions: bool = False,
             use_cache: bool = False,
+            cache_position: Optional[ms.Tensor] = None,
             **kwargs,
     ) -> Tuple[ms.Tensor, Optional[ms.Tensor], Optional[Tuple[ms.Tensor]]]:
         # MiniCPMFlashAttention2 attention does not support output_attentions
@@ -563,7 +564,8 @@ class MiniCPMFlashAttention2(MiniCPMAttention):
 
         kv_seq_len = value_states.shape[-2]
         if past_key_value is not None:
-            kv_seq_len += past_key_value.get_usable_length(kv_seq_len, self.layer_idx)
+            # kv_seq_len += past_key_value.get_usable_length(kv_seq_len, self.layer_idx)
+            kv_seq_len = past_key_value[0].shape[-2]
 
         cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
         q_pe, k_pe = apply_rotary_pos_emb(q_pe, k_pe, cos, sin, position_ids)
@@ -585,10 +587,8 @@ class MiniCPMFlashAttention2(MiniCPMAttention):
             value_states = F.pad(value_states, [0, self.q_head_dim - self.v_head_dim])
 
         if past_key_value is not None:
-            cache_kwargs = {"sin": sin, "cos": cos}  # Specific to RoPE models
-            key_states, value_states = past_key_value.update(
-                key_states, value_states, self.layer_idx, cache_kwargs
-            )
+            key_states, value_states = update(past_key_value, key_states, value_states, cache_position)
+            past_key_value = (key_states, value_states)
 
         # # TODO: These transpose are quite inefficient but Flash Attention requires the layout [batch_size, sequence_length, num_heads, head_dim]. We would need to refactor the KV cache
         # # to be able to avoid many of these transpose/reshape/view.
@@ -769,6 +769,7 @@ class MiniCPMDecoderLayer(nn.Cell):
             past_key_value: Optional[Tuple[ms.Tensor]] = None,
             output_attentions: Optional[bool] = False,
             use_cache: Optional[bool] = False,
+            cache_position: Optional[ms.Tensor] = None,
             **kwargs,
     ) -> Tuple[ms.Tensor, Optional[Tuple[ms.Tensor, ms.Tensor]]]:
         """
@@ -800,6 +801,7 @@ class MiniCPMDecoderLayer(nn.Cell):
             past_key_value=past_key_value,
             output_attentions=output_attentions,
             use_cache=use_cache,
+            cache_position=cache_position,
             **kwargs,
         )
 
@@ -989,11 +991,12 @@ class MiniCPM3Model(MiniCPM3PreTrainedModel):
                 use_cache = False
 
         past_key_values_length = 0
-        # if use_cache:
-        #     use_legacy_cache = not isinstance(past_key_values, Cache)
-        #     if use_legacy_cache:
-        #         past_key_values = DynamicCache.from_legacy_cache(past_key_values)
-        #     past_key_values_length = past_key_values.get_usable_length(seq_length)
+        if use_cache:
+            # use_legacy_cache = not isinstance(past_key_values, Cache)
+            # if use_legacy_cache:
+            #     past_key_values = DynamicCache.from_legacy_cache(past_key_values)
+            # past_key_values_length = past_key_values.get_usable_length(seq_length)
+            past_key_values_length = get_seq_length(past_key_values)
 
         if position_ids is None:
             position_ids = ops.arange(
@@ -1016,9 +1019,9 @@ class MiniCPM3Model(MiniCPM3PreTrainedModel):
         # decoder layers
         all_hidden_states = () if output_hidden_states else None
         all_self_attns = () if output_attentions else None
-        next_decoder_cache = None
+        next_caches = () if use_cache else None
 
-        for decoder_layer in self.layers:
+        for layer_idx, decoder_layer in enumerate(self.layers):
             if output_hidden_states:
                 all_hidden_states += (hidden_states,)
 
@@ -1031,21 +1034,23 @@ class MiniCPM3Model(MiniCPM3PreTrainedModel):
                     past_key_values,
                     output_attentions,
                     use_cache,
+                    cache_position,
                 )
             else:
                 layer_outputs = decoder_layer(
                     hidden_states,
                     attention_mask=attention_mask,
                     position_ids=position_ids,
-                    past_key_value=past_key_values,
+                    past_key_value=past_key_values[layer_idx] if past_key_values is not None else None,
                     output_attentions=output_attentions,
                     use_cache=use_cache,
+                    cache_position=cache_position,
                 )
 
             hidden_states = layer_outputs[0]
 
             if use_cache:
-                next_decoder_cache = layer_outputs[2 if output_attentions else 1]
+                next_caches += (layer_outputs[2 if output_attentions else 1],)
 
             if output_attentions:
                 all_self_attns += (layer_outputs[1],)
@@ -1056,14 +1061,11 @@ class MiniCPM3Model(MiniCPM3PreTrainedModel):
         if output_hidden_states:
             all_hidden_states += (hidden_states,)
 
-        next_cache = None
-        # if use_cache:
-        #     next_cache = next_decoder_cache.to_legacy_cache() if use_legacy_cache else next_decoder_cache
         if not return_dict:
-            return tuple(v for v in [hidden_states, next_cache, all_hidden_states, all_self_attns] if v is not None)
+            return tuple(v for v in [hidden_states, next_caches, all_hidden_states, all_self_attns] if v is not None)
         return BaseModelOutputWithPast(
             last_hidden_state=hidden_states,
-            past_key_values=next_cache,
+            past_key_values=next_caches,
             hidden_states=all_hidden_states,
             attentions=all_self_attns,
         )
@@ -1106,7 +1108,7 @@ class MiniCPM3ForCausalLM(MiniCPM3PreTrainedModel):
             input_ids: ms.Tensor = None,
             attention_mask: Optional[ms.Tensor] = None,
             position_ids: Optional[ms.Tensor] = None,
-            past_key_values: Optional[List[ms.Tensor]] = None,
+            past_key_values: Optional[Tuple[Tuple[ms.Tensor, ms.Tensor]]] = None,
             inputs_embeds: Optional[ms.Tensor] = None,
             labels: Optional[ms.Tensor] = None,
             use_cache: Optional[bool] = None,

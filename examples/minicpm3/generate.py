@@ -40,7 +40,6 @@ model_inputs = ms.tensor(model_inputs)
 model_outputs = model.generate(
     model_inputs,
     max_new_tokens=1024,
-    use_cache=False,
 )
 
 output_token_ids = [
