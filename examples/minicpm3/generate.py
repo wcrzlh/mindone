@@ -22,7 +22,11 @@ ms.set_context(mode=0)
 path = "openbmb/MiniCPM3-4B"
 
 tokenizer = AutoTokenizer.from_pretrained(path, trust_remote_code=True)
-model = MiniCPM3ForCausalLM.from_pretrained(path, mindspore_dtype=ms.bfloat16, revision="refs/pr/41")
+model = MiniCPM3ForCausalLM.from_pretrained(
+    path,
+    mindspore_dtype=ms.bfloat16,
+    _attn_implementation="flash_attention_2",
+    revision="refs/pr/41")
 
 messages = [
     {"role": "user", "content": "推荐5个北京的景点。"},

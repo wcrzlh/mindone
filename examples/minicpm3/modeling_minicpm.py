@@ -6,9 +6,11 @@ from typing import List, Optional, Tuple, Union, Dict
 
 import mindspore as ms
 from mindspore import mint, nn, ops, Tensor, Parameter
+import mindspore.mint.nn.functional as F
 from mindspore.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 from mindspore.ops.operations.nn_ops import FlashAttentionScore
 
+from mindone.transformers.mindspore_adapter.utils import _MIN_FP16
 from mindone.transformers.activations import ACT2FN
 from mindone.transformers.cache_utils import Cache, DynamicCache, get_max_length, get_seq_length, init_static_cache, update
 from mindone.transformers.modeling_attn_mask_utils import (
@@ -499,15 +501,15 @@ class MiniCPMFlashAttention2(MiniCPMAttention):
     flash attention and deal with padding tokens in case the input contains any of them.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, config: MiniCPM3Config, layer_idx: Optional[int] = None):
+        super().__init__(config, layer_idx)
 
         # # TODO: Should be removed once Flash Attention for RoCm is bumped to 2.1.
         # # flash_attn<2.1 generates top-left aligned causal mask, while what is needed here is bottom-right alignement, that was made default for flash_attn>=2.1. This attribute is used to handle this difference. Reference: https://github.com/Dao-AILab/flash-attention/releases/tag/v2.1.0.
         # # Beware that with flash_attn<2.1, using q_seqlen != k_seqlen (except for the case q_seqlen == 1) produces a wrong mask (top-left).
         # self._flash_attn_uses_top_left_mask = not is_flash_attn_greater_or_equal_2_10()
 
-        scale_factor = 1 / math.sqrt(self.head_dim)
+        scale_factor = 1 / math.sqrt(self.q_head_dim)
         self.flash_attention = FlashAttentionScore(
             self.num_heads, keep_prob=1 - self.attention_dropout, scale_value=scale_factor, input_layout="BNSD"
         )
@@ -566,16 +568,21 @@ class MiniCPMFlashAttention2(MiniCPMAttention):
         cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
         q_pe, k_pe = apply_rotary_pos_emb(q_pe, k_pe, cos, sin, position_ids)
 
-        query_states = ops.zeros((bsz, self.num_heads, q_len, self.q_head_dim)).to(k_pe.dtype)
-        query_states[:, :, :, : self.qk_nope_head_dim] = q_nope
-        query_states[:, :, :, self.qk_nope_head_dim:] = q_pe
+        # for performance prof
+        # query_states = ops.zeros((bsz, self.num_heads, q_len, self.q_head_dim)).to(k_pe.dtype)
+        # query_states[:, :, :, : self.qk_nope_head_dim] = q_nope
+        # query_states[:, :, :, self.qk_nope_head_dim:] = q_pe
+        query_states = ops.cat((q_nope, q_pe), axis=-1)
 
-        key_states = ops.zeros((bsz, self.num_heads, q_len, self.q_head_dim)).to(k_pe.dtype)
-        key_states[:, :, :, : self.qk_nope_head_dim] = k_nope
-        key_states[:, :, :, self.qk_nope_head_dim:] = k_pe
+        # for performance prof
+        # key_states = ops.zeros((bsz, self.num_heads, q_len, self.q_head_dim)).to(k_pe.dtype)
+        # key_states[:, :, :, : self.qk_nope_head_dim] = k_nope
+        # key_states[:, :, :, self.qk_nope_head_dim:] = k_pe
+        k_pe = k_pe.tile((1, self.num_heads, 1, 1))
+        key_states = ops.cat((k_nope, k_pe), axis=-1)
 
         if self.q_head_dim != self.v_head_dim:
-            value_states = ops.pad(value_states, [0, self.q_head_dim - self.v_head_dim])
+            value_states = F.pad(value_states, [0, self.q_head_dim - self.v_head_dim])
 
         if past_key_value is not None:
             cache_kwargs = {"sin": sin, "cos": cos}  # Specific to RoPE models
@@ -583,11 +590,11 @@ class MiniCPMFlashAttention2(MiniCPMAttention):
                 key_states, value_states, self.layer_idx, cache_kwargs
             )
 
-        # TODO: These transpose are quite inefficient but Flash Attention requires the layout [batch_size, sequence_length, num_heads, head_dim]. We would need to refactor the KV cache
-        # to be able to avoid many of these transpose/reshape/view.
-        query_states = query_states.swapaxes(1, 2)
-        key_states = key_states.swapaxes(1, 2)
-        value_states = value_states.swapaxes(1, 2)
+        # # TODO: These transpose are quite inefficient but Flash Attention requires the layout [batch_size, sequence_length, num_heads, head_dim]. We would need to refactor the KV cache
+        # # to be able to avoid many of these transpose/reshape/view.
+        # query_states = query_states.swapaxes(1, 2)
+        # key_states = key_states.swapaxes(1, 2)
+        # value_states = value_states.swapaxes(1, 2)
 
         dropout_rate = self.attention_dropout if self.training else 0.0
 
@@ -621,6 +628,7 @@ class MiniCPMFlashAttention2(MiniCPMAttention):
         if self.q_head_dim != self.v_head_dim:
             attn_output = attn_output[:, :, :, : self.v_head_dim]
 
+        attn_output = attn_output.swapaxes(1, 2)
         attn_output = attn_output.reshape(
             bsz, q_len, self.num_heads * self.v_head_dim
         ).contiguous()
@@ -953,6 +961,7 @@ class MiniCPM3Model(MiniCPM3PreTrainedModel):
             output_attentions: Optional[bool] = None,
             output_hidden_states: Optional[bool] = None,
             return_dict: Optional[bool] = None,
+            cache_position: Optional[ms.Tensor] = None,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -995,14 +1004,11 @@ class MiniCPM3Model(MiniCPM3PreTrainedModel):
         if inputs_embeds is None:
             inputs_embeds = self.embed_tokens(input_ids) * self.config.scale_emb
 
-        if self._use_flash_attention_2:
-            # 2d mask is passed through the layers
-            attention_mask = attention_mask if (attention_mask is not None and 0 in attention_mask) else None
-        else:
-            # 4d mask is passed through the layers
-            attention_mask = _prepare_4d_causal_attention_mask(
-                attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
-            )
+
+        # 4d mask is passed through the layers
+        attention_mask = _prepare_4d_causal_attention_mask(
+            attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
+        )
 
         # embed positions
         hidden_states = inputs_embeds
@@ -1145,6 +1151,7 @@ class MiniCPM3ForCausalLM(MiniCPM3PreTrainedModel):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
+            cache_position=cache_position,
         )
 
         hidden_states = outputs[0]
