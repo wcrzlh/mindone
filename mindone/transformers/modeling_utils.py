@@ -283,7 +283,7 @@ def load_state_dict(checkpoint_file: Union[str, os.PathLike]):
             import torch
             state_dict_torch = torch.load(checkpoint_file, map_location="cpu", weights_only=True)
             for key in state_dict_torch.keys():
-                state_dict_torch[key] = ms.tensor(state_dict_torch[key])
+                state_dict_torch[key] = ms.tensor(state_dict_torch[key].numpy())
         else:
             raise NotImplementedError(
                 f"Only supports deserialization of weights file in safetensors format, but got {checkpoint_file}"
