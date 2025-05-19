@@ -402,19 +402,19 @@ class MiniCPMAttention(nn.Cell):
 
         bsz, q_len, _ = hidden_states.shape
 
-        if self.pretraining_tp > 1:
-            key_value_slicing = (self.num_key_value_heads * self.head_dim) // self.pretraining_tp
-            query_slices = self.q_proj.weight.split((self.num_heads * self.head_dim) // self.pretraining_tp, axis=0)
+        if self.config.pretraining_tp > 1:
+            key_value_slicing = (self.num_key_value_heads * self.head_dim) // self.config.pretraining_tp
+            query_slices = self.q_proj.weight.split((self.num_heads * self.head_dim) // self.config.pretraining_tp, axis=0)
             key_slices = self.k_proj.weight.split(key_value_slicing, axis=0)
             value_slices = self.v_proj.weight.split(key_value_slicing, axis=0)
 
-            query_states = [ops.dense(hidden_states, query_slices[i]) for i in range(self.pretraining_tp)]
+            query_states = [ops.dense(hidden_states, query_slices[i]) for i in range(self.config.pretraining_tp)]
             query_states = ops.cat(query_states, axis=-1)
 
-            key_states = [ops.dense(hidden_states, key_slices[i]) for i in range(self.pretraining_tp)]
+            key_states = [ops.dense(hidden_states, key_slices[i]) for i in range(self.config.pretraining_tp)]
             key_states = ops.cat(key_states, axis=-1)
 
-            value_states = [ops.dense(hidden_states, value_slices[i]) for i in range(self.pretraining_tp)]
+            value_states = [ops.dense(hidden_states, value_slices[i]) for i in range(self.config.pretraining_tp)]
             value_states = ops.cat(value_states, axis=-1)
 
         else:
@@ -483,10 +483,10 @@ class MiniCPMAttention(nn.Cell):
 
         attn_output = attn_output.reshape(bsz, q_len, self.hidden_size)
 
-        if self.pretraining_tp > 1:
-            attn_output = attn_output.split(self.hidden_size // self.pretraining_tp, axis=2)
-            o_proj_slices = self.o_proj.weight.split(self.hidden_size // self.pretraining_tp, axis=1)
-            attn_output = sum([ops.dense(attn_output[i], o_proj_slices[i]) for i in range(self.pretraining_tp)])
+        if self.config.pretraining_tp > 1:
+            attn_output = attn_output.split(self.hidden_size // self.config.pretraining_tp, axis=2)
+            o_proj_slices = self.o_proj.weight.split(self.hidden_size // self.config.pretraining_tp, axis=1)
+            attn_output = sum([ops.dense(attn_output[i], o_proj_slices[i]) for i in range(self.config.pretraining_tp)])
         else:
             attn_output = self.o_proj(attn_output)
 
