@@ -339,7 +339,7 @@ class MiniCPMAttention(nn.Cell):
             has_bias=config.attention_bias,
         )
         self.o_proj = nn.Dense(
-            self.num_heads * self.v_head_dim,
+            self.num_heads * self.head_dim,
             self.hidden_size,
             has_bias=config.attention_bias,
         )
