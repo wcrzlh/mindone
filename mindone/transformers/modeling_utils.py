@@ -279,6 +279,9 @@ def load_state_dict(checkpoint_file: Union[str, os.PathLike]):
                     "you save your model with the `save_pretrained` method."
                 )
             return ms.load_checkpoint(checkpoint_file, format="safetensors")
+        elif checkpoint_file.endswith("bin"):
+            import torch
+            return torch.load(checkpoint_file, map_location="cpu", weights_only=True)
         else:
             raise NotImplementedError(
                 f"Only supports deserialization of weights file in safetensors format, but got {checkpoint_file}"
