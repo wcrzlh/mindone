@@ -353,7 +353,7 @@ class MiniCPMAttention(nn.Cell):
                 base=self.rope_theta,
             )
         else:
-            scaling_type = self.config.rope_scaling["type"]
+            scaling_type = self.config.rope_scaling["rope_type"]
             scaling_factor = self.config.rope_scaling.get("factor", None)
             if scaling_type == "linear":
                 self.rotary_emb = MiniCPMLinearScalingRotaryEmbedding(
