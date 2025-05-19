@@ -24,8 +24,7 @@ def generate(args):
     model = MiniCPMForCausalLM.from_pretrained(
         args.model_name,
         mindspore_dtype=ms.bfloat16,
-        _attn_implementation=args.attn_implementation,
-        revision="refs/pr/41")
+        _attn_implementation=args.attn_implementation,)
 
     if args.attn_implementation == "paged_attention":
         # infer boost
@@ -60,7 +59,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MiniCPM3 demo.")
 
     parser.add_argument("--prompt", type=str, default="推荐5个北京的景点。")
-    parser.add_argument("--model_name", type=str, default="openbmb/MiniCPM3-4B", help="Path to the pre-trained model.")
+    parser.add_argument("--model_name", type=str, default="path/to/MiniCPM4", help="Path to the pre-trained model.")
     parser.add_argument(
         "--attn_implementation",
         type=str,
