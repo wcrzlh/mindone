@@ -731,8 +731,9 @@ class MiniCPMPagedAttention(MiniCPMAttention):
             num_blocks=1024,
             is_dynamic=True,
             use_flash_attention=True,
-            use_rope_rotary_emb=False,
+            use_rope_rotary_emb=True,
             compute_dtype=compute_dtype,
+            rotary_cos_format=2,
         )
 
         self.is_first_iteration = True
