@@ -12,6 +12,11 @@ from mindspore.ops.operations.nn_ops import FlashAttentionScore
 
 from mindone.transformers.activations import ACT2FN
 from mindone.transformers.cache_utils import Cache, DynamicCache, get_max_length, get_seq_length, init_static_cache, update
+from mindone.transformers.mindspore_adapter import str_to_dtype
+from mindone.transformers.mindspore_adapter.paged_attention_freqs import FreqsMgr
+from mindone.transformers.mindspore_adapter.paged_attention_infer_attention_block import InferAttention
+from mindone.transformers.mindspore_adapter.paged_attention_mask import LowerTriangularMaskWithDynamic
+from mindone.transformers.mindspore_adapter.paged_attention_block_tables import BlockTables
 from mindone.transformers.modeling_attn_mask_utils import (
     AttentionMaskConverter,
     _prepare_4d_attention_mask,
@@ -246,9 +251,9 @@ class MiniCPMMLP(nn.Cell):
         self.config = config
         self.hidden_size = config.hidden_size
         self.intermediate_size = config.intermediate_size
-        self.gate_proj = mint.nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
-        self.up_proj = mint.nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
-        self.down_proj = mint.nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
+        self.gate_proj = nn.Dense(self.hidden_size, self.intermediate_size, has_bias=False)
+        self.up_proj = nn.Dense(self.hidden_size, self.intermediate_size, has_bias=False)
+        self.down_proj = nn.Dense(self.intermediate_size, self.hidden_size, has_bias=False)
         self.act_fn = ACT2FN[config.hidden_act]
 
     def construct(self, x):
@@ -315,30 +320,30 @@ class MiniCPMAttention(nn.Cell):
 
         self.is_causal = True
 
-        self.q_a_proj = mint.nn.Linear(
-            self.hidden_size, config.q_lora_rank, bias=config.attention_bias
+        self.q_a_proj = nn.Dense(
+            self.hidden_size, config.q_lora_rank, has_bias=config.attention_bias
         )
         self.q_a_layernorm = MiniCPMRMSNorm(config.q_lora_rank)
-        self.q_b_proj = mint.nn.Linear(
-            config.q_lora_rank, self.num_heads * self.q_head_dim, bias=False
+        self.q_b_proj = nn.Dense(
+            config.q_lora_rank, self.num_heads * self.q_head_dim, has_bias=False
         )
-        self.kv_a_proj_with_mqa = mint.nn.Linear(
+        self.kv_a_proj_with_mqa = nn.Dense(
             self.hidden_size,
             config.kv_lora_rank + config.qk_rope_head_dim,
-            bias=config.attention_bias,
+            has_bias=config.attention_bias,
         )
         self.kv_a_layernorm = MiniCPMRMSNorm(config.kv_lora_rank)
-        self.kv_b_proj = mint.nn.Linear(
+        self.kv_b_proj = nn.Dense(
             config.kv_lora_rank,
             self.num_heads
             * (self.q_head_dim - self.qk_rope_head_dim + self.v_head_dim),
-            bias=False,
+            has_bias=False,
         )
 
-        self.o_proj = mint.nn.Linear(
+        self.o_proj = nn.Dense(
             self.num_heads * self.v_head_dim,
             self.hidden_size,
-            bias=config.attention_bias,
+            has_bias=config.attention_bias,
         )
         self._init_rope()
 
@@ -741,10 +746,134 @@ class MiniCPMFlashAttention2(MiniCPMAttention):
     #         (max_seqlen_in_batch_q, max_seqlen_in_batch_k),
     #     )
 
+class MiniCPMPagedAttention(MiniCPMAttention):
+    """Paged Attention"""
+    def __init__(self, config: MiniCPM3Config, layer_idx: Optional[int] = None):
+        super().__init__(config, layer_idx)
+        compute_dtype = str_to_dtype(config.mindspore_dtype)
+
+        self.infer_attention = InferAttention(
+            config.num_attention_heads,
+            self.q_head_dim,
+            self.q_head_dim,
+            self.v_head_dim,
+            config.num_key_value_heads,
+            seq_length=config.max_position_embeddings,
+            pa_n_head_split=config.num_attention_heads,
+            pa_n_kv_head_split=self.q_head_dim,
+            scale_value=1.0 / (math.sqrt(self.q_head_dim)),
+            pre_tokens=2147483647,
+            next_tokens=0,
+            block_size=32,
+            num_blocks=1024,
+            is_dynamic=True,
+            use_flash_attention=True,
+            use_rope_rotary_emb=False,
+            compute_dtype=compute_dtype,
+        )
+
+        self.is_first_iteration = True
+
+    def construct(
+            self,
+            hidden_states: ms.Tensor,
+            attention_mask: Optional[ms.Tensor] = None,
+            position_ids: Optional[ms.Tensor] = None,
+            past_key_value: Optional[Cache] = None,
+            output_attentions: bool = False,
+            use_cache: bool = False,
+            cache_position: Optional[ms.Tensor] = None,
+            block_tables: Optional[ms.Tensor] = None,
+            slot_mapping: Optional[ms.Tensor] = None,
+            freqs_cis: Optional[ms.Tensor] = None,
+            mask: Optional[ms.Tensor] = None,
+            batch_valid_length: Optional[ms.Tensor] = None,
+            **kwargs,
+    ) -> Tuple[ms.Tensor, Optional[ms.Tensor], Optional[Tuple[ms.Tensor]]]:
+        if "padding_mask" in kwargs:
+            warnings.warn(
+                "Passing `padding_mask` is deprecated and will be removed in v4.37. Please make sure use `attention_mask` instead.`"
+            )
+
+        bsz, q_len, _ = hidden_states.shape
+
+        q = self.q_b_proj(self.q_a_layernorm(self.q_a_proj(hidden_states)))
+        q = q.view(bsz, q_len, self.num_heads, self.q_head_dim).swapaxes(1, 2)
+        q_nope, q_pe = mint.split(
+            q, [self.qk_nope_head_dim, self.qk_rope_head_dim], dim=-1
+        )
+
+        compressed_kv = self.kv_a_proj_with_mqa(hidden_states)
+        compressed_kv, k_pe = mint.split(
+            compressed_kv, [self.kv_lora_rank, self.qk_rope_head_dim], dim=-1
+        )
+        k_pe = k_pe.view(bsz, q_len, 1, self.qk_rope_head_dim).swapaxes(1, 2)
+        kv = (
+            self.kv_b_proj(self.kv_a_layernorm(compressed_kv))
+            .view(bsz, q_len, self.num_heads, self.qk_nope_head_dim + self.v_head_dim)
+            .swapaxes(1, 2)
+        )
+
+        k_nope, value_states = mint.split(
+            kv, [self.qk_nope_head_dim, self.v_head_dim], dim=-1
+        )
+        kv_seq_len = value_states.shape[-2]
+        cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
+
+        q_pe, k_pe = apply_rotary_pos_emb(q_pe, k_pe, cos, sin, position_ids)
+
+        if not self.is_first_iteration:
+            q_pe = q_pe[:, :, -1, :].reshape(bsz, self.num_heads, 1, -1)
+            k_pe = k_pe[:, :, -1, :].reshape(bsz, 1, 1, -1)
+
+        # performance problem
+        # query_states = ops.zeros((bsz, self.num_heads, q_len, self.q_head_dim)).to(k_pe.dtype)
+        # query_states[:, :, :, : self.qk_nope_head_dim] = q_nope
+        # query_states[:, :, :, self.qk_nope_head_dim:] = q_pe
+        query_states = ops.cat((q_nope, q_pe), axis=-1)
+
+        # key_states = ops.zeros((bsz, self.num_heads, q_len, self.q_head_dim)).to(k_pe.dtype)
+        # key_states[:, :, :, : self.qk_nope_head_dim] = k_nope
+        # key_states[:, :, :, self.qk_nope_head_dim:] = k_pe
+        k_pe = k_pe.tile((1, self.num_heads, 1, 1))
+        key_states = ops.cat((k_nope, k_pe), axis=-1)
+
+        query_states = query_states.swapaxes(1, 2).contiguous()
+        key_states = key_states.swapaxes(1, 2).contiguous()
+        value_states = value_states.swapaxes(1, 2).contiguous()
+
+        query_states = query_states.reshape(bsz, q_len, -1)
+        key_states = key_states.reshape(bsz, q_len, -1)
+        value_states = value_states.reshape(bsz, q_len, -1)
+
+        attn_output = self.infer_attention(
+            query_states,
+            key_states,
+            value_states,
+            batch_valid_length,
+            block_tables,
+            slot_mapping,
+            freqs_cis,
+            mask,
+            q_seq_lens=None,
+        )
+
+        if self.q_head_dim != self.v_head_dim:
+            if not self.is_first_iteration:
+                attn_output = attn_output[:, :, :self.num_heads*self.v_head_dim]
+
+        attn_output = self.o_proj(attn_output)
+
+        if not output_attentions:
+            attn_weights = None
+
+        return attn_output, None, past_key_value
+
 
 MINICPM_ATTENTION_CLASSES = {
     "eager": MiniCPMAttention,
     "flash_attention_2": MiniCPMFlashAttention2,
+    "paged_attention": MiniCPMPagedAttention,
 }
 
 
@@ -761,6 +890,9 @@ class MiniCPMDecoderLayer(nn.Cell):
         self.scale_depth = config.scale_depth
         self.num_hidden_layers = config.num_hidden_layers
 
+        if config._attn_implementation == "paged_attention":
+            self.is_first_iteration = True
+
     def construct(
             self,
             hidden_states: ms.Tensor,
@@ -770,6 +902,11 @@ class MiniCPMDecoderLayer(nn.Cell):
             output_attentions: Optional[bool] = False,
             use_cache: Optional[bool] = False,
             cache_position: Optional[ms.Tensor] = None,
+            block_tables: Optional[ms.Tensor] = None,
+            slot_mapping: Optional[ms.Tensor] = None,
+            freqs_cis: Optional[ms.Tensor] = None,
+            mask: Optional[ms.Tensor] = None,
+            batch_valid_length: Optional[ms.Tensor] = None,
             **kwargs,
     ) -> Tuple[ms.Tensor, Optional[Tuple[ms.Tensor, ms.Tensor]]]:
         """
@@ -802,6 +939,11 @@ class MiniCPMDecoderLayer(nn.Cell):
             output_attentions=output_attentions,
             use_cache=use_cache,
             cache_position=cache_position,
+            block_tables=block_tables,
+            slot_mapping=slot_mapping,
+            freqs_cis=freqs_cis,
+            mask=mask,
+            batch_valid_length=batch_valid_length,
             **kwargs,
         )
 
@@ -945,6 +1087,9 @@ class MiniCPM3Model(MiniCPM3PreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+        if self.config._attn_implementation == "paged_attention":
+            self.is_first_iteration = True
+
     def get_input_embeddings(self):
         return self.embed_tokens
 
@@ -964,6 +1109,11 @@ class MiniCPM3Model(MiniCPM3PreTrainedModel):
             output_hidden_states: Optional[bool] = None,
             return_dict: Optional[bool] = None,
             cache_position: Optional[ms.Tensor] = None,
+            block_tables: Optional[ms.Tensor] = None,
+            slot_mapping: Optional[ms.Tensor] = None,
+            freqs_cis: Optional[ms.Tensor] = None,
+            mask: Optional[ms.Tensor] = None,
+            batch_valid_length: Optional[ms.Tensor] = None,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -1007,11 +1157,11 @@ class MiniCPM3Model(MiniCPM3PreTrainedModel):
         if inputs_embeds is None:
             inputs_embeds = self.embed_tokens(input_ids) * self.config.scale_emb
 
-
-        # 4d mask is passed through the layers
-        attention_mask = _prepare_4d_causal_attention_mask(
-            attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
-        )
+        if block_tables is None:
+            # 4d mask is passed through the layers
+            attention_mask = _prepare_4d_causal_attention_mask(
+                attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
+            )
 
         # embed positions
         hidden_states = inputs_embeds
@@ -1045,6 +1195,11 @@ class MiniCPM3Model(MiniCPM3PreTrainedModel):
                     output_attentions=output_attentions,
                     use_cache=use_cache,
                     cache_position=cache_position,
+                    block_tables=block_tables,
+                    slot_mapping=slot_mapping,
+                    freqs_cis=freqs_cis,
+                    mask=mask,
+                    batch_valid_length=batch_valid_length,
                 )
 
             hidden_states = layer_outputs[0]
@@ -1078,10 +1233,37 @@ class MiniCPM3ForCausalLM(MiniCPM3PreTrainedModel):
         super().__init__(config)
         self.model = MiniCPM3Model(config)
         self.vocab_size = config.vocab_size
-        self.lm_head = mint.nn.Linear(config.hidden_size, config.vocab_size, bias=False)
+        self.lm_head = nn.Dense(config.hidden_size, config.vocab_size, has_bias=False)
 
         # Initialize weights and apply final processing
         self.post_init()
+
+        if self.config._attn_implementation == "paged_attention":
+            compute_dtype = str_to_dtype(config.mindspore_dtype)
+
+            self.freqs_mgr = FreqsMgr(
+                head_dim=config.hidden_size // config.num_attention_heads,
+                seq_length=config.max_position_embeddings,
+                max_position_embedding=config.max_position_embeddings,
+                rotary_dtype=compute_dtype,
+                theta=config.rope_theta,
+                is_dynamic=True,
+            )
+
+            self.casual_mask = LowerTriangularMaskWithDynamic(
+                seq_length=config.max_position_embeddings,
+                batch_size=1,
+                compute_type=compute_dtype,
+                is_dynamic=True,
+                pad_token_id=config.pad_token_id,
+                use_flash_attention=True,
+                use_attn_mask_compression=False,
+                use_past=True,
+                seq_split_num=1,
+                chunk_prefill=False,
+            )
+
+            self.is_first_iteration = True
 
     def get_input_embeddings(self):
         return self.model.embed_tokens
@@ -1101,6 +1283,49 @@ class MiniCPM3ForCausalLM(MiniCPM3PreTrainedModel):
     def get_decoder(self):
         return self.model
 
+    def add_flags_custom(self, is_first_iteration):
+        """Add customized attributes for specific cells in the model."""
+        self.add_flags(is_first_iteration=is_first_iteration)
+        self.model.add_flags(is_first_iteration=is_first_iteration)
+        for layer in self.model.layers:
+            layer.add_flags(is_first_iteration=is_first_iteration)
+            layer.self_attn.add_flags(is_first_iteration=is_first_iteration)
+            layer.self_attn.infer_attention.add_flags(is_first_iteration=is_first_iteration)
+            layer.self_attn.infer_attention.paged_attention_mgr.add_flags(is_first_iteration=is_first_iteration)
+
+    def enable_dynamic_shape(self):
+        input_ids = Tensor(shape=[None, None], dtype=ms.int32)
+        position_ids = Tensor(shape=[None, None], dtype=ms.int32)
+        attention_mask = Tensor(shape=[None, None], dtype=ms.int32)
+        past_key_values = None
+        inputs_embeds = None
+        labels = None
+        use_cache = False
+        output_attentions = False
+        output_hidden_states = False
+        return_dict = False
+        cache_position = Tensor(shape=[None], dtype=ms.int64)
+        block_tables = Tensor(shape=[None, None], dtype=ms.int32)
+        slot_mapping = Tensor(shape=[None], dtype=ms.int32)
+        batch_valid_length = ms.mutable(Tensor(shape=[None], dtype=ms.int32))
+
+        self.set_inputs(
+            input_ids,
+            attention_mask,
+            position_ids,
+            past_key_values,
+            inputs_embeds,
+            labels,
+            use_cache,
+            output_attentions,
+            output_hidden_states,
+            return_dict,
+            cache_position,
+            block_tables,
+            slot_mapping,
+            batch_valid_length,
+        )
+
     @add_start_docstrings_to_model_forward(MINICPM_INPUTS_DOCSTRING)
     @replace_return_docstrings(output_type=CausalLMOutputWithPast, config_class=_CONFIG_FOR_DOC)
     def construct(
@@ -1116,6 +1341,9 @@ class MiniCPM3ForCausalLM(MiniCPM3PreTrainedModel):
             output_hidden_states: Optional[bool] = None,
             return_dict: Optional[bool] = None,
             cache_position: Optional[ms.Tensor] = None,
+            block_tables: Optional[ms.Tensor] = None,
+            slot_mapping: Optional[ms.Tensor] = None,
+            batch_valid_length: Optional[ms.Tensor] = None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         r"""
         Args:
@@ -1136,6 +1364,18 @@ class MiniCPM3ForCausalLM(MiniCPM3PreTrainedModel):
         # >>> tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
         # "Hey, are you conscious? Can you talk to me?\nI'm not conscious, but I can talk to you."
         ```"""
+        if block_tables is not None:
+            bs, seq_len = input_ids.shape
+            mask = None
+            if self.is_first_iteration:
+                freqs_cis = self.freqs_mgr.prefill(bs, seq_len)
+                mask = self.casual_mask.prefill()
+            else:
+                freqs_cis = self.freqs_mgr.increment(batch_valid_length)
+        else:
+            freqs_cis = None
+            mask = None
+
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
@@ -1154,6 +1394,11 @@ class MiniCPM3ForCausalLM(MiniCPM3PreTrainedModel):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
             cache_position=cache_position,
+            block_tables=block_tables,
+            slot_mapping=slot_mapping,
+            freqs_cis=freqs_cis,
+            mask=mask,
+            batch_valid_length=batch_valid_length,
         )
 
         hidden_states = outputs[0]
@@ -1272,6 +1517,56 @@ class MiniCPM3ForCausalLM(MiniCPM3PreTrainedModel):
                 "attention_mask": attention_mask,
             }
         )
+
+        # Paged Attention
+        if self.config._attn_implementation == "paged_attention":
+            bs, seq_len = input_ids.shape
+            step = kwargs["step"]
+            if step == 0:
+                self.enable_dynamic_shape()
+
+                # init block tables
+                self.block_mgr = BlockTables(1024, 32, self.config.max_position_embeddings)
+                self.block_mgr.init_cache_engine(bs)
+
+                # get slot mapping and block tables
+                max_input_length = self.config.max_position_embeddings
+                self.valid_length_each_example = ms.tensor(seq_len).reshape(bs)
+                block_tables, slot_mapping = self.block_mgr.assemble_pa_full_inputs(
+                    max_input_length, self.valid_length_each_example, [False]
+                )
+                slot_mapping = np.delete(slot_mapping, np.where(slot_mapping == -1))
+
+                # set batch valid length
+                self.batch_valid_length = ms.tensor(seq_len).to(ms.int32).reshape(bs)
+
+                self.phase = "prefill"
+                self.add_flags_custom(True)
+            else:
+                model_inputs.update({"input_ids": input_ids[:, -1].reshape(bs, 1)})
+
+                # get slot mapping and block tables
+                self.valid_length_each_example += 1
+                block_tables, slot_mapping = self.block_mgr.assemble_pa_inc_inputs(
+                    self.valid_length_each_example, [False]
+                )
+
+                # set batch valid length
+                self.batch_valid_length += 1
+
+                if step == 1:
+                    self.phase = "increment"
+                    self.add_flags_custom(False)
+            slot_mapping = ms.tensor(slot_mapping)
+            block_tables = ms.tensor(block_tables)
+            model_inputs.update(
+                {
+                    "block_tables": block_tables,
+                    "slot_mapping": slot_mapping,
+                    "batch_valid_length": self.batch_valid_length,
+                }
+            )
+            model_inputs.pop("step", None)
         return model_inputs
 
     @staticmethod
@@ -1327,7 +1622,7 @@ class MiniCPM3ForSequenceClassification(MiniCPM3PreTrainedModel):
         super().__init__(config)
         self.num_labels = config.num_labels
         self.model = MiniCPM3Model(config)
-        self.score = mint.nn.Linear(config.hidden_size, self.num_labels, bias=False)
+        self.score = nn.Dense(config.hidden_size, self.num_labels, has_bias=False)
 
         # Initialize weights and apply final processing
         self.post_init()
