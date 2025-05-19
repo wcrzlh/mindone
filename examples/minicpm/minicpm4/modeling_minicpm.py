@@ -473,9 +473,9 @@ class MiniCPMAttention(nn.Cell):
         )
         attn_output = mint.matmul(attn_weights, value_states)
 
-        if attn_output.shape != (bsz, self.num_heads, q_len, self.v_head_dim):
+        if attn_output.shape != (bsz, self.num_heads, q_len, self.head_dim):
             raise ValueError(
-                f"`attn_output` should be of size {(bsz, self.num_heads, q_len, self.v_head_dim)}, but is"
+                f"`attn_output` should be of size {(bsz, self.num_heads, q_len, self.head_dim)}, but is"
                 f" {attn_output.shape}"
             )
 
@@ -511,7 +511,7 @@ class MiniCPMFlashAttention2(MiniCPMAttention):
         # # Beware that with flash_attn<2.1, using q_seqlen != k_seqlen (except for the case q_seqlen == 1) produces a wrong mask (top-left).
         # self._flash_attn_uses_top_left_mask = not is_flash_attn_greater_or_equal_2_10()
 
-        scale_factor = 1 / math.sqrt(self.q_head_dim)
+        scale_factor = 1 / math.sqrt(self.head_dim)
         self.flash_attention = FlashAttentionScore(
             self.num_heads, keep_prob=1 - self.attention_dropout, scale_value=scale_factor, input_layout="BNSD"
         )
@@ -723,8 +723,8 @@ class MiniCPMPagedAttention(MiniCPMAttention):
             config.num_key_value_heads,
             seq_length=config.max_position_embeddings,
             pa_n_head_split=config.num_attention_heads,
-            pa_n_kv_head_split=self.q_head_dim,
-            scale_value=1.0 / (math.sqrt(self.q_head_dim)),
+            pa_n_kv_head_split=self.head_dim,
+            scale_value=1.0 / (math.sqrt(self.head_dim)),
             pre_tokens=2147483647,
             next_tokens=0,
             block_size=32,
