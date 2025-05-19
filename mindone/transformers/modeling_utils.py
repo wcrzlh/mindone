@@ -281,7 +281,9 @@ def load_state_dict(checkpoint_file: Union[str, os.PathLike]):
             return ms.load_checkpoint(checkpoint_file, format="safetensors")
         elif checkpoint_file.endswith("bin"):
             import torch
-            return torch.load(checkpoint_file, map_location="cpu", weights_only=True)
+            state_dict_torch = torch.load(checkpoint_file, map_location="cpu", weights_only=True)
+            for key in state_dict_torch.keys():
+                state_dict_torch[key] = ms.tensor(state_dict_torch[key])
         else:
             raise NotImplementedError(
                 f"Only supports deserialization of weights file in safetensors format, but got {checkpoint_file}"
