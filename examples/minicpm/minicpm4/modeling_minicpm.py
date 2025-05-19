@@ -200,8 +200,8 @@ class MiniCPMLongRoPE(MiniCPMRotaryEmbedding):
         )
         # Different from paper, but it uses a different permutation in order to obtain the same calculation
         emb = ops.cat((freqs, freqs), axis=-1)
-        self.cos_cached = emb.cos().to(dtype)
-        self.sin_cached = emb.sin().to(dtype)
+        self.cos_cached = emb.cos().to(dtype) * self.scaling_factor
+        self.sin_cached = emb.sin().to(dtype) * self.scaling_factor
 
 
 def rotate_half(x):
