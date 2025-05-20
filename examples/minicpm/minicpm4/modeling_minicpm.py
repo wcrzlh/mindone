@@ -731,9 +731,8 @@ class MiniCPMPagedAttention(MiniCPMAttention):
             num_blocks=1024,
             is_dynamic=True,
             use_flash_attention=True,
-            use_rope_rotary_emb=True,
+            use_rope_rotary_emb=False,
             compute_dtype=compute_dtype,
-            rotary_cos_format=2,
         )
 
         self.is_first_iteration = True
@@ -764,6 +763,25 @@ class MiniCPMPagedAttention(MiniCPMAttention):
         query_states = self.q_proj(hidden_states)
         key_states = self.k_proj(hidden_states)
         value_states = self.v_proj(hidden_states)
+
+        query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).swapaxes(1, 2)
+        key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).swapaxes(1, 2)
+        value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).swapaxes(1, 2)
+
+        kv_seq_len = key_states.shape[-2]
+
+        cos, sin = self.rotary_emb(value_states.to(ms.float32), seq_len=kv_seq_len)
+
+        query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)
+
+        query_states = query_states.swapaxes(1, 2).reshape(bsz, q_len, -1)
+        key_states = key_states.swapaxes(1, 2).reshape(bsz, q_len, -1)
+        value_states = value_states.swapaxes(1, 2).reshape(bsz, q_len, -1)
+
+        if not self.is_first_iteration:
+            query_states = query_states[:, -1, :].reshape(bsz, 1, -1)
+            key_states = key_states[:, -1, :].reshape(bsz, 1, -1)
+            value_states = value_states[:, -1, :].reshape(bsz, 1, -1)
 
         attn_output = self.infer_attention(
             query_states,
@@ -1458,7 +1476,7 @@ class MiniCPMForCausalLM(MiniCPMPreTrainedModel):
                 self.phase = "prefill"
                 self.add_flags_custom(True)
             else:
-                model_inputs.update({"input_ids": input_ids[:, -1].reshape(bs, 1)})
+                # model_inputs.update({"input_ids": input_ids[:, -1].reshape(bs, 1)})
 
                 # get slot mapping and block tables
                 self.valid_length_each_example += 1
