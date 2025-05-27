@@ -560,6 +560,9 @@ class MiniCPMFlashAttention2(MiniCPMAttention):
             key_states, value_states = update(past_key_value, key_states, value_states, cache_position)
             past_key_value = (key_states, value_states)
 
+        key_states = repeat_kv(key_states, self.num_key_value_groups)
+        value_states = repeat_kv(value_states, self.num_key_value_groups)
+
         # # TODO: These transpose are quite inefficient but Flash Attention requires the layout [batch_size, sequence_length, num_heads, head_dim]. We would need to refactor the KV cache
         # # to be able to avoid many of these transpose/reshape/view.
         # query_states = query_states.swapaxes(1, 2)
