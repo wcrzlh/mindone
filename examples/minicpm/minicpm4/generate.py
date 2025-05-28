@@ -10,7 +10,6 @@ sys.path.insert(0, mindone_lib_path)
 from transformers import AutoTokenizer
 from modeling_minicpm import MiniCPMForCausalLM
 import mindspore as ms
-ms.set_seed(0)
 
 def generate(args):
     # path = 'openbmb/MiniCPM3-4B'
@@ -46,6 +45,7 @@ def generate(args):
         model_inputs,
         max_new_tokens=1024,
         use_cache=args.use_cache,
+        do_sample=args.do_sample,
     )
 
     output_token_ids = [
@@ -56,7 +56,7 @@ def generate(args):
     print(responses)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="MiniCPM3 demo.")
+    parser = argparse.ArgumentParser(description="MiniCPM4 demo.")
 
     parser.add_argument("--prompt", type=str, default="推荐5个北京的景点。")
     parser.add_argument("--model_name", type=str, default="path/to/MiniCPM4", help="Path to the pre-trained model.")
@@ -67,6 +67,7 @@ if __name__ == "__main__":
         choices=["paged_attention", "flash_attention_2", "eager"],
     )
     parser.add_argument("--use_cache", type=ast.literal_eval, default=True)
+    parser.add_argument("--do_sample", type=ast.literal_eval, default=False)
 
     # Parse the arguments
     args = parser.parse_args()
