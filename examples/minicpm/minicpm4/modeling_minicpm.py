@@ -1531,8 +1531,7 @@ class MiniCPMForCausalLM(MiniCPMPreTrainedModel):
         history_str = tokenizer.apply_chat_template(history, tokenize=False, add_generation_prompt=True)
         inputs = tokenizer(history_str, return_tensors='np')
         for key in inputs.keys():
-            if isinstance(inputs[key], np.array):
-                inputs[key] = ms.tensor(inputs[key])
+            inputs[key] = ms.tensor(inputs[key])
         outputs = self.generate(**inputs, **gen_kwargs)
         outputs = outputs.tolist()[0][len(inputs["input_ids"][0]):-1]
         response = tokenizer.decode(outputs)
