@@ -15,8 +15,7 @@ class PagedAttentionMgr(nn.Cell):
         n_heads,
         head_dim,
         n_kv_heads,
-        k_shape,
-        v_shape,
+        kv_shape,
         seq_length=-1,
         compute_dtype=mstype.float16,
         parallel_decoding=False,
@@ -29,9 +28,9 @@ class PagedAttentionMgr(nn.Cell):
         self.seq_length = seq_length
         self.is_first_iteration = True
         self.scale_value = 1 / math.sqrt(self.head_dim)
-        self.key_cache = Parameter(initializer("zeros", k_shape, compute_dtype), name="key_cache", requires_grad=False)
+        self.key_cache = Parameter(initializer("zeros", kv_shape, compute_dtype), name="key_cache", requires_grad=False)
         self.value_cache = Parameter(
-            initializer("zeros", v_shape, compute_dtype), name="value_cache", requires_grad=False
+            initializer("zeros", kv_shape, compute_dtype), name="value_cache", requires_grad=False
         )
 
         self.reshape_and_cache = P.auto_generate.ReshapeAndCache()

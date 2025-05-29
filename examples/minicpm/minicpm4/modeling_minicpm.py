@@ -6,7 +6,6 @@ from typing import List, Optional, Tuple, Union, Dict
 
 import mindspore as ms
 from mindspore import mint, nn, ops, Tensor, Parameter
-import mindspore.mint.nn.functional as F
 from mindspore.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 from mindspore.ops.operations.nn_ops import FlashAttentionScore
 
@@ -631,38 +630,6 @@ class MiniCPMFlashAttention2(MiniCPMAttention):
             softmax_scale (`float`, *optional*):
                 The scaling of QK^T before applying softmax. Default to 1 / sqrt(head_dim)
         """
-        # if not self._flash_attn_uses_top_left_mask:
-        #     causal = self.is_causal
-        # else:
-        #     # TODO: Remove the `query_length != 1` check once Flash Attention for RoCm is bumped to 2.1. For details, please see the comment in MiniCPMFlashAttention2 __init__.
-        #     causal = self.is_causal and query_length != 1
-        # # Contains at least one padding token in the sequence
-        # if attention_mask is not None:
-        #     batch_size = query_states.shape[0]
-        #     query_states, key_states, value_states, indices_q, cu_seq_lens, max_seq_lens = self._upad_input(
-        #         query_states, key_states, value_states, attention_mask, query_length
-        #     )
-        #
-        #     cu_seqlens_q, cu_seqlens_k = cu_seq_lens
-        #     max_seqlen_in_batch_q, max_seqlen_in_batch_k = max_seq_lens
-        #     attn_output_unpad = flash_attn_varlen_func(
-        #         query_states,
-        #         key_states,
-        #         value_states,
-        #         cu_seqlens_q=cu_seqlens_q,
-        #         cu_seqlens_k=cu_seqlens_k,
-        #         max_seqlen_q=max_seqlen_in_batch_q,
-        #         max_seqlen_k=max_seqlen_in_batch_k,
-        #         dropout_p=dropout,
-        #         softmax_scale=softmax_scale,
-        #         causal=causal,
-        #     )
-        #
-        #     attn_output = pad_input(attn_output_unpad, indices_q, batch_size, query_length)
-        # else:
-        #     attn_output = flash_attn_func(
-        #         query_states, key_states, value_states, dropout, softmax_scale=softmax_scale, causal=causal
-        #     )
         # 1. flash attention
         if attention_mask is not None:  # no matter the length, we just slice it
             attention_mask = attention_mask[:, :, :, : key_states.shape[-2]]
@@ -674,43 +641,6 @@ class MiniCPMFlashAttention2(MiniCPMAttention):
 
         return attn_output
 
-    # def _upad_input(self, query_layer, key_layer, value_layer, attention_mask, query_length):
-    #     indices_k, cu_seqlens_k, max_seqlen_in_batch_k = _get_unpad_data(attention_mask)
-    #     batch_size, kv_seq_len, num_key_value_heads, head_dim = key_layer.shape
-    #
-    #     key_layer = index_first_axis(
-    #         key_layer.reshape(batch_size * kv_seq_len, num_key_value_heads, head_dim), indices_k
-    #     )
-    #     value_layer = index_first_axis(
-    #         value_layer.reshape(batch_size * kv_seq_len, num_key_value_heads, head_dim), indices_k
-    #     )
-    #     if query_length == kv_seq_len:
-    #         query_layer = index_first_axis(
-    #             query_layer.reshape(batch_size * kv_seq_len, self.num_heads, head_dim), indices_k
-    #         )
-    #         cu_seqlens_q = cu_seqlens_k
-    #         max_seqlen_in_batch_q = max_seqlen_in_batch_k
-    #         indices_q = indices_k
-    #     elif query_length == 1:
-    #         max_seqlen_in_batch_q = 1
-    #         cu_seqlens_q = ops.arange(
-    #             batch_size + 1, dtype=ms.int32
-    #         )  # There is a memcpy here, that is very bad.
-    #         indices_q = cu_seqlens_q[:-1]
-    #         query_layer = query_layer.squeeze(1)
-    #     else:
-    #         # The -q_len: slice assumes left padding.
-    #         attention_mask = attention_mask[:, -query_length:]
-    #         query_layer, indices_q, cu_seqlens_q, max_seqlen_in_batch_q = unpad_input(query_layer, attention_mask)
-    #
-    #     return (
-    #         query_layer,
-    #         key_layer,
-    #         value_layer,
-    #         indices_q,
-    #         (cu_seqlens_q, cu_seqlens_k),
-    #         (max_seqlen_in_batch_q, max_seqlen_in_batch_k),
-    #     )
 
 class MiniCPMPagedAttention(MiniCPMAttention):
     """Paged Attention"""
@@ -720,8 +650,6 @@ class MiniCPMPagedAttention(MiniCPMAttention):
 
         self.infer_attention = InferAttention(
             config.num_attention_heads,
-            self.head_dim,
-            self.head_dim,
             self.head_dim,
             config.num_key_value_heads,
             seq_length=config.max_position_embeddings,
@@ -771,9 +699,13 @@ class MiniCPMPagedAttention(MiniCPMAttention):
         key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).swapaxes(1, 2)
         value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).swapaxes(1, 2)
 
-        kv_seq_len = key_states.shape[-2]
+        kv_seq_len = batch_valid_length[0].to(ms.int64)
 
         cos, sin = self.rotary_emb(value_states.to(ms.float32), seq_len=kv_seq_len)
+
+        if not self.is_first_iteration:
+            length = position_ids.shape[1]
+            position_ids = position_ids[:, length-1:length]
 
         query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)
 
@@ -1085,10 +1017,16 @@ class MiniCPMModel(MiniCPMPreTrainedModel):
             past_key_values_length = get_seq_length(past_key_values)
 
         if position_ids is None:
-            position_ids = ops.arange(
-                past_key_values_length, seq_length + past_key_values_length, dtype=ms.int64
-            )
-            position_ids = position_ids.unsqueeze(0)
+            if block_tables is None:
+                position_ids = ops.arange(
+                    past_key_values_length, seq_length + past_key_values_length, dtype=ms.int64
+                )
+                position_ids = position_ids.unsqueeze(0)
+            else:
+                position_ids = ops.arange(
+                    past_key_values_length, batch_valid_length[0] + past_key_values_length, dtype=ms.int64
+                )
+                position_ids = position_ids.unsqueeze(0)
 
         if inputs_embeds is None:
             inputs_embeds = self.embed_tokens(input_ids) * self.config.scale_emb
@@ -1479,7 +1417,7 @@ class MiniCPMForCausalLM(MiniCPMPreTrainedModel):
                 self.phase = "prefill"
                 self.add_flags_custom(True)
             else:
-                # model_inputs.update({"input_ids": input_ids[:, -1].reshape(bs, 1)})
+                model_inputs.update({"input_ids": input_ids[:, -1].reshape(bs, 1)})
 
                 # get slot mapping and block tables
                 self.valid_length_each_example += 1

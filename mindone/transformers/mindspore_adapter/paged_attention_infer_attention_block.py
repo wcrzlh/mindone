@@ -132,8 +132,6 @@ class InferAttention(Cell):
         self,
         n_head,
         head_dim,
-        k_head_dim,
-        v_head_dim,
         n_kv_head,
         pa_n_head_split=None,
         pa_n_kv_head_split=None,
@@ -157,8 +155,6 @@ class InferAttention(Cell):
         super(InferAttention, self).__init__()
         self.n_head = n_head
         self.head_dim = head_dim
-        self.k_head_dim = k_head_dim
-        self.v_head_dim = v_head_dim
         self.n_kv_head = n_kv_head
         self.pa_n_head_split = pa_n_head_split if pa_n_head_split is not None else n_head
         self.pa_n_kv_head_split = pa_n_kv_head_split if pa_n_kv_head_split is not None else n_kv_head
@@ -200,15 +196,12 @@ class InferAttention(Cell):
             input_layout=self.input_layout,
         )
 
-        # kv_shape = (self.num_blocks, self.block_size, self.n_kv_head, self.head_dim)
-        k_shape = (self.num_blocks, self.block_size, self.n_kv_head, self.k_head_dim)
-        v_shape = (self.num_blocks, self.block_size, self.n_kv_head, self.v_head_dim)
+        kv_shape = (self.num_blocks, self.block_size, self.n_kv_head, self.head_dim)
         self.paged_attention_mgr = PagedAttentionMgr(
             self.pa_n_head_split,
             self.head_dim,
             self.pa_n_kv_head_split,
-            k_shape,
-            v_shape,
+            kv_shape,
             seq_length,
             compute_dtype=self.compute_dtype,
             parallel_decoding=parallel_decoding,
@@ -242,14 +235,14 @@ class InferAttention(Cell):
                 bs, seq_len, _ = query.shape
                 # [1, actual_seq_len, H] -> [actual_seq_len, H]
                 query = query.reshape((-1, self.n_head * self.head_dim))
-                key = key.reshape((-1, self.n_kv_head * self.k_head_dim))
-                value = value.reshape((-1, self.n_kv_head * self.v_head_dim))
+                key = key.reshape((-1, self.n_kv_head * self.head_dim))
+                value = value.reshape((-1, self.n_kv_head * self.head_dim))
                 # [actual_seq_len, H]
                 output = self.flash_attention(
                     query, key, value, attn_mask, alibi_mask, None, None, actual_seq_qlen, actual_seq_kvlen
                 )
                 # [actual_seq_len, H] -> [1, actual_seq_len, H]
-                output = output.reshape((bs, seq_len, self.n_head * self.v_head_dim))
+                output = output.reshape((bs, seq_len, self.n_head * self.head_dim))
                 return output
 
         if self.input_layout == "BSH":
