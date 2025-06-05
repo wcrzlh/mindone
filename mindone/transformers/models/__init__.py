@@ -23,6 +23,7 @@ from . import (
     qwen2_5_vl,
     qwen2_vl,
     qwen3,
+    siglip2,
     speecht5,
     t5,
     umt5,
