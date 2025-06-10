@@ -28,21 +28,15 @@ import mindspore.nn as nn
 import mindspore.mint.nn.functional as F
 from mindspore import mint, ops, Parameter
 from mindspore.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
+from mindspore.ops.operations.nn_ops import FlashAttentionScore
 
 from ...activations import ACT2FN
 from ...modeling_attn_mask_utils import _prepare_4d_attention_mask
 from ...modeling_outputs import BaseModelOutput, BaseModelOutputWithPooling, ImageClassifierOutput
 from ...modeling_utils import PreTrainedModel
-from ...utils import (
-    is_flash_attn_2_available,
-    logging,
-)
+from ...utils import logging
 from transformers.utils import ModelOutput, add_start_docstrings, add_start_docstrings_to_model_forward, replace_return_docstrings
 from transformers.models.siglip2.configuration_siglip2 import Siglip2Config, Siglip2TextConfig, Siglip2VisionConfig
-
-
-if is_flash_attn_2_available():
-    from ...modeling_flash_attention_utils import _flash_attention_forward
 
 
 logger = logging.get_logger(__name__)
@@ -154,8 +148,8 @@ class Siglip2VisionEmbeddings(nn.Cell):
         self.patch_size = config.patch_size
 
         self.patch_embedding = nn.Dense(
-            in_features=config.num_channels * self.patch_size * self.patch_size,
-            out_features=self.embed_dim,
+            config.num_channels * self.patch_size * self.patch_size,
+            self.embed_dim,
         )
 
         self.num_patches = config.num_patches
@@ -186,7 +180,7 @@ class Siglip2VisionEmbeddings(nn.Cell):
         embed_dim = positional_embeddings.shape[-1]
         source_dtype = positional_embeddings.dtype
 
-        resulted_positional_embeddings = mint.empty(
+        resulted_positional_embeddings = mint.zeros(
             (batch_size, max_length, embed_dim),
             dtype=source_dtype,
         )
@@ -199,14 +193,13 @@ class Siglip2VisionEmbeddings(nn.Cell):
             height, width = spatial_shapes[i]
             resized_embeddings = F.interpolate(
                 positional_embeddings,
-                size=(height, width),
+                size=(int(height), int(width)),
                 mode="bilinear",
                 align_corners=False,
-                antialias=True,
             )
 
             # (1, dim, target_height, target_width) -> (target_height * target_width, dim)
-            resized_embeddings = resized_embeddings.reshape(embed_dim, height * width).swapaxes(0, 1)
+            resized_embeddings = resized_embeddings.reshape(embed_dim, int(height * width)).swapaxes(0, 1)
 
             # Cast to original dtype
             resized_embeddings = resized_embeddings.to(source_dtype)
@@ -333,6 +326,10 @@ class Siglip2FlashAttention2(Siglip2Attention):
         # flash_attn<2.1 generates top-left aligned causal mask, while what is needed here is bottom-right alignment, that was made default for flash_attn>=2.1. This attribute is used to handle this difference. Reference: https://github.com/Dao-AILab/flash-attention/releases/tag/v2.1.0.
         # Beware that with flash_attn<2.1, using q_seqlen != k_seqlen (except for the case q_seqlen == 1) produces a wrong mask (top-left).
         # self._flash_attn_uses_top_left_mask = not is_flash_attn_greater_or_equal_2_10()
+        scale_factor = 1 / math.sqrt(self.head_dim)
+        self.flash_attention = FlashAttentionScore(
+            self.num_heads, keep_prob=1 - self.attention_dropout, scale_value=scale_factor, input_layout="BNSD"
+        )
 
     # Adapted from transformers.models.llama.modeling_llama.LlamaFlashAttention2.forward
     def construct(
@@ -381,15 +378,13 @@ class Siglip2FlashAttention2(Siglip2Attention):
             key_states = key_states.to(target_dtype)
             value_states = value_states.to(target_dtype)
 
-        attn_output = _flash_attention_forward(
-            query_states,
-            key_states,
-            value_states,
-            attention_mask,
-            q_len,
-            dropout=dropout_rate,
-            is_causal=self.is_causal,
-            use_top_left_mask=self._flash_attn_uses_top_left_mask,
+        # 1. flash attention
+        if attention_mask is not None:  # no matter the length, we just slice it
+            attention_mask = attention_mask[:, :, :, : key_states.shape[-2]]
+        # flip mask to ms FA format, 1 - drop, 0 - retain
+        attention_mask = (-attention_mask).to(ms.bool_)
+        _, _, _, attn_output = self.flash_attention(
+            query_states, key_states, value_states, None, None, None, attention_mask
         )
 
         attn_output = attn_output.reshape(batch_size, q_len, self.embed_dim).contiguous()
@@ -648,13 +643,11 @@ class Siglip2TextEmbeddings(nn.Cell):
         super().__init__()
         embed_dim = config.hidden_size
 
-        self.token_embedding = nn.Embedding(config.vocab_size, embed_dim)
-        self.position_embedding = nn.Embedding(config.max_position_embeddings, embed_dim)
+        self.token_embedding = mint.nn.Embedding(config.vocab_size, embed_dim)
+        self.position_embedding = mint.nn.Embedding(config.max_position_embeddings, embed_dim)
 
         # position_ids (1, len position emb) is contiguous in memory and exported when serialized
-        self.register_buffer(
-            "position_ids", mint.arange(config.max_position_embeddings).expand((1, -1)), persistent=False
-        )
+        self.position_ids = mint.arange(config.max_position_embeddings).expand((1, -1))
 
     def construct(
         self,
@@ -1004,12 +997,12 @@ class Siglip2MultiheadAttentionPoolingHead(nn.Cell):
 
     def construct(self, hidden_state: ms.Tensor, attention_mask: Optional[ms.Tensor] = None):
         batch_size = hidden_state.shape[0]
-        probe = self.probe.repeat(batch_size, 1, 1)
+        probe = self.probe.tile((batch_size, 1, 1))
 
         if attention_mask is not None:
             target_len, source_len = probe.shape[1], hidden_state.shape[1]
             attention_mask = _prepare_4d_attention_mask(attention_mask, hidden_state.dtype, target_len)
-            attention_mask = attention_mask.repeat(1, self.num_heads, target_len, 1)
+            attention_mask = attention_mask.tile((1, self.num_heads, target_len, 1))
             attention_mask = attention_mask.reshape(-1, target_len, source_len)
 
         hidden_state = self.attention(probe, hidden_state, hidden_state, attn_mask=attention_mask)[0]
@@ -1297,8 +1290,8 @@ class Siglip2Model(Siglip2PreTrainedModel):
         text_embeds = text_outputs[1]
 
         # normalized features
-        image_embeds = image_embeds / image_embeds.norm(p=2, dim=-1, keepdim=True)
-        text_embeds = text_embeds / text_embeds.norm(p=2, dim=-1, keepdim=True)
+        image_embeds = image_embeds / mint.norm(image_embeds, p=2, dim=-1, keepdim=True)
+        text_embeds = text_embeds / mint.norm(text_embeds, p=2, dim=-1, keepdim=True)
 
         # cosine similarity as logits
         logits_per_text = mint.matmul(text_embeds, image_embeds.t())
