@@ -18,6 +18,7 @@ from typing import List, Optional, Tuple, Union
 
 import mindspore as ms
 from mindspore import mint
+import numpy as np
 
 from ...image_processing_utils import BatchFeature
 from ...image_processing_utils_fast import (
