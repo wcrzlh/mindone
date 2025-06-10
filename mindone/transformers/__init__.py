@@ -155,6 +155,8 @@ from .models.siglip2 import (
     Siglip2PreTrainedModel,
     Siglip2TextModel,
     Siglip2VisionModel,
+    Siglip2Processor,
+    Siglip2ImageProcessor,
 )
 from .models.speecht5 import (
     SpeechT5ForSpeechToSpeech,
