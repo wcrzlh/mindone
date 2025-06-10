@@ -49,6 +49,7 @@ else:
             ("blip-2", ("BlipImageProcessor",)),
             ("clip", ("CLIPImageProcessor",)),
             ("dpt", ("DPTImageProcessor",)),
+            ("siglip2", ("Siglip2ImageProcessor", "Siglip2ImageProcessorFast")),
         ]
     )
 
