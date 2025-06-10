@@ -27,7 +27,7 @@ from transformers.dynamic_module_utils import get_class_from_dynamic_module, res
 from ...feature_extraction_utils import FeatureExtractionMixin
 from ...image_processing_utils import ImageProcessingMixin
 from ...processing_utils import ProcessorMixin
-from ...tokenization_utils import TOKENIZER_CONFIG_FILE
+from transformers.tokenization_utils import TOKENIZER_CONFIG_FILE
 from ...utils import FEATURE_EXTRACTOR_NAME, PROCESSOR_NAME, logging
 from transformers.utils import cached_file
 from .auto_factory import _LazyAutoMapping
