@@ -410,7 +410,9 @@ class BaseImageProcessorFast(BaseImageProcessor):
             mean=mean,
             std=std,
         )
-        return normalize(image)
+        image = normalize(image)
+        image = ms.tensor(image.transpose(2, 0, 1))
+        return image
 
     @lru_cache(maxsize=10)
     def _fuse_mean_std_and_rescale_factor(
