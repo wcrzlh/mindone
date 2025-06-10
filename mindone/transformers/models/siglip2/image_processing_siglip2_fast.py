@@ -154,7 +154,7 @@ class Siglip2ImageProcessorFast(BaseImageProcessorFast):
                 )
                 side_dict = SizeDict(height=height, width=width)
                 image = image.transpose(1, 2, 0)
-                image = ToPIL()(image.asnumpy())
+                image = ToPIL()(image.asnumpy()).to(ms.uint8)
                 image = self.resize(image=image, size=side_dict, interpolation=interpolation)
 
             image = self.rescale_and_normalize(image, do_rescale, rescale_factor, do_normalize, image_mean, image_std)
