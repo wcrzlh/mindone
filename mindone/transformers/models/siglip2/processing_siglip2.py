@@ -21,7 +21,7 @@ from typing import List, Optional, Union
 from ...feature_extraction_utils import BatchFeature
 from ...image_utils import ImageInput
 from ...processing_utils import ImagesKwargs, ProcessingKwargs, ProcessorMixin, Unpack
-from ...tokenization_utils_base import PreTokenizedInput, TextInput
+from transformers.tokenization_utils_base import PreTokenizedInput, TextInput
 
 
 class Siglip2ImagesKwargs(ImagesKwargs, total=False):
