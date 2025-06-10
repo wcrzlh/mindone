@@ -403,8 +403,8 @@ class BaseImageProcessorFast(BaseImageProcessor):
         Returns:
             `torch.Tensor`: The normalized image.
         """
-        mean = np.array(mean)
-        std = np.array(std)
+        mean = mean.tolist()
+        std = std.tolist()
         normalize = vision.Normalize(
             mean=mean,
             std=std,
