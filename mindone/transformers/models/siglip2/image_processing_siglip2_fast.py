@@ -153,6 +153,7 @@ class Siglip2ImageProcessorFast(BaseImageProcessorFast):
                     max_num_patches=max_num_patches,
                 )
                 side_dict = SizeDict(height=height, width=width)
+                image = image.transpose(1, 2, 0)
                 image = ToPIL()(image.asnumpy())
                 image = self.resize(image=image, size=side_dict, interpolation=interpolation)
 
