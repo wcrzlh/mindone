@@ -156,6 +156,7 @@ class Siglip2ImageProcessorFast(BaseImageProcessorFast):
                 image = image.transpose(1, 2, 0).to(ms.uint8)
                 image = ToPIL()(image.asnumpy())
                 image = self.resize(image=image, size=side_dict, interpolation=interpolation)
+                image = ms.tensor(image).transpose(2, 0, 1)
 
             image = self.rescale_and_normalize(image, do_rescale, rescale_factor, do_normalize, image_mean, image_std)
 
