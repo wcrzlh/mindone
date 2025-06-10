@@ -405,6 +405,7 @@ class BaseImageProcessorFast(BaseImageProcessor):
         """
         mean = mean.tolist()
         std = std.tolist()
+        image = image.transpose(1, 2, 0).to(ms.uint8).asnumpy()
         normalize = vision.Normalize(
             mean=mean,
             std=std,
