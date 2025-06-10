@@ -39,6 +39,7 @@ MODEL_MAPPING_NAMES = OrderedDict(
         ("gpt2", "GPT2Model"),
         ("llama", "LlamaModel"),
         ("mt5", "MT5Model"),
+        ("siglip2", "Siglip2Model"),
         ("t5", "T5Model"),
         ("xlm-roberta", "XLMRobertaModel"),
     ]
@@ -99,6 +100,7 @@ MODEL_FOR_IMAGE_CLASSIFICATION_MAPPING_NAMES = OrderedDict(
         # Model for Image Classification mapping
         ("bit", "BitForImageClassification"),
         ("clip", "CLIPForImageClassification"),
+        ("siglip2", "Siglip2ForImageClassification"),
     ]
 )
 
@@ -245,7 +247,11 @@ MODEL_FOR_TEXT_TO_SPECTROGRAM_MAPPING_NAMES = OrderedDict()
 
 MODEL_FOR_TEXT_TO_WAVEFORM_MAPPING_NAMES = OrderedDict()
 
-MODEL_FOR_ZERO_SHOT_IMAGE_CLASSIFICATION_MAPPING_NAMES = OrderedDict()
+MODEL_FOR_ZERO_SHOT_IMAGE_CLASSIFICATION_MAPPING_NAMES = OrderedDict(
+    [
+        ("siglip2", "Siglip2Model"),
+    ]
+)
 
 MODEL_FOR_BACKBONE_MAPPING_NAMES = OrderedDict()
 
