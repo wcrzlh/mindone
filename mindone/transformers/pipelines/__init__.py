@@ -39,11 +39,12 @@ from .base import (
     infer_framework_load_model,
 )
 from .text_generation import TextGenerationPipeline
+from .zero_shot_image_classification import ZeroShotImageClassificationPipeline
 
 if is_mindspore_available():
     import mindspore as ms
 
-    from ..models.auto.modeling_auto import AutoModelForCausalLM, AutoModelForTokenClassification
+    from ..models.auto.modeling_auto import AutoModelForCausalLM, AutoModelForTokenClassification, AutoModelForZeroShotImageClassification
 
 
 if TYPE_CHECKING:
@@ -68,6 +69,17 @@ SUPPORTED_TASKS = {
         "ms": (AutoModelForCausalLM,) if is_mindspore_available() else (),
         "default": {"model": {"ms": ("openai-community/gpt2", "607a30d"), "tf": ("openai-community/gpt2", "607a30d")}},
         "type": "text",
+    },
+    "zero-shot-image-classification": {
+        "impl": ZeroShotImageClassificationPipeline,
+        "ms": (AutoModelForZeroShotImageClassification,) if is_mindspore_available() else (),
+        "default": {
+            "model": {
+                "pt": ("openai/clip-vit-base-patch32", "3d74acf"),
+                "tf": ("openai/clip-vit-base-patch32", "3d74acf"),
+            }
+        },
+        "type": "multimodal",
     },
 }
 
