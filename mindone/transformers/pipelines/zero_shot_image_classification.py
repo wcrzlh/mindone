@@ -141,7 +141,7 @@ class ZeroShotImageClassificationPipeline(Pipeline):
         if "siglip" in self.model.config.model_type:
             tokenizer_default_kwargs.update(padding="max_length", max_length=64, truncation=True)
         tokenizer_default_kwargs.update(tokenizer_kwargs)
-        text_inputs = self.tokenizer(sequences, return_tensors=self.framework, **tokenizer_default_kwargs)
+        text_inputs = ms.tensor(self.tokenizer(sequences, return_tensors="np", **tokenizer_default_kwargs))
         inputs["text_inputs"] = [text_inputs]
         return inputs
 
