@@ -40,6 +40,8 @@ from ...utils import (
 from transformers.utils import add_start_docstrings
 from .image_processing_siglip2 import get_image_size_for_max_num_patches
 
+from mindspore.dataset.vision import ToPIL
+
 
 logger = logging.get_logger(__name__)
 
@@ -151,7 +153,8 @@ class Siglip2ImageProcessorFast(BaseImageProcessorFast):
                     max_num_patches=max_num_patches,
                 )
                 side_dict = SizeDict(height=height, width=width)
-                image = self.resize(image=image.asnumpy(), size=side_dict, interpolation=interpolation)
+                image = ToPIL()(image.asnumpy())
+                image = self.resize(image=image, size=side_dict, interpolation=interpolation)
 
             image = self.rescale_and_normalize(image, do_rescale, rescale_factor, do_normalize, image_mean, image_std)
 
