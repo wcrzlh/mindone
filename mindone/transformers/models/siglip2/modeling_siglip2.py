@@ -26,6 +26,7 @@ from typing import Any, Optional, Tuple, Union
 import mindspore as ms
 import mindspore.nn as nn
 import mindspore.mint.nn.functional as F
+import torch
 from mindspore import mint, ops, Parameter
 from mindspore.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 from mindspore.ops.operations.nn_ops import FlashAttentionScore
@@ -191,11 +192,19 @@ class Siglip2VisionEmbeddings(nn.Cell):
         for i in range(batch_size):
             # (1, dim, height, width) -> (1, dim, target_height, target_width)
             height, width = spatial_shapes[i]
-            resized_embeddings = F.interpolate(
-                positional_embeddings,
+            # Fixme mint/ops interpolate has precision bugs
+            # resized_embeddings = F.interpolate(
+            #     positional_embeddings,
+            #     size=(int(height), int(width)),
+            #     mode="bilinear",
+            #     align_corners=False,
+            # )
+            resized_embeddings = torch.nn.functional.interpolate(
+                torch.tensor(positional_embeddings.numpy()),
                 size=(int(height), int(width)),
                 mode="bilinear",
                 align_corners=False,
+                antialias=True,
             )
 
             # (1, dim, target_height, target_width) -> (target_height * target_width, dim)
