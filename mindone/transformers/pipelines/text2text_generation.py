@@ -1,7 +1,7 @@
 import enum
 import warnings
 
-from ..tokenization_utils import TruncationStrategy
+from transformers.tokenization_utils import TruncationStrategy
 from transformers.utils import add_end_docstrings, logging
 from ..utils import is_mindspore_available
 from .base import Pipeline, build_pipeline_init_args
