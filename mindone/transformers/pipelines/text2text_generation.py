@@ -7,6 +7,7 @@ from ..utils import is_mindspore_available
 from .base import Pipeline, build_pipeline_init_args
 
 if is_mindspore_available():
+    import mindspore as ms
     from ..models.auto.modeling_auto import MODEL_FOR_SEQ_TO_SEQ_CAUSAL_LM_MAPPING_NAMES
 
 logger = logging.get_logger(__name__)
@@ -126,7 +127,9 @@ class Text2TextGenerationPipeline(Pipeline):
             raise ValueError(
                 f" `args[0]`: {args[0]} have the wrong format. The should be either of type `str` or type `list`"
             )
-        inputs = self.tokenizer(*args, padding=padding, truncation=truncation, return_tensors=self.framework)
+        inputs = self.tokenizer(*args, padding=padding, truncation=truncation, return_tensors="np")
+        for k, v in inputs.items():
+            inputs[k] = ms.tensor(inputs[k])
         # This is produced by tokenizers but is an invalid generate kwargs
         if "token_type_ids" in inputs:
             del inputs["token_type_ids"]
