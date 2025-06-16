@@ -747,7 +747,7 @@ class T5Stack(T5PreTrainedModel):
         if attention_mask is None:
             # required mask seq length can be calculated via length of past cache
             mask_seq_length = past_key_values_length + seq_length
-            attention_mask = mint.ones(batch_size, mask_seq_length)
+            attention_mask = mint.ones((batch_size, mask_seq_length))
 
         if self.config.is_decoder:
             causal_mask = self._update_causal_mask(
