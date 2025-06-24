@@ -76,6 +76,7 @@ SUPPORTED_TASKS = {
         "default": {"model": {"pt": ("google-t5/t5-base", "a9723ea"), "tf": ("google-t5/t5-base", "a9723ea")}},
         "type": "text",
     },
+
 }
 
 NO_FEATURE_EXTRACTOR_TASKS = set()
