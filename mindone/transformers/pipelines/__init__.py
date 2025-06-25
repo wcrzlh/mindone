@@ -40,11 +40,12 @@ from .base import (
 )
 from .text2text_generation import Text2TextGenerationPipeline
 from .text_generation import TextGenerationPipeline
+from .question_answering import QuestionAnsweringArgumentHandler, QuestionAnsweringPipeline
 
 if is_mindspore_available():
     import mindspore as ms
 
-    from ..models.auto.modeling_auto import AutoModelForCausalLM, AutoModelForTokenClassification, AutoModelForSeq2SeqLM
+    from ..models.auto.modeling_auto import AutoModelForCausalLM, AutoModelForTokenClassification, AutoModelForSeq2SeqLM, AutoModelForQuestionAnswering
 
 
 if TYPE_CHECKING:
@@ -76,7 +77,16 @@ SUPPORTED_TASKS = {
         "default": {"model": {"pt": ("google-t5/t5-base", "a9723ea"), "tf": ("google-t5/t5-base", "a9723ea")}},
         "type": "text",
     },
-
+    "question-answering": {
+        "impl": QuestionAnsweringPipeline,
+        "ms": (AutoModelForQuestionAnswering,) if is_mindspore_available() else (),
+        "default": {
+            "model": {
+                "ms": ("distilbert/distilbert-base-cased-distilled-squad", "564e9b5"),
+            },
+        },
+        "type": "text",
+    },
 }
 
 NO_FEATURE_EXTRACTOR_TASKS = set()
