@@ -8,7 +8,7 @@ import numpy as np
 
 from ..data import SquadExample, SquadFeatures, squad_convert_examples_to_features
 from ..modelcard import ModelCard
-from ..tokenization_utils import PreTrainedTokenizer
+from transformers.tokenization_utils import PreTrainedTokenizer
 from ..utils import (
     PaddingStrategy,
     is_mindspore_available,
