@@ -159,7 +159,7 @@ class PipelineIterator:
 
 
 class PipelineChunkIterator(PipelineIterator):
-    def __init__(self, loader, infer, params, loader_batch_size=None):
+    def __init__(self, loader, infer, params, loader_batch_size=None, collate_fn=None):
         """
         Roughly equivalent to
 
@@ -180,7 +180,7 @@ class PipelineChunkIterator(PipelineIterator):
         super().__init__(loader, infer, params)
 
     def __iter__(self):
-        self.iterator = iter(self.loader.batch(batch_size=1).create_dict_iterator())
+        self.iterator = iter(self.loader.batch(batch_size=1, per_batch_map=collate_fn).create_dict_iterator())
         self.subiterator = None
         return self
 
