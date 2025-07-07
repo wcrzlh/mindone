@@ -1,23 +1,61 @@
+import transformers
+from packaging import version
+
 from . import (
+    albert,
     auto,
+    bart,
     bert,
+    big_bird,
+    bigbird_pegasus,
     bit,
     blip_2,
     clap,
     clip,
     dpt,
+    fuyu,
     gemma,
     gemma2,
+    gemma3,
     glm,
+    glpn,
     gpt2,
+    granite,
+    granitemoe,
+    granitemoeshared,
+    hiera,
+    idefics3,
+    ijepa,
+    imagegpt,
+    levit,
     llama,
     llava,
+    megatron_bert,
+    minicpm4,
+    mixtral,
+    mobilebert,
+    paligemma,
+    persimmon,
+    phi,
     phi3,
     qwen2,
+    qwen2_5_omni,
+    qwen2_5_vl,
+    qwen2_audio,
     qwen2_vl,
+    roberta,
+    siglip,
     speecht5,
+    switch_transformers,
     t5,
     umt5,
+    vits,
     wav2vec2,
     xlm_roberta,
 )
+
+if version.parse(transformers.__version__) >= version.parse("4.51.0"):
+    from . import qwen3
+
+if version.parse(transformers.__version__) >= version.parse("4.53.0"):
+    from . import glm4v
