@@ -71,7 +71,7 @@ class PipelineIterator:
     def __iter__(self):
         # modification
         # self.iterator = iter(self.loader)
-        self.iterator = iter(self.loader.batch(batch_size=1, per_batch_map=self.collate_fn).create_dict_iterator())
+        self.iterator = iter(self.loader)
         return self
 
     def loader_batch_item(self):
@@ -180,7 +180,7 @@ class PipelineChunkIterator(PipelineIterator):
         super().__init__(loader, infer, params)
 
     def __iter__(self):
-        self.iterator = iter(self.loader.batch(batch_size=1, per_batch_map=collate_fn).create_dict_iterator())
+        self.iterator = iter(self.loader)
         self.subiterator = None
         return self
 

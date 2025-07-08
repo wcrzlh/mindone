@@ -499,13 +499,14 @@ class QuestionAnsweringPipeline(ChunkPipeline):
             yield {"example": example, "is_last": is_last, **fw_args, **others}
 
     def _forward(self, inputs):
+        inputs = inputs[0]
         example = inputs["example"]
         model_inputs = {k: inputs[k] for k in self.tokenizer.model_input_names}
         # `XXXForSequenceClassification` models should not use `use_cache=True` even if it's supported
-        model_forward = self.model.construct
-        if "use_cache" in inspect.signature(model_forward).parameters.keys():
-            model_inputs["use_cache"] = False
-        output = self.model(**model_inputs)
+        # model_forward = self.model.construct
+        # if "use_cache" in inspect.signature(model_forward).parameters.keys():
+        #     model_inputs["use_cache"] = False
+        output = self.model(**model_inputs, use_cache=False)
         if isinstance(output, dict):
             return {"start": output["start_logits"], "end": output["end_logits"], "example": example, **inputs}
         else:
