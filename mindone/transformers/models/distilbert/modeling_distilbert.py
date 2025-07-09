@@ -86,9 +86,7 @@ class Embeddings(nn.Cell):
 
         self.LayerNorm = mint.nn.LayerNorm(config.dim, eps=1e-12)
         self.dropout = mint.nn.Dropout(config.dropout)
-        self.register_buffer(
-            "position_ids", mint.arange(config.max_position_embeddings).broadcast_to((1, -1)), persistent=False
-        )
+        self.position_ids = mint.arange(config.max_position_embeddings).broadcast_to((1, -1))
 
     def construct(self, input_ids: ms.tensor, input_embeds: Optional[ms.tensor] = None) -> ms.tensor:
         """
