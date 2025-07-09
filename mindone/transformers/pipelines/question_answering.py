@@ -506,7 +506,7 @@ class QuestionAnsweringPipeline(ChunkPipeline):
         # model_forward = self.model.construct
         # if "use_cache" in inspect.signature(model_forward).parameters.keys():
         #     model_inputs["use_cache"] = False
-        output = self.model(**model_inputs, use_cache=False)
+        output = self.model(**model_inputs)
         if isinstance(output, dict):
             return {"start": output["start_logits"], "end": output["end_logits"], "example": example, **inputs}
         else:
