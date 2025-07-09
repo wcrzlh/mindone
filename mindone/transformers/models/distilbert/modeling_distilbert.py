@@ -103,7 +103,7 @@ class Embeddings(nn.Cell):
         if input_ids is not None:
             input_embeds = self.word_embeddings(input_ids)  # (bs, max_seq_length, dim)
 
-        seq_length = input_embeds.size(1)
+        seq_length = input_embeds.shape[1]
 
         # Setting the position-ids to the registered buffer in constructor, it helps
         # when tracing the model without passing position-ids, solves
@@ -767,7 +767,7 @@ class DistilBertForMaskedLM(DistilBertPreTrainedModel):
 
         mlm_loss = None
         if labels is not None:
-            mlm_loss = self.mlm_loss_fct(prediction_logits.view(-1, prediction_logits.size(-1)), labels.view(-1))
+            mlm_loss = self.mlm_loss_fct(prediction_logits.view(-1, prediction_logits.shape[-1]), labels.view(-1))
 
         if not return_dict:
             output = (prediction_logits,) + dlbrt_output[1:]
@@ -994,7 +994,7 @@ class DistilBertForQuestionAnswering(DistilBertPreTrainedModel):
             if len(end_positions.shape) > 1:
                 end_positions = end_positions.squeeze(-1)
             # sometimes the start/end positions are outside our model inputs, we ignore these terms
-            ignored_index = start_logits.size(1)
+            ignored_index = start_logits.shape[1]
             start_positions = start_positions.clamp(0, ignored_index)
             end_positions = end_positions.clamp(0, ignored_index)
 
@@ -1196,10 +1196,10 @@ class DistilBertForMultipleChoice(DistilBertPreTrainedModel):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
         num_choices = input_ids.shape[1] if input_ids is not None else inputs_embeds.shape[1]
 
-        input_ids = input_ids.view(-1, input_ids.size(-1)) if input_ids is not None else None
-        attention_mask = attention_mask.view(-1, attention_mask.size(-1)) if attention_mask is not None else None
+        input_ids = input_ids.view(-1, input_ids.shape[-1]) if input_ids is not None else None
+        attention_mask = attention_mask.view(-1, attention_mask.shape[-1]) if attention_mask is not None else None
         inputs_embeds = (
-            inputs_embeds.view(-1, inputs_embeds.size(-2), inputs_embeds.size(-1))
+            inputs_embeds.view(-1, inputs_embeds.shape[-2], inputs_embeds.shape[-1])
             if inputs_embeds is not None
             else None
         )
