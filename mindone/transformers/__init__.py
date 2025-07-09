@@ -100,6 +100,15 @@ from .models.deberta_v2 import (
     DebertaV2Model,
     DebertaV2PreTrainedModel,
 )
+from .models.distilbert import (
+    DistilBertModel,
+    DistilBertForMaskedLM,
+    DistilBertForQuestionAnswering,
+    DistilBertForSequenceClassification,
+    DistilBertForTokenClassification,
+    DistilBertForMultipleChoice,
+    DistilBertPreTrainedModel,
+)
 from .models.dpt import DPTForDepthEstimation
 from .models.gemma import (
     GemmaForCausalLM,

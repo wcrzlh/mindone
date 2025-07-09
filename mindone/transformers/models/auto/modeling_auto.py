@@ -296,6 +296,7 @@ MODEL_FOR_QUESTION_ANSWERING_MAPPING_NAMES = OrderedDict(
         ("bart", "BartForQuestionAnswering"),
         ("bert", "BertForQuestionAnswering"),
         ("deberta-v2", "DebertaV2ForQuestionAnswering"),
+        ("distilbert", "DistilBertForQuestionAnswering"),
         ("llama", "LlamaForQuestionAnswering"),
         ("mobilebert", "MobileBertForQuestionAnswering"),
         ("qwen2", "Qwen2ForQuestionAnswering"),
