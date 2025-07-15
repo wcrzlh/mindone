@@ -55,13 +55,14 @@ from .base import (
     get_default_model_and_revision,
     infer_framework_load_model,
 )
+from .zero_shot_image_classification import ZeroShotImageClassificationPipeline
 from .text2text_generation import Text2TextGenerationPipeline
 from .text_generation import TextGenerationPipeline
 
 if is_mindspore_available():
     import mindspore as ms
 
-    from ..models.auto.modeling_auto import AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoModelForTokenClassification
+    from ..models.auto.modeling_auto import AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoModelForTokenClassification, AutoModelForZeroShotImageClassification
 
 
 if TYPE_CHECKING:
@@ -92,6 +93,16 @@ SUPPORTED_TASKS = {
         "ms": (AutoModelForSeq2SeqLM,) if is_mindspore_available() else (),
         "default": {"model": {"ms": ("google-t5/t5-base", "a9723ea")}},
         "type": "text",
+    },
+    "zero-shot-image-classification": {
+        "impl": ZeroShotImageClassificationPipeline,
+        "ms": (AutoModelForZeroShotImageClassification,) if is_mindspore_available() else (),
+        "default": {
+            "model": {
+                "ms": ("openai/clip-vit-base-patch32", "3d74acf"),
+            }
+        },
+        "type": "multimodal",
     },
 }
 
