@@ -186,7 +186,7 @@ class SiglipImageProcessor(BaseImageProcessor):
         if not valid_images(images):
             raise ValueError(
                 "Invalid image type. Must be of type PIL.Image.Image, numpy.ndarray, "
-                "torch.Tensor, tf.Tensor or jax.ndarray."
+                "mindspore.tensor"
             )
         validate_preprocess_arguments(
             do_rescale=do_rescale,

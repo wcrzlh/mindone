@@ -20,7 +20,7 @@ from ...image_utils import (
     IMAGENET_STANDARD_STD,
     PILImageResampling,
 )
-from ...utils import add_start_docstrings
+from transformers.utils import add_start_docstrings
 
 
 @add_start_docstrings(
