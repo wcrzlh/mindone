@@ -1,20 +1,3 @@
-# coding=utf-8
-# Copyright 2018 The HuggingFace Inc. team.
-#
-# This code is adapted from https://github.com/huggingface/transformers
-# with modifications to run transformers on mindspore.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 import collections
 import copy
 import csv
@@ -794,7 +777,7 @@ def build_pipeline_init_args(
         device (`int`, *optional*, defaults to -1):
             Device ordinal for CPU/GPU supports. Setting this to -1 will leverage CPU, a positive will run the model on
             the associated CUDA device id. You can pass native `torch.device` or a `str` too
-        torch_dtype (`str` or `torch.dtype`, *optional*):
+        mindspore_dtype (`str` or `torch.dtype`, *optional*):
             Sent directly as `model_kwargs` (just a simpler shortcut) to use the available precision for this model
             (`torch.float16`, `torch.bfloat16`, ... or `"auto"`)"""
     if supports_binary_output:
@@ -1076,7 +1059,7 @@ class Pipeline(_ScikitCompat, PushToHubMixin):
         return self(X)
 
     @property
-    def torch_dtype(self) -> Optional["ms.dtype"]:
+    def mindspore_dtype(self) -> Optional["ms.dtype"]:
         """
         Torch dtype of the model (if it's Pytorch model), `None` otherwise.
         """
