@@ -15,3 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from .modeling_siglip import *
+from .image_processing_siglip import *
+from .image_processing_siglip_fast import *
+from .processing_siglip import *

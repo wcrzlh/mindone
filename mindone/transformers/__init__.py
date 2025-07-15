@@ -323,6 +323,9 @@ from .models.siglip import (
     SiglipPreTrainedModel,
     SiglipTextModel,
     SiglipVisionModel,
+    SiglipProcessor,
+    SiglipImageProcessor,
+    SiglipImageProcessorFast,
 )
 from .models.speecht5 import (
     SpeechT5ForSpeechToSpeech,
