@@ -147,17 +147,17 @@ class MinLengthLogitsProcessor(LogitsProcessor):
         self, input_ids: Union[ms.Tensor, np.ndarray], scores: Union[ms.Tensor, np.ndarray]
     ) -> Union[ms.Tensor, np.ndarray]:
         if isinstance(scores, ms.Tensor):
-            vocab_tensor = ops.arange(0, scores.shape[-1])
+            vocab_tensor = mint.arange(0, scores.shape[-1])
             eos_token_mask = mnp.isin(vocab_tensor, self.eos_token_id)
             scores_processed = scores[:]
             if input_ids.shape[-1] < self.min_length:
-                scores_processed = ops.where(eos_token_mask, -INF, scores)
+                scores_processed = mint.where(eos_token_mask, -INF, scores)
         elif isinstance(scores, np.ndarray):
             vocab_tensor = np.arange(0, scores.shape[-1])
             eos_token_mask = np.isin(vocab_tensor, self.eos_token_id)
             scores_processed = scores[:]
             if input_ids.shape[-1] < self.min_length:
-                scores_processed = ops.where(eos_token_mask, -INF, scores)
+                scores_processed = mint.where(eos_token_mask, -INF, scores)
         else:
             raise NotImplementedError
 
@@ -209,10 +209,10 @@ class MinNewTokensLengthLogitsProcessor(LogitsProcessor):
         if isinstance(scores, ms.Tensor):
             new_tokens_length = input_ids.shape[-1] - self.prompt_length_to_skip
             scores_processed = scores[:]
-            vocab_tensor = ops.arange(0, scores.shape[-1])
+            vocab_tensor = mint.arange(0, scores.shape[-1])
             eos_token_mask = mnp.isin(vocab_tensor, self.eos_token_id)
             if new_tokens_length < self.min_new_tokens:
-                scores_processed = ops.where(eos_token_mask, -INF, scores)
+                scores_processed = mint.where(eos_token_mask, -INF, scores)
         elif isinstance(scores, np.ndarray):
             new_tokens_length = input_ids.shape[-1] - self.prompt_length_to_skip
             scores_processed = scores[:]
@@ -1268,7 +1268,7 @@ class PrefixConstrainedLogitsProcessor(LogitsProcessor):
     ) -> Union[ms.Tensor, np.ndarray]:
         if isinstance(input_ids, ms.Tensor):
             assert isinstance(scores, ms.Tensor)
-            mask = ops.full_like(scores, -INF)
+            mask = mint.full_like(scores, -INF)
             for batch_id, beam_sent in enumerate(input_ids.view(-1, self._num_beams, input_ids.shape[-1])):
                 for beam_id, sent in enumerate(beam_sent):
                     prefix_allowed_tokens = self._prefix_allowed_tokens_fn(batch_id, sent)
@@ -1676,7 +1676,7 @@ class LogitNormalization(LogitsProcessor):
         self, input_ids: Union[ms.Tensor, np.ndarray], scores: Union[ms.Tensor, np.ndarray]
     ) -> Union[ms.Tensor, np.ndarray]:
         if isinstance(scores, ms.Tensor):
-            scores_processed = ops.log_softmax(scores.to(ms.float32), axis=-1).to(scores.dtype)
+            scores_processed = mint.nn.functional.log_softmax(scores.to(ms.float32), dim=-1).to(scores.dtype)
         elif isinstance(scores, np.ndarray):
             exp_scores = np.exp(scores)
             scores_processed = np.log(exp_scores / exp_scores.sum(-1))

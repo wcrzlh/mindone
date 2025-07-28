@@ -155,14 +155,14 @@ def find_pruneable_heads_and_indices(
         `Tuple[Set[int], ms.Tensor]`: A tuple with the indices of heads to prune taking `already_pruned_heads`
         into account and the indices of rows/columns to keep in the layer weight.
     """
-    mask = ops.ones((n_heads, head_size))
+    mask = mint.ones((n_heads, head_size))
     heads = set(heads) - already_pruned_heads  # Convert to set and remove already pruned heads
     for head in heads:
         # Compute how many pruned heads are before the head and move the index accordingly
         head = head - sum(1 if h < head else 0 for h in already_pruned_heads)
         mask[head] = 0
     mask = mask.view(-1).eq(1)
-    index = ops.arange(len(mask))[mask].long()
+    index = mint.arange(len(mask))[mask].long()
     return heads, index
 
 
@@ -236,7 +236,7 @@ def apply_chunking_to_forward(
         # apply forward fn to every tuple
         output_chunks = tuple(forward_fn(*input_tensors_chunk) for input_tensors_chunk in zip(*input_tensors_chunks))
         # concatenate output at same dimension
-        return ops.cat(output_chunks, dim=chunk_dim)
+        return mint.cat(output_chunks, dim=chunk_dim)
 
     return forward_fn(*input_tensors)
 

@@ -101,17 +101,17 @@ def update(
     if dynamic:
         if len(k_out) == 0:  # first time, prefill the cache
             return key_states, value_states
-        k_out = ops.cat((k_out, key_states), axis=-2)
-        v_out = ops.cat((v_out, value_states), axis=-2)
+        k_out = mint.cat((k_out, key_states), dim=-2)
+        v_out = mint.cat((v_out, value_states), dim=-2)
         return k_out, v_out
 
-    k_out = ops.select(
-        (ops.arange(k_out.shape[2]) == cache_position)[None, None, :, None],
+    k_out = mint.select(
+        (mint.arange(k_out.shape[2]) == cache_position)[None, None, :, None],
         key_states,
         k_out,
     )
-    v_out = ops.select(
-        (ops.arange(v_out.shape[2]) == cache_position)[None, None, :, None],
+    v_out = mint.select(
+        (mint.arange(v_out.shape[2]) == cache_position)[None, None, :, None],
         value_states,
         v_out,
     )
@@ -140,8 +140,8 @@ def reset(past_key_values):
     """Resets the cache values while preserving the objects"""
     for layer_idx in range(len(past_key_values)):
         # In-place ops prevent breaking the static address
-        past_key_values[layer_idx][0] = ops.zeros_like(past_key_values[layer_idx][0])  # key
-        past_key_values[layer_idx][1] = ops.zeros_like(past_key_values[layer_idx][1])  # value
+        past_key_values[layer_idx][0] = mint.zeros_like(past_key_values[layer_idx][0])  # key
+        past_key_values[layer_idx][1] = mint.zeros_like(past_key_values[layer_idx][1])  # value
 
     return past_key_values
 
@@ -508,8 +508,8 @@ class DynamicCache(Cache):
             self.key_cache[layer_idx] = key_states
             self.value_cache[layer_idx] = value_states
         else:
-            self.key_cache[layer_idx] = ops.cat([self.key_cache[layer_idx], key_states], axis=-2)
-            self.value_cache[layer_idx] = ops.cat([self.value_cache[layer_idx], value_states], axis=-2)
+            self.key_cache[layer_idx] = mint.cat([self.key_cache[layer_idx], key_states], dim=-2)
+            self.value_cache[layer_idx] = mint.cat([self.value_cache[layer_idx], value_states], dim=-2)
 
         return self.key_cache[layer_idx], self.value_cache[layer_idx]
 
@@ -576,16 +576,16 @@ class DynamicCache(Cache):
         `generation.utils`"""
         cache = cls()
         for idx in range(len(splits[0])):
-            layer_keys = ops.cat([current.key_cache[idx] for current in splits], dim=0)
-            layer_values = ops.cat([current.value_cache[idx] for current in splits], dim=0)
+            layer_keys = mint.cat([current.key_cache[idx] for current in splits], dim=0)
+            layer_values = mint.cat([current.value_cache[idx] for current in splits], dim=0)
             cache.update(layer_keys, layer_values, idx)
         return cache
 
     def batch_repeat_interleave(self, repeats: int):
         """Repeat the cache `repeats` times in the batch dimension. Used in contrastive search."""
         for layer_idx in range(len(self)):
-            self.key_cache[layer_idx] = ops.repeat_interleave(self.key_cache[layer_idx], repeats, dim=0)
-            self.value_cache[layer_idx] = ops.repeat_interleave(self.value_cache[layer_idx], repeats, dim=0)
+            self.key_cache[layer_idx] = mint.repeat_interleave(self.key_cache[layer_idx], repeats, dim=0)
+            self.value_cache[layer_idx] = mint.repeat_interleave(self.value_cache[layer_idx], repeats, dim=0)
 
     def batch_select_indices(self, indices: ms.Tensor):
         """Only keep the `indices` in the batch dimension of the cache. Used in contrastive search."""
@@ -705,7 +705,7 @@ class SlidingWindowCache(StaticCache):
             # into consideration when building kv cache instead of just throwing away tokens outside of the window
             return key_states, value_states
 
-        slicing = ops.ones(self.max_cache_len, dtype=ms.int32).cumsum(0)
+        slicing = mint.ones(self.max_cache_len, dtype=ms.int32).cumsum(0)
         cache_position = cache_position.clamp(0, self.max_cache_len - 1)
         to_shift = cache_position >= self.max_cache_len - 1
         indices = (slicing + to_shift[-1].int() - 1) % self.max_cache_len
@@ -882,12 +882,12 @@ class EncoderDecoderCache(Cache):
         self_attention_cache = DynamicCache()
         cross_attention_cache = DynamicCache()
         for idx in range(len(splits[0])):
-            layer_keys = ops.cat([current.self_attention_cache.key_cache[idx] for current in splits], axis=0)
-            layer_values = ops.cat([current.self_attention_cache.value_cache[idx] for current in splits], axis=0)
+            layer_keys = mint.cat([current.self_attention_cache.key_cache[idx] for current in splits], dim=0)
+            layer_values = mint.cat([current.self_attention_cache.value_cache[idx] for current in splits], dim=0)
             self_attention_cache.update(layer_keys, layer_values, idx)
 
-            layer_keys = ops.cat([current.cross_attention_cache.key_cache[idx] for current in splits], axis=0)
-            layer_values = ops.cat([current.cross_attention_cache.value_cache[idx] for current in splits], axis=0)
+            layer_keys = mint.cat([current.cross_attention_cache.key_cache[idx] for current in splits], dim=0)
+            layer_values = mint.cat([current.cross_attention_cache.value_cache[idx] for current in splits], dim=0)
             cross_attention_cache.update(layer_keys, layer_values, idx)
         return cls(self_attention_cache, cross_attention_cache)
 
@@ -995,8 +995,8 @@ class HybridCache(Cache):
             # Note: `mark_static_address` is used to tag the cache as an fixed data pointer, preventing cuda graph
             # breaks when updating the cache.
             cache_shape = global_cache_shape if not self.is_sliding[i] else sliding_cache_shape
-            new_layer_key_cache = ops.zeros(cache_shape, dtype=self.dtype)
-            new_layer_value_cache = ops.zeros(cache_shape, dtype=self.dtype)
+            new_layer_key_cache = mint.zeros(cache_shape, dtype=self.dtype)
+            new_layer_value_cache = mint.zeros(cache_shape, dtype=self.dtype)
             self.key_cache.append(new_layer_key_cache)
             self.value_cache.append(new_layer_value_cache)
 
@@ -1011,7 +1011,7 @@ class HybridCache(Cache):
             # into consideration when building kv cache instead of just throwing away tokens outside of the window
             return key_states, value_states
 
-        slicing = ops.ones(max_cache_len, dtype=ms.int32).cumsum(0)
+        slicing = mint.ones(max_cache_len, dtype=ms.int32).cumsum(0)
         cache_position = cache_position.clamp(0, max_cache_len - 1)
         to_shift = cache_position >= max_cache_len - 1
         indices = (slicing + to_shift[-1].int() - 1) % max_cache_len

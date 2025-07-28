@@ -530,7 +530,7 @@ class StoppingCriteriaList(list):
         if isinstance(input_ids, ms.Tensor):
             is_done = ops.full((input_ids.shape[0],), False, dtype=ms.bool_)
             for criteria in self:
-                is_done = ops.logical_or(is_done, criteria(input_ids, scores, **kwargs))
+                is_done = mint.logical_or(is_done, criteria(input_ids, scores, **kwargs))
         elif isinstance(input_ids, np.ndarray):
             is_done = np.full((input_ids.shape[0],), False, dtype=np.bool_)
             for criteria in self:

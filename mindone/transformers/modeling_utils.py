@@ -432,22 +432,22 @@ class ModuleUtilsMixin:
     @staticmethod
     def create_extended_attention_mask_for_decoder(input_shape, attention_mask):
         batch_size, seq_length = input_shape
-        seq_ids = ops.arange(seq_length)
+        seq_ids = mint.arange(seq_length)
         causal_mask = seq_ids[None, None, :].tile((batch_size, seq_length, 1)) <= seq_ids[None, :, None]
         causal_mask = causal_mask.to(attention_mask.dtype)
 
         if causal_mask.shape[1] < attention_mask.shape[1]:
             prefix_seq_len = attention_mask.shape[1] - causal_mask.shape[1]
-            causal_mask = ops.cat(
+            causal_mask = mint.cat(
                 [
-                    ops.ones((batch_size, seq_length, prefix_seq_len), dtype=causal_mask.dtype),
+                    mint.ones((batch_size, seq_length, prefix_seq_len), dtype=causal_mask.dtype),
                     causal_mask,
                 ],
-                axis=-1,
+                dim=-1,
             )
 
         # extended_attention_mask = causal_mask[:, None, :, :] * attention_mask[:, None, None, :]
-        extended_attention_mask = ops.mul(causal_mask.unsqueeze(1), attention_mask.unsqueeze(1).unsqueeze(1))
+        extended_attention_mask = mint.mul(causal_mask.unsqueeze(1), attention_mask.unsqueeze(1).unsqueeze(1))
         return extended_attention_mask
 
     def get_extended_attention_mask(
@@ -3132,7 +3132,7 @@ class SequenceSummary(nn.Cell):
             output = hidden_states.mean(axis=1)
         elif self.summary_type == "cls_index":
             if cls_index is None:
-                cls_index = ops.full_like(
+                cls_index = mint.full_like(
                     hidden_states[..., :1, :],
                     hidden_states.shape[-2] - 1,
                     dtype=ms.int64,
