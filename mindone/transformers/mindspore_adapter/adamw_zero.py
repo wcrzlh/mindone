@@ -1,7 +1,7 @@
 import numpy as np
 
 import mindspore as ms
-from mindspore import Parameter, ParameterTuple, Tensor, context, nn, ops
+from mindspore import Parameter, ParameterTuple, Tensor, context, mint, nn, ops
 from mindspore.common.initializer import initializer
 from mindspore.communication.management import GlobalComm, get_group_size, get_rank
 from mindspore.ops import functional as F
@@ -30,7 +30,7 @@ def _update_params_with_all_gather(param, update, all_gather):
 def split_params(shard_id, shard_size, param):
     if param.shape[0] % shard_size == 0:
         # param = ops.Split(0, shard_size)(param)[shard_id]
-        param = ops.chunk(param, shard_size, axis=0)[shard_id]
+        param = mint.chunk(param, shard_size, dim=0)[shard_id]
     return param
 
 

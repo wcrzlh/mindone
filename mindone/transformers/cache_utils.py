@@ -128,7 +128,7 @@ def get_seq_length(past_key_values, layer_idx: Optional[int] = 0, dynamic=False)
         if past_key_values is None:
             return 0
         return past_key_values[layer_idx][0].shape[-2]
-    return (past_key_values[layer_idx][0][0, 0].any(axis=-1)).sum()
+    return (past_key_values[layer_idx][0][0, 0].any(dim=-1)).sum()
 
 
 def get_max_length(past_key_values) -> Optional[int]:
@@ -312,7 +312,7 @@ class StaticCache(Cache):
         # Occupied cache == any slot in the 3rd dim (sequence length) holds a non-zero value. To save on compute, let's
         # limit the check to the first batch member and head dimension.
         # TODO: deprecate this function in favor of `cache_position`
-        return (self.key_cache[layer_idx][0, 0].any(axis=-1)).sum()
+        return (self.key_cache[layer_idx][0, 0].any(dim=-1)).sum()
 
     def get_max_length(self) -> Optional[int]:
         """Returns the maximum sequence length of the cached states."""

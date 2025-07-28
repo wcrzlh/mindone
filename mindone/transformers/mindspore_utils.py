@@ -23,7 +23,7 @@ import mindspore as ms
 from mindspore import mint, nn, ops
 from mindspore.common.initializer import Normal, Zero, initializer
 
-ALL_LAYERNORM_LAYERS = [nn.LayerNorm]
+ALL_LAYERNORM_LAYERS = [nn.LayerNorm, mint.nn.LayerNorm]
 
 logger = logging.get_logger(__name__)
 
@@ -51,6 +51,38 @@ def prune_linear_layer(layer: nn.Dense, index: ms.Tensor, dim: int = 0) -> nn.De
     new_size = list(layer.weight.shape)
     new_size[dim] = len(index)
     new_layer = nn.Dense(new_size[1], new_size[0], has_bias=layer.bias is not None)
+    new_layer.weight.requires_grad = False
+    ops.assign(new_layer.weight, w)
+    new_layer.weight.requires_grad = True
+    if layer.bias is not None:
+        new_layer.bias.requires_grad = False
+        ops.assign(new_layer.bias, b)
+        new_layer.bias.requires_grad = True
+    return new_layer
+
+def prune_mint_linear_layer(layer: mint.nn.Linear, index: ms.Tensor, dim: int = 0) -> mint.nn.Linear:
+    """
+    Prune a linear layer to keep only entries in index.
+
+    Used to remove heads.
+
+    Args:
+        layer (`mindspore.nn.Dense`): The layer to prune.
+        index (`mindspore.Tensor`): The indices to keep in the layer.
+        dim (`int`, *optional*, defaults to 0): The dimension on which to keep the indices.
+
+    Returns:
+        `mindspore.mint.nn.Linear`: The pruned layer as a new layer with `requires_grad=True`.
+    """
+    w = layer.weight.index_select(dim, index).clone()
+    if layer.bias is not None:
+        if dim == 1:
+            b = layer.bias.clone()
+        else:
+            b = layer.bias[index].clone()
+    new_size = list(layer.weight.shape)
+    new_size[dim] = len(index)
+    new_layer = mint.nn.Linear(new_size[1], new_size[0], bias=layer.bias is not None)
     new_layer.weight.requires_grad = False
     ops.assign(new_layer.weight, w)
     new_layer.weight.requires_grad = True
@@ -133,6 +165,8 @@ def prune_layer(layer: Union[nn.Dense, Conv1D], index: ms.Tensor, dim: Optional[
     """
     if isinstance(layer, nn.Dense):
         return prune_linear_layer(layer, index, dim=0 if dim is None else dim)
+    elif isinstance(layer, mint.nn.Linear):
+        return prune_mint_linear_layer(layer, index, dim=0 if dim is None else dim)
     elif isinstance(layer, Conv1D):
         return prune_conv1d_layer(layer, index, dim=1 if dim is None else dim)
     else:

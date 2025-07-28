@@ -1,5 +1,5 @@
 import mindspore as ms
-from mindspore import nn
+from mindspore import mint, nn
 from mindspore.train.amp import _auto_black_list
 
 HALF_UNFRIENDLY_LAYERS = [
@@ -19,6 +19,22 @@ HALF_UNFRIENDLY_LAYERS = [
     nn.AvgPool2d,
     nn.AvgPool3d,
     nn.CrossEntropyLoss,
+    mint.nn.BatchNorm1d,
+    mint.nn.BatchNorm2d,
+    mint.nn.BatchNorm3d,
+    mint.nn.LayerNorm,
+    mint.nn.GroupNorm,
+    mint.nn.SiLU,
+    mint.nn.GELU,
+    mint.nn.Softmax,
+    mint.nn.Sigmoid,
+    mint.nn.MaxPool1d,
+    mint.nn.MaxPool2d,
+    mint.nn.MaxPool3d,
+    mint.nn.AvgPool1d,
+    mint.nn.AvgPool2d,
+    mint.nn.AvgPool3d,
+    mint.nn.CrossEntropyLoss,
 ]
 
 

@@ -1388,7 +1388,7 @@ class PreTrainedModel(nn.Cell, ModuleUtilsMixin, GenerationMixin, PushToHubMixin
         self, old_embeddings, new_embeddings, old_embedding_dim, old_num_tokens, added_num_tokens
     ):
         old_embeddings_weight = old_embeddings.weight.to(ms.float32)
-        mean_embeddings = mint.mean(old_embeddings_weight, axis=0)
+        mean_embeddings = mint.mean(old_embeddings_weight, dim=0)
 
         # Check if the covariance is positive definite.
         is_covariance_psd = False
@@ -1425,8 +1425,8 @@ class PreTrainedModel(nn.Cell, ModuleUtilsMixin, GenerationMixin, PushToHubMixin
             old_lm_head.weight = old_lm_head.weight.t()
 
     def _init_added_lm_head_bias_with_mean(self, old_lm_head, new_lm_head, added_num_tokens):
-        bias_mean = mint.mean(old_lm_head.bias.data, axis=0, dtype=ms.float32)
-        bias_std = mint.std(old_lm_head.bias.data, axis=0).to(ms.float32)
+        bias_mean = mint.mean(old_lm_head.bias.data, dim=0, dtype=ms.float32)
+        bias_std = mint.std(old_lm_head.bias.data, dim=0).to(ms.float32)
         new_lm_head.bias.data[-1 * added_num_tokens :].normal_(mean=bias_mean, std=1e-9 * bias_std)
 
     def _copy_lm_head_original_to_resized(
@@ -3129,7 +3129,7 @@ class SequenceSummary(nn.Cell):
         elif self.summary_type == "first":
             output = hidden_states[:, 0]
         elif self.summary_type == "mean":
-            output = hidden_states.mean(axis=1)
+            output = hidden_states.mean(dim=1)
         elif self.summary_type == "cls_index":
             if cls_index is None:
                 cls_index = mint.full_like(

@@ -104,15 +104,15 @@ def validate_fast_preprocess_arguments(
         raise ValueError("Only channel first data format is currently supported.")
 
 
-def safe_squeeze(tensor: "ms.Tensor", axis: Optional[int] = None) -> "ms.Tensor":
+def safe_squeeze(tensor: "ms.Tensor", dim: Optional[int] = None) -> "ms.Tensor":
     """
     Squeezes a tensor, but only if the axis specified has dim 1.
     """
-    if axis is None:
+    if dim is None:
         return tensor.squeeze()
 
     try:
-        return tensor.squeeze(axis=axis)
+        return tensor.squeeze(dim=dim)
     except ValueError:
         return tensor
 

@@ -8,7 +8,7 @@ import numpy as np
 from transformers import BatchEncoding, logging
 
 import mindspore as ms
-from mindspore import Tensor, nn, ops
+from mindspore import Tensor, mint, nn, ops
 
 from .mindspore_adapter import Sampler
 
@@ -35,17 +35,17 @@ class LabelSmoother:
             logits = logits[..., :-1, :]
             labels = labels[..., 1:]
 
-        log_probs = -ops.log_softmax(logits.to(ms.float32), axis=-1).to(logits.dtype)
+        log_probs = -mint.nn.functional.log_softmax(logits.to(ms.float32), dim=-1).to(logits.dtype)
         if labels.ndim == log_probs.ndim - 1:
             labels = labels.unsqueeze(-1)
 
         padding_mask = labels.equal(self.ignore_index)
         # In case the ignore_index is -100, the gather will fail, so we replace labels by 0. The padding_mask
         # will ignore them in any case.
-        labels = ops.clamp(labels, min=0)
+        labels = mint.clamp(labels, min=0)
         nll_loss = log_probs.gather_elements(dim=-1, index=labels)
         # works for fp16 input tensor too, by internally upcasting it to fp32
-        smoothed_loss = log_probs.sum(axis=-1, keepdims=True, dtype=ms.float32)
+        smoothed_loss = log_probs.sum(dim=-1, keepdim=True, dtype=ms.float32)
 
         nll_loss = nll_loss.masked_fill(padding_mask, 0.0)
         smoothed_loss = smoothed_loss.masked_fill(padding_mask, 0.0)

@@ -414,7 +414,7 @@ class TopPLogitsWarper(LogitsWarper):
             filter_value = self.filter_value if self.filter_value is not None else dtype_to_min(scores.dtype)
 
             sorted_logits, sorted_indices = mint.sort(scores, descending=False)
-            cumulative_probs = sorted_logits.softmax(axis=-1).cumsum(dim=-1)
+            cumulative_probs = sorted_logits.softmax(dim=-1).cumsum(dim=-1)
 
             # Remove tokens with cumulative top_p above the threshold (token with 0 are kept)
             sorted_indices_to_remove = cumulative_probs <= (1 - self.top_p)
@@ -2550,7 +2550,7 @@ class SynthIDTextWatermarkLogitsProcessor(LogitsProcessor):
 
         for i in range(depth):
             g_values_at_depth = g_values[:, :, i]
-            g_mass_at_depth = (g_values_at_depth * probs).sum(axis=1, keepdims=True)
+            g_mass_at_depth = (g_values_at_depth * probs).sum(dim=1, keepdim=True)
             probs = probs * (1 + g_values_at_depth - g_mass_at_depth)
 
         log_probs = mint.log(probs)

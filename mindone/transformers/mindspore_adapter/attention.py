@@ -1,7 +1,7 @@
 import numpy as np
 
 import mindspore as ms
-from mindspore import nn, ops
+from mindspore import mint, nn, ops
 from mindspore.ops.operations.nn_ops import FlashAttentionScore as _FlashAttention
 
 DTYPE_FP16_MIN = float(np.finfo(np.float16).min)
@@ -19,15 +19,15 @@ def scaled_dot_product_attention(query, key, value, attn_mask=None, dtype=None):
             attn_mask = attn_mask.masked_fill((1 - attn_mask).to(ms.bool_), DTYPE_FP16_MIN)
         attn_mask = attn_mask.to(query.dtype)
 
-        attn_weight = ops.softmax(
-            ops.matmul(query, key.swapaxes(-2, -1)) / (query.shape[-1] ** 0.5) + attn_mask, axis=-1, dtype=ms.float32
+        attn_weight = mint.softmax(
+            mint.matmul(query, key.swapaxes(-2, -1)) / (query.shape[-1] ** 0.5) + attn_mask, dim=-1, dtype=ms.float32
         ).astype(query.dtype)
     else:
-        attn_weight = ops.softmax(
-            ops.matmul(query, key.swapaxes(-2, -1)) / (query.shape[-1] ** 0.5), axis=-1, dtype=ms.float32
+        attn_weight = mint.softmax(
+            mint.matmul(query, key.swapaxes(-2, -1)) / (query.shape[-1] ** 0.5), dim=-1, dtype=ms.float32
         ).astype(query.dtype)
 
-    out = ops.matmul(attn_weight, value)
+    out = mint.matmul(attn_weight, value)
     out = out.astype(ori_dtype)
 
     return out
@@ -74,12 +74,12 @@ class FlashAttention2(nn.Cell):
         if self.need_pad:
             if self.input_layout == "BNSD":
                 B, N, S, D = x.shape
-                pad = ops.zeros((B, N, S, self.d_pad), x.dtype)
+                pad = mint.zeros((B, N, S, self.d_pad), dtype=x.dtype)
             else:
                 B, S = x.shape[:2]
                 x = x.reshape(B, S, -1, self.head_dim)
-                pad = ops.zeros((B, S, x.shape[2], self.d_pad), x.dtype)
-            x = ops.concat((x, pad), axis=-1)
+                pad = mint.zeros((B, S, x.shape[2], self.d_pad), dtype=x.dtype)
+            x = mint.concat((x, pad), dim=-1)
         if self.input_layout == "BSH":
             B, S = x.shape[:2]
             x = x.reshape(B, S, -1)

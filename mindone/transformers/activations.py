@@ -137,7 +137,7 @@ class AccurateGELUActivation(nn.Cell):
 class SiLUActivationFP32(nn.Cell):
     def __init__(self):
         super(SiLUActivationFP32, self).__init__()
-        self.sigmoid = nn.Sigmoid()
+        self.sigmoid = mint.nn.Sigmoid()
 
     def construct(self, x):
         _dtype = x.dtype
@@ -198,7 +198,7 @@ class ClassInstantier(OrderedDict):
 
 
 ACT2CLS = {
-    "gelu": partial(nn.GELU, approximate=False),
+    "gelu": mint.nn.GELU,
     "gelu_10": (ClippedGELUActivation, {"min": -10, "max": 10}),
     "gelu_fast": FastGELUActivation,
     "gelu_new": NewGELUActivation,
@@ -209,13 +209,13 @@ ACT2CLS = {
     "linear": LinearActivation,
     "mish": MishActivation,
     "quick_gelu": QuickGELUActivation,
-    "relu": nn.ReLU,
+    "relu": mint.nn.ReLU,
     "relu2": ReLUSquaredActivation,
-    "relu6": nn.ReLU6,
-    "sigmoid": nn.Sigmoid,
+    "relu6": mint.nn.ReLU6,
+    "sigmoid": mint.nn.Sigmoid,
     "silu": SiLUActivationFP32,
     "swish": SiLUActivationFP32,
-    "tanh": nn.Tanh,
+    "tanh": mint.nn.Tanh,
 }
 ACT2FN = ClassInstantier(ACT2CLS)
 
