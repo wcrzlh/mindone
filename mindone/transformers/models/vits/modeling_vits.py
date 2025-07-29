@@ -25,7 +25,7 @@ import numpy as np
 from transformers.models.vits.configuration_vits import VitsConfig
 
 import mindspore as ms
-from mindspore import nn, ops
+from mindspore import mint, nn, ops
 from mindspore.common.initializer import HeNormal, Uniform, initializer
 
 from mindone.utils import WeightNorm
@@ -110,8 +110,8 @@ class VitsTextEncoderOutput(ModelOutput):
 
 def fused_add_tanh_sigmoid_multiply(input_a, input_b, num_channels):
     in_act = input_a + input_b
-    t_act = ops.tanh(in_act[:, :num_channels, :])
-    s_act = ops.sigmoid(in_act[:, num_channels:, :])
+    t_act = mint.tanh(in_act[:, :num_channels, :])
+    s_act = mint.sigmoid(in_act[:, num_channels:, :])
     acts = t_act * s_act
     return acts
 
@@ -162,14 +162,14 @@ def _unconstrained_rational_quadratic_spline(
             Logarithm of the absolute value of the determinants corresponding to the `outputs` with the `tail_bound`
             limits applied.
     """
-    inside_interval_mask = ops.logical_and((inputs >= -tail_bound), (inputs <= tail_bound))
-    outside_interval_mask = ops.logical_not(inside_interval_mask)
+    inside_interval_mask = mint.logical_and((inputs >= -tail_bound), (inputs <= tail_bound))
+    outside_interval_mask = mint.logical_not(inside_interval_mask)
 
-    outputs = ops.zeros_like(inputs)
-    log_abs_det = ops.zeros_like(inputs)
+    outputs = mint.zeros_like(inputs)
+    log_abs_det = mint.zeros_like(inputs)
     constant = np.log(np.exp(1 - min_derivative) - 1)
 
-    unnormalized_derivatives = ms.mint.nn.functional.pad(unnormalized_derivatives, pad=(1, 1))
+    unnormalized_derivatives = mint.nn.functional.pad(unnormalized_derivatives, pad=(1, 1))
     unnormalized_derivatives[..., 0] = constant
     unnormalized_derivatives[..., -1] = constant
 
@@ -237,7 +237,7 @@ def _rational_quadratic_spline(
     upper_bound = tail_bound
     lower_bound = -tail_bound
 
-    if ms.mint.min(inputs) < lower_bound or ms.mint.max(inputs) > upper_bound:
+    if mint.min(inputs) < lower_bound or mint.max(inputs) > upper_bound:
         raise ValueError("Input to a transform is not within its domain")
 
     num_bins = unnormalized_widths.shape[-1]
@@ -247,21 +247,21 @@ def _rational_quadratic_spline(
     if min_bin_height * num_bins > 1.0:
         raise ValueError(f"Minimal bin height {min_bin_height} too large for the number of bins {num_bins}")
 
-    widths = ops.softmax(unnormalized_widths, axis=-1)
+    widths = mint.softmax(unnormalized_widths, dim=-1)
     widths = min_bin_width + (1 - min_bin_width * num_bins) * widths
-    cumwidths = ops.cumsum(widths, axis=-1)
-    cumwidths = ms.mint.nn.functional.pad(cumwidths, pad=(1, 0), mode="constant", value=0.0)
+    cumwidths = mint.cumsum(widths, dim=-1)
+    cumwidths = mint.nn.functional.pad(cumwidths, pad=(1, 0), mode="constant", value=0.0)
     cumwidths = (upper_bound - lower_bound) * cumwidths + lower_bound
     cumwidths[..., 0] = lower_bound
     cumwidths[..., -1] = upper_bound
     widths = cumwidths[..., 1:] - cumwidths[..., :-1]
 
-    derivatives = min_derivative + ops.softplus(unnormalized_derivatives)
+    derivatives = min_derivative + mint.nn.functional.softplus(unnormalized_derivatives)
 
-    heights = ops.softmax(unnormalized_heights, axis=-1)
+    heights = mint.softmax(unnormalized_heights, dim=-1)
     heights = min_bin_height + (1 - min_bin_height * num_bins) * heights
-    cumheights = ops.cumsum(heights, axis=-1)
-    cumheights = ms.mint.nn.functional.pad(cumheights, pad=(1, 0), mode="constant", value=0.0)
+    cumheights = mint.cumsum(heights, dim=-1)
+    cumheights = mint.nn.functional.pad(cumheights, pad=(1, 0), mode="constant", value=0.0)
     cumheights = (upper_bound - lower_bound) * cumheights + lower_bound
     cumheights[..., 0] = lower_bound
     cumheights[..., -1] = upper_bound
@@ -269,7 +269,7 @@ def _rational_quadratic_spline(
 
     bin_locations = cumheights if reverse else cumwidths
     bin_locations[..., -1] += 1e-6
-    bin_idx = ops.sum(inputs[..., None] >= bin_locations, dim=-1) - 1
+    bin_idx = mint.sum(inputs[..., None] >= bin_locations, dim=-1) - 1
     bin_idx = bin_idx[..., None]
 
     input_cumwidths = cumwidths.gather(-1, bin_idx)[..., 0]
@@ -298,7 +298,7 @@ def _rational_quadratic_spline(
             + 2 * input_delta * theta_one_minus_theta
             + input_derivatives * (1 - theta).pow(2)
         )
-        log_abs_det = ops.log(derivative_numerator) - 2 * ops.log(denominator)
+        log_abs_det = mint.log(derivative_numerator) - 2 * mint.log(denominator)
         return outputs, log_abs_det
     else:
         # find the roots of a quadratic equation
@@ -312,7 +312,7 @@ def _rational_quadratic_spline(
         if not (discriminant >= 0).all():
             raise RuntimeError(f"invalid discriminant {discriminant}")
 
-        root = (2 * c) / (-b - ops.sqrt(discriminant))
+        root = (2 * c) / (-b - mint.sqrt(discriminant))
         outputs = root * input_bin_widths + input_cumwidths
 
         theta_one_minus_theta = root * (1 - root)
@@ -322,7 +322,7 @@ def _rational_quadratic_spline(
             + 2 * input_delta * theta_one_minus_theta
             + input_derivatives * (1 - root).pow(2)
         )
-        log_abs_det = ops.log(derivative_numerator) - 2 * ops.log(denominator)
+        log_abs_det = mint.log(derivative_numerator) - 2 * mint.log(denominator)
         return outputs, -log_abs_det
 
 
@@ -334,7 +334,7 @@ class VitsWaveNet(nn.Cell):
 
         in_layers = []
         res_skip_layers = []
-        self.dropout = nn.Dropout(p=config.wavenet_dropout)
+        self.dropout = mint.nn.Dropout(p=config.wavenet_dropout)
 
         if config.speaker_embedding_size != 0:
             cond_layer = nn.Conv1d(
@@ -371,7 +371,7 @@ class VitsWaveNet(nn.Cell):
         self.res_skip_layers = nn.CellList(res_skip_layers)
 
     def construct(self, inputs, padding_mask, global_conditioning=None):
-        outputs = ops.zeros_like(inputs)
+        outputs = mint.zeros_like(inputs)
         num_channels_tensor = ms.tensor([self.hidden_size])
 
         if global_conditioning is not None:
@@ -384,7 +384,7 @@ class VitsWaveNet(nn.Cell):
                 cond_offset = i * 2 * self.hidden_size
                 global_states = global_conditioning[:, cond_offset : cond_offset + 2 * self.hidden_size, :]
             else:
-                global_states = ops.zeros_like(hidden_states)
+                global_states = mint.zeros_like(hidden_states)
 
             acts = fused_add_tanh_sigmoid_multiply(hidden_states, global_states, num_channels_tensor[0])
             acts = self.dropout(acts)
@@ -421,8 +421,8 @@ class VitsPosteriorEncoder(nn.Cell):
         inputs = self.conv_pre(inputs) * padding_mask
         inputs = self.wavenet(inputs, padding_mask, global_conditioning)
         stats = self.conv_proj(inputs) * padding_mask
-        mean, log_stddev = ops.split(stats, self.out_channels, axis=1)
-        sampled = (mean + ops.randn_like(mean) * ops.exp(log_stddev)) * padding_mask
+        mean, log_stddev = mint.split(stats, self.out_channels, dim=1)
+        sampled = (mean + mint.randn_like(mean) * mint.exp(log_stddev)) * padding_mask
         return sampled, mean, log_stddev
 
 
@@ -481,9 +481,9 @@ class HifiGanResidualBlock(nn.Cell):
     def construct(self, hidden_states):
         for conv1, conv2 in zip(self.convs1, self.convs2):
             residual = hidden_states
-            hidden_states = ops.leaky_relu(hidden_states, self.leaky_relu_slope)
+            hidden_states = mint.nn.functional.leaky_relu(hidden_states, self.leaky_relu_slope)
             hidden_states = conv1(hidden_states)
-            hidden_states = ops.leaky_relu(hidden_states, self.leaky_relu_slope)
+            hidden_states = mint.nn.functional.leaky_relu(hidden_states, self.leaky_relu_slope)
             hidden_states = conv2(hidden_states)
             hidden_states = hidden_states + residual
         return hidden_states
@@ -567,7 +567,7 @@ class VitsHifiGan(nn.Cell):
             hidden_states = hidden_states + self.cond(global_conditioning)
 
         for i in range(self.num_upsamples):
-            hidden_states = ops.leaky_relu(hidden_states, self.leaky_relu_slope)
+            hidden_states = mint.nn.functional.leaky_relu(hidden_states, self.leaky_relu_slope)
             hidden_states = self.upsampler[i](hidden_states)
 
             res_state = self.resblocks[i * self.num_kernels](hidden_states)
@@ -575,9 +575,9 @@ class VitsHifiGan(nn.Cell):
                 res_state += self.resblocks[i * self.num_kernels + j](hidden_states)
             hidden_states = res_state / self.num_kernels
 
-        hidden_states = ops.leaky_relu(hidden_states)
+        hidden_states = mint.nn.functional.leaky_relu(hidden_states)
         hidden_states = self.conv_post(hidden_states)
-        waveform = ops.tanh(hidden_states)
+        waveform = mint.tanh(hidden_states)
         return waveform
 
 
@@ -591,20 +591,20 @@ class VitsResidualCouplingLayer(nn.Cell):
         self.conv_post = nn.Conv1d(config.hidden_size, self.half_channels, 1, has_bias=True, pad_mode="valid")
 
     def construct(self, inputs, padding_mask, global_conditioning=None, reverse=False):
-        first_half, second_half = ops.split(inputs, [self.half_channels] * 2, axis=1)
+        first_half, second_half = mint.split(inputs, [self.half_channels] * 2, dim=1)
         hidden_states = self.conv_pre(first_half) * padding_mask
         hidden_states = self.wavenet(hidden_states, padding_mask, global_conditioning)
         mean = self.conv_post(hidden_states) * padding_mask
-        log_stddev = ops.zeros_like(mean)
+        log_stddev = mint.zeros_like(mean)
 
         if not reverse:
-            second_half = mean + second_half * ops.exp(log_stddev) * padding_mask
-            outputs = ops.cat([first_half, second_half], axis=1)
-            log_determinant = ops.sum(log_stddev, [1, 2])
+            second_half = mean + second_half * mint.exp(log_stddev) * padding_mask
+            outputs = mint.cat([first_half, second_half], dim=1)
+            log_determinant = mint.sum(log_stddev, [1, 2])
             return outputs, log_determinant
         else:
-            second_half = (second_half - mean) * ops.exp(-log_stddev) * padding_mask
-            outputs = ops.cat([first_half, second_half], axis=1)
+            second_half = (second_half - mean) * mint.exp(-log_stddev) * padding_mask
+            outputs = mint.cat([first_half, second_half], dim=1)
             return outputs, None
 
 
@@ -620,10 +620,10 @@ class VitsResidualCouplingBlock(nn.Cell):
         if not reverse:
             for flow in self.flows:
                 inputs, _ = flow(inputs, padding_mask, global_conditioning)
-                inputs = ops.flip(inputs, [1])
+                inputs = mint.flip(inputs, [1])
         else:
             for flow in reversed(self.flows):
-                inputs = ops.flip(inputs, [1])
+                inputs = mint.flip(inputs, [1])
                 inputs, _ = flow(inputs, padding_mask, global_conditioning, reverse=True)
         return inputs
 
@@ -635,7 +635,7 @@ class VitsDilatedDepthSeparableConv(nn.Cell):
         channels = config.hidden_size
         self.num_layers = config.depth_separable_num_layers
 
-        self.dropout = nn.Dropout(p=dropout_rate)
+        self.dropout = mint.nn.Dropout(p=dropout_rate)
         convs_dilated = []
         convs_pointwise = []
         norms_1 = []
@@ -656,8 +656,8 @@ class VitsDilatedDepthSeparableConv(nn.Cell):
                 )
             )
             convs_pointwise.append(nn.Conv1d(channels, channels, 1, has_bias=True, pad_mode="valid"))
-            norms_1.append(ms.mint.nn.LayerNorm(channels))
-            norms_2.append(ms.mint.nn.LayerNorm(channels))
+            norms_1.append(mint.nn.LayerNorm(channels))
+            norms_2.append(mint.nn.LayerNorm(channels))
 
         self.convs_dilated = nn.CellList(convs_dilated)
         self.convs_pointwise = nn.CellList(convs_pointwise)
@@ -671,10 +671,10 @@ class VitsDilatedDepthSeparableConv(nn.Cell):
         for i in range(self.num_layers):
             hidden_states = self.convs_dilated[i](inputs * padding_mask)
             hidden_states = self.norms_1[i](hidden_states.swapaxes(1, -1)).swapaxes(1, -1)
-            hidden_states = ops.gelu(hidden_states)
+            hidden_states = mint.nn.functional.gelu(hidden_states)
             hidden_states = self.convs_pointwise[i](hidden_states)
             hidden_states = self.norms_2[i](hidden_states.swapaxes(1, -1)).swapaxes(1, -1)
-            hidden_states = ops.gelu(hidden_states)
+            hidden_states = mint.nn.functional.gelu(hidden_states)
             hidden_states = self.dropout(hidden_states)
             inputs = inputs + hidden_states
 
@@ -696,7 +696,7 @@ class VitsConvFlow(nn.Cell):
         )
 
     def construct(self, inputs, padding_mask, global_conditioning=None, reverse=False):
-        first_half, second_half = ops.split(inputs, [self.half_channels] * 2, axis=1)
+        first_half, second_half = mint.split(inputs, [self.half_channels] * 2, dim=1)
 
         hidden_states = self.conv_pre(first_half)
         hidden_states = self.conv_dds(hidden_states, padding_mask, global_conditioning)
@@ -718,9 +718,9 @@ class VitsConvFlow(nn.Cell):
             tail_bound=self.tail_bound,
         )
 
-        outputs = ops.cat([first_half, second_half], axis=1) * padding_mask
+        outputs = mint.cat([first_half, second_half], dim=1) * padding_mask
         if not reverse:
-            log_determinant = ops.sum(log_abs_det * padding_mask, [1, 2])
+            log_determinant = mint.sum(log_abs_det * padding_mask, [1, 2])
             return outputs, log_determinant
         else:
             return outputs, None
@@ -730,17 +730,17 @@ class VitsElementwiseAffine(nn.Cell):
     def __init__(self, config: VitsConfig):
         super().__init__()
         self.channels = config.depth_separable_channels
-        self.translate = ms.Parameter(ops.zeros((self.channels, 1)), name="translate")
-        self.log_scale = ms.Parameter(ops.zeros((self.channels, 1)), name="log_scale")
+        self.translate = ms.Parameter(mint.zeros((self.channels, 1)), name="translate")
+        self.log_scale = ms.Parameter(mint.zeros((self.channels, 1)), name="log_scale")
 
     def construct(self, inputs, padding_mask, global_conditioning=None, reverse=False):
         if not reverse:
-            outputs = self.translate + ops.exp(self.log_scale) * inputs
+            outputs = self.translate + mint.exp(self.log_scale) * inputs
             outputs = outputs * padding_mask
-            log_determinant = ops.sum(self.log_scale * padding_mask, [1, 2])
+            log_determinant = mint.sum(self.log_scale * padding_mask, [1, 2])
             return outputs, log_determinant
         else:
-            outputs = (inputs - self.translate) * ops.exp(-self.log_scale) * padding_mask
+            outputs = (inputs - self.translate) * mint.exp(-self.log_scale) * padding_mask
             return outputs, None
 
 
@@ -796,7 +796,7 @@ class VitsStochasticDurationPredictor(nn.Cell):
             hidden_states = self.post_conv_proj(hidden_states) * padding_mask
 
             random_posterior = (
-                ops.randn(durations.shape[0], 2, durations.shape[2]).to(dtype=inputs.dtype) * padding_mask
+                mint.randn(durations.shape[0], 2, durations.shape[2]).to(dtype=inputs.dtype) * padding_mask
             )
             log_determinant_posterior_sum = 0
             latents_posterior = random_posterior
@@ -804,41 +804,41 @@ class VitsStochasticDurationPredictor(nn.Cell):
                 latents_posterior, log_determinant = flow(
                     latents_posterior, padding_mask, global_conditioning=inputs + hidden_states
                 )
-                latents_posterior = ops.flip(latents_posterior, [1])
+                latents_posterior = mint.flip(latents_posterior, [1])
                 log_determinant_posterior_sum += log_determinant
 
-            first_half, second_half = ops.split(latents_posterior, [1, 1], axis=1)
+            first_half, second_half = mint.split(latents_posterior, [1, 1], dim=1)
 
-            log_determinant_posterior_sum += ops.sum(
-                (ops.logsigmoid(first_half) + ops.logsigmoid(-first_half)) * padding_mask, [1, 2]
+            log_determinant_posterior_sum += mint.sum(
+                (mint.nn.functional.logsigmoid(first_half) + mint.nn.functional.logsigmoid(-first_half)) * padding_mask, [1, 2]
             )
             logq = (
-                ops.sum(-0.5 * (math.log(2 * math.pi) + (random_posterior**2)) * padding_mask, [1, 2])
+                mint.sum(-0.5 * (math.log(2 * math.pi) + (random_posterior**2)) * padding_mask, [1, 2])
                 - log_determinant_posterior_sum
             )
 
-            first_half = (durations - ops.sigmoid(first_half)) * padding_mask
-            first_half = ops.log(ops.clamp(first_half, min=1e-5)) * padding_mask
-            log_determinant_sum = ops.sum(-first_half, [1, 2])
+            first_half = (durations - mint.nn.functional.sigmoid(first_half)) * padding_mask
+            first_half = mint.log(mint.clamp(first_half, min=1e-5)) * padding_mask
+            log_determinant_sum = mint.sum(-first_half, [1, 2])
 
-            latents = ops.cat([first_half, second_half], axis=1)
+            latents = mint.cat([first_half, second_half], dim=1)
             for flow in self.flows:
                 latents, log_determinant = flow(latents, padding_mask, global_conditioning=inputs)
-                latents = ops.flip(latents, [1])
+                latents = mint.flip(latents, [1])
                 log_determinant_sum += log_determinant
 
-            nll = ops.sum(0.5 * (math.log(2 * math.pi) + (latents**2)) * padding_mask, [1, 2]) - log_determinant_sum
+            nll = mint.sum(0.5 * (math.log(2 * math.pi) + (latents**2)) * padding_mask, [1, 2]) - log_determinant_sum
             return nll + logq
         else:
             flows = list(reversed(self.flows))
             flows = flows[:-2] + [flows[-1]]  # remove a useless vflow
 
-            latents = ops.randn(inputs.shape[0], 2, inputs.shape[2]).to(dtype=inputs.dtype) * noise_scale
+            latents = mint.randn(inputs.shape[0], 2, inputs.shape[2]).to(dtype=inputs.dtype) * noise_scale
             for flow in flows:
-                latents = ops.flip(latents, [1])
+                latents = mint.flip(latents, [1])
                 latents, _ = flow(latents, padding_mask, global_conditioning=inputs, reverse=True)
 
-            log_duration, _ = ops.split(latents, [1, 1], axis=1)
+            log_duration, _ = mint.split(latents, [1, 1], dim=1)
             return log_duration
 
 
@@ -848,15 +848,15 @@ class VitsDurationPredictor(nn.Cell):
         kernel_size = config.duration_predictor_kernel_size
         filter_channels = config.duration_predictor_filter_channels
 
-        self.dropout = nn.Dropout(p=config.duration_predictor_dropout)
+        self.dropout = mint.nn.Dropout(p=config.duration_predictor_dropout)
         self.conv_1 = nn.Conv1d(
             config.hidden_size, filter_channels, kernel_size, pad_mode="pad", padding=kernel_size // 2, has_bias=True
         )
-        self.norm_1 = ms.mint.nn.LayerNorm(filter_channels, eps=config.layer_norm_eps)
+        self.norm_1 = mint.nn.LayerNorm(filter_channels, eps=config.layer_norm_eps)
         self.conv_2 = nn.Conv1d(
             filter_channels, filter_channels, kernel_size, pad_mode="pad", padding=kernel_size // 2, has_bias=True
         )
-        self.norm_2 = ms.mint.nn.LayerNorm(filter_channels, eps=config.layer_norm_eps)
+        self.norm_2 = mint.nn.LayerNorm(filter_channels, eps=config.layer_norm_eps)
         self.proj = nn.Conv1d(filter_channels, 1, 1, has_bias=True, pad_mode="valid")
 
         if config.speaker_embedding_size != 0:
@@ -870,12 +870,12 @@ class VitsDurationPredictor(nn.Cell):
             inputs = inputs + self.cond(global_conditioning)
 
         inputs = self.conv_1(inputs * padding_mask)
-        inputs = ops.relu(inputs)
+        inputs = mint.nn.functional.relu(inputs)
         inputs = self.norm_1(inputs.swapaxes(1, -1)).swapaxes(1, -1)
         inputs = self.dropout(inputs)
 
         inputs = self.conv_2(inputs * padding_mask)
-        inputs = ops.relu(inputs)
+        inputs = mint.nn.functional.relu(inputs)
         inputs = self.norm_2(inputs.swapaxes(1, -1)).swapaxes(1, -1)
         inputs = self.dropout(inputs)
 
@@ -902,17 +902,17 @@ class VitsAttention(nn.Cell):
                 f" and `num_attention_heads`: {self.num_heads})."
             )
 
-        self.k_proj = nn.Dense(self.embed_dim, self.embed_dim, has_bias=config.use_bias)
-        self.v_proj = nn.Dense(self.embed_dim, self.embed_dim, has_bias=config.use_bias)
-        self.q_proj = nn.Dense(self.embed_dim, self.embed_dim, has_bias=config.use_bias)
-        self.out_proj = nn.Dense(self.embed_dim, self.embed_dim, has_bias=config.use_bias)
+        self.k_proj = mint.nn.Linear(self.embed_dim, self.embed_dim, bias=config.use_bias)
+        self.v_proj = mint.nn.Linear(self.embed_dim, self.embed_dim, bias=config.use_bias)
+        self.q_proj = mint.nn.Linear(self.embed_dim, self.embed_dim, bias=config.use_bias)
+        self.out_proj = mint.nn.Linear(self.embed_dim, self.embed_dim, bias=config.use_bias)
 
         if self.window_size:
             self.emb_rel_k = ms.Parameter(
-                ops.randn(1, self.window_size * 2 + 1, self.head_dim) * self.scaling, name="emb_rel_k"
+                mint.randn(1, self.window_size * 2 + 1, self.head_dim) * self.scaling, name="emb_rel_k"
             )
             self.emb_rel_v = ms.Parameter(
-                ops.randn(1, self.window_size * 2 + 1, self.head_dim) * self.scaling, name="emb_rel_v"
+                mint.randn(1, self.window_size * 2 + 1, self.head_dim) * self.scaling, name="emb_rel_v"
             )
 
     def _shape(self, tensor: ms.Tensor, seq_len: int, bsz: int):
@@ -946,7 +946,7 @@ class VitsAttention(nn.Cell):
         value_states = value_states.view(*proj_shape)
 
         src_len = key_states.shape[1]
-        attn_weights = ops.bmm(query_states, key_states.swapaxes(1, 2))
+        attn_weights = mint.bmm(query_states, key_states.swapaxes(1, 2))
 
         if attn_weights.shape != (bsz * self.num_heads, tgt_len, src_len):
             raise ValueError(
@@ -956,7 +956,7 @@ class VitsAttention(nn.Cell):
 
         if self.window_size is not None:
             key_relative_embeddings = self._get_relative_embeddings(self.emb_rel_k, src_len)
-            relative_logits = ops.matmul(query_states, key_relative_embeddings.swapaxes(-2, -1))
+            relative_logits = mint.matmul(query_states, key_relative_embeddings.swapaxes(-2, -1))
             rel_pos_bias = self._relative_position_to_absolute_position(relative_logits)
             attn_weights += rel_pos_bias
 
@@ -968,7 +968,7 @@ class VitsAttention(nn.Cell):
             attn_weights = attn_weights.view(bsz, self.num_heads, tgt_len, src_len) + attention_mask
             attn_weights = attn_weights.view(bsz * self.num_heads, tgt_len, src_len)
 
-        attn_weights = ops.softmax(attn_weights, axis=-1)
+        attn_weights = mint.softmax(attn_weights, dim=-1)
 
         if layer_head_mask is not None:
             if layer_head_mask.shape != (self.num_heads,):
@@ -989,9 +989,9 @@ class VitsAttention(nn.Cell):
         else:
             attn_weights_reshaped = None
 
-        attn_probs = ops.dropout(attn_weights, p=self.dropout, training=self.training)
+        attn_probs = mint.nn.functional.dropout(attn_weights, p=self.dropout, training=self.training)
 
-        attn_output = ops.bmm(attn_probs, value_states)
+        attn_output = mint.bmm(attn_probs, value_states)
 
         if attn_output.shape != (bsz * self.num_heads, tgt_len, self.head_dim):
             raise ValueError(
@@ -1002,7 +1002,7 @@ class VitsAttention(nn.Cell):
         if self.window_size is not None:
             value_relative_embeddings = self._get_relative_embeddings(self.emb_rel_v, src_len)
             relative_weights = self._absolute_position_to_relative_position(attn_probs)
-            rel_pos_bias = ops.matmul(relative_weights, value_relative_embeddings)
+            rel_pos_bias = mint.matmul(relative_weights, value_relative_embeddings)
             attn_output += rel_pos_bias
 
         attn_output = attn_output.view(bsz, self.num_heads, tgt_len, self.head_dim)
@@ -1019,7 +1019,7 @@ class VitsAttention(nn.Cell):
     def _get_relative_embeddings(self, relative_embeddings, length):
         pad_length = max(length - (self.window_size + 1), 0)
         if pad_length > 0:
-            relative_embeddings = ms.mint.nn.functional.pad(relative_embeddings, [0, 0, pad_length, pad_length, 0, 0])
+            relative_embeddings = mint.nn.functional.pad(relative_embeddings, [0, 0, pad_length, pad_length, 0, 0])
 
         slice_start_position = max((self.window_size + 1) - length, 0)
         slice_end_position = slice_start_position + 2 * length - 1
@@ -1029,11 +1029,11 @@ class VitsAttention(nn.Cell):
         batch_heads, length, _ = x.shape
 
         # Concat columns of pad to shift from relative to absolute indexing.
-        x = ms.mint.nn.functional.pad(x, [0, 1, 0, 0, 0, 0])
+        x = mint.nn.functional.pad(x, [0, 1, 0, 0, 0, 0])
 
         # Concat extra elements so to add up to shape (len+1, 2*len-1).
         x_flat = x.view(batch_heads, length * 2 * length)
-        x_flat = ms.mint.nn.functional.pad(x_flat, [0, length - 1, 0, 0])
+        x_flat = mint.nn.functional.pad(x_flat, [0, length - 1, 0, 0])
 
         # Reshape and slice out the padded elements.
         x_final = x_flat.view(batch_heads, length + 1, 2 * length - 1)
@@ -1044,11 +1044,11 @@ class VitsAttention(nn.Cell):
         batch_heads, length, _ = x.shape
 
         # Pad along column
-        x = ms.mint.nn.functional.pad(x, [0, length - 1, 0, 0, 0, 0])
+        x = mint.nn.functional.pad(x, [0, length - 1, 0, 0, 0, 0])
         x_flat = x.view(batch_heads, length * (2 * length - 1))
 
         # Add 0's in the beginning that will skew the elements after reshape
-        x_flat = ms.mint.nn.functional.pad(x_flat, [length, 0, 0, 0])
+        x_flat = mint.nn.functional.pad(x_flat, [length, 0, 0, 0])
         x_final = x_flat.view(batch_heads, length, 2 * length)[:, :, 1:]
         return x_final
 
@@ -1082,7 +1082,7 @@ class VitsFeedForward(nn.Cell):
 
         hidden_states = hidden_states * padding_mask
         if self.padding is not None:
-            hidden_states = ms.mint.nn.functional.pad(hidden_states, self.padding)
+            hidden_states = mint.nn.functional.pad(hidden_states, self.padding)
 
         hidden_states = self.conv_1(hidden_states)
         hidden_states = self.act_fn(hidden_states)
@@ -1090,7 +1090,7 @@ class VitsFeedForward(nn.Cell):
 
         hidden_states = hidden_states * padding_mask
         if self.padding is not None:
-            hidden_states = ms.mint.nn.functional.pad(hidden_states, self.padding)
+            hidden_states = mint.nn.functional.pad(hidden_states, self.padding)
 
         hidden_states = self.conv_2(hidden_states)
         hidden_states = hidden_states * padding_mask
@@ -1104,9 +1104,9 @@ class VitsEncoderLayer(nn.Cell):
         super().__init__()
         self.attention = VitsAttention(config)
         self.dropout = nn.Dropout(p=config.hidden_dropout)
-        self.layer_norm = ms.mint.nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+        self.layer_norm = mint.nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.feed_forward = VitsFeedForward(config)
-        self.final_layer_norm = ms.mint.nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+        self.final_layer_norm = mint.nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
     def construct(
         self,
@@ -1246,7 +1246,7 @@ class VitsTextEncoder(nn.Cell):
         last_hidden_state = encoder_outputs[0]
 
         stats = self.project(last_hidden_state.swapaxes(1, 2)).swapaxes(1, 2) * padding_mask
-        prior_means, prior_log_variances = ops.split(stats, self.flow_size, axis=2)
+        prior_means, prior_log_variances = mint.split(stats, self.flow_size, dim=2)
 
         if not return_dict:
             outputs = (last_hidden_state, prior_means, prior_log_variances) + encoder_outputs[1:]
@@ -1274,11 +1274,11 @@ class VitsPreTrainedModel(PreTrainedModel):
 
     def _init_weights(self, module):
         """Initialize the weights"""
-        if isinstance(module, nn.Dense):
+        if isinstance(module, mint.nn.Linear):
             module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
             if module.bias is not None:
                 module.bias.data.zero_()
-        elif isinstance(module, ms.mint.nn.LayerNorm):
+        elif isinstance(module, mint.nn.LayerNorm):
             module.bias.data.zero_()
             module.weight.data.fill_(1.0)
         elif isinstance(module, nn.Conv1d):
@@ -1286,7 +1286,7 @@ class VitsPreTrainedModel(PreTrainedModel):
             if module.bias is not None:
                 k = math.sqrt(module.group / (module.in_channels * module.kernel_size[0]))
                 module.bias.set_data(initializer(Uniform(k), module.bias.shape, module.bias.dtype))
-        elif isinstance(module, nn.Embedding):
+        elif isinstance(module, mint.nn.Embedding):
             module.embedding_table.data.normal_(mean=0.0, std=self.config.initializer_range)
             if module.padding_idx is not None:
                 module.embedding_table.data[module.padding_idx].zero_()
@@ -1354,7 +1354,7 @@ class VitsModel(VitsPreTrainedModel):
             self.duration_predictor = VitsDurationPredictor(config)
 
         if config.num_speakers > 1:
-            self.embed_speaker = nn.Embedding(config.num_speakers, config.speaker_embedding_size)
+            self.embed_speaker = mint.nn.Embedding(config.num_speakers, config.speaker_embedding_size)
 
         # This is used only for training.
         self.posterior_encoder = VitsPosteriorEncoder(config)
@@ -1419,7 +1419,7 @@ class VitsModel(VitsPreTrainedModel):
         if attention_mask is not None:
             input_padding_mask = attention_mask.unsqueeze(-1).float()
         else:
-            input_padding_mask = ops.ones_like(input_ids).unsqueeze(-1).float()
+            input_padding_mask = mint.ones_like(input_ids).unsqueeze(-1).float()
 
         if self.num_speakers > 1 and speaker_id is not None:
             if isinstance(speaker_id, int):
@@ -1454,29 +1454,29 @@ class VitsModel(VitsPreTrainedModel):
             log_duration = self.duration_predictor(hidden_states, input_padding_mask, speaker_embeddings)
 
         length_scale = 1.0 / self.speaking_rate
-        duration = ops.ceil(ops.exp(log_duration) * input_padding_mask * length_scale)
-        predicted_lengths = ops.clamp(ops.sum(duration, [1, 2]), min=1).long()
+        duration = mint.ceil(mint.exp(log_duration) * input_padding_mask * length_scale)
+        predicted_lengths = mint.clamp(mint.sum(duration, [1, 2]), min=1).long()
 
         # Create a padding mask for the output lengths of shape (batch, 1, max_output_length)
-        indices = ops.arange(predicted_lengths.max(), dtype=predicted_lengths.dtype)
+        indices = mint.arange(predicted_lengths.max(), dtype=predicted_lengths.dtype)
         output_padding_mask = indices.unsqueeze(0) < predicted_lengths.unsqueeze(1)
         output_padding_mask = output_padding_mask.unsqueeze(1).to(input_padding_mask.dtype)
 
         # Reconstruct an attention tensor of shape (batch, 1, out_length, in_length)
-        attn_mask = ops.unsqueeze(input_padding_mask, 2) * ops.unsqueeze(output_padding_mask, -1)
+        attn_mask = mint.unsqueeze(input_padding_mask, 2) * mint.unsqueeze(output_padding_mask, -1)
         batch_size, _, output_length, input_length = attn_mask.shape
-        cum_duration = ops.cumsum(duration, -1).view(batch_size * input_length, 1)
-        indices = ops.arange(output_length, dtype=duration.dtype)
+        cum_duration = mint.cumsum(duration, -1).view(batch_size * input_length, 1)
+        indices = mint.arange(output_length, dtype=duration.dtype)
         valid_indices = indices.unsqueeze(0) < cum_duration
         valid_indices = valid_indices.to(attn_mask.dtype).view(batch_size, input_length, output_length)
-        padded_indices = valid_indices - ms.mint.nn.functional.pad(valid_indices, [0, 0, 1, 0, 0, 0])[:, :-1]
+        padded_indices = valid_indices - mint.nn.functional.pad(valid_indices, [0, 0, 1, 0, 0, 0])[:, :-1]
         attn = padded_indices.unsqueeze(1).swapaxes(2, 3) * attn_mask
 
         # Expand prior distribution
-        prior_means = ops.matmul(attn.squeeze(1), prior_means).swapaxes(1, 2)
-        prior_log_variances = ops.matmul(attn.squeeze(1), prior_log_variances).swapaxes(1, 2)
+        prior_means = mint.matmul(attn.squeeze(1), prior_means).swapaxes(1, 2)
+        prior_log_variances = mint.matmul(attn.squeeze(1), prior_log_variances).swapaxes(1, 2)
 
-        prior_latents = prior_means + ops.randn_like(prior_means) * ops.exp(prior_log_variances) * self.noise_scale
+        prior_latents = prior_means + mint.randn_like(prior_means) * mint.exp(prior_log_variances) * self.noise_scale
         latents = self.flow(prior_latents, output_padding_mask, speaker_embeddings, reverse=True)
 
         spectrogram = latents * output_padding_mask
