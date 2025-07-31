@@ -25,7 +25,7 @@ from transformers.models.speecht5.configuration_speecht5 import SpeechT5Config, 
 from transformers.utils import logging
 
 import mindspore as ms
-from mindspore import Parameter, nn, ops
+from mindspore import Parameter, mint, nn, ops
 from mindspore.common.initializer import Constant, HeUniform, Normal, One, Uniform, Zero, initializer
 from mindspore.mint.nn import LayerNorm
 from mindspore.nn import BCEWithLogitsLoss, CrossEntropyLoss, L1Loss
@@ -75,7 +75,7 @@ def pad_sequence(
     else:
         out_dims = (max_len, len(sequences)) + trailing_dims
 
-    out_sequences = ops.full_like(out_dims, fill_value=padding_value)
+    out_sequences = mint.full_like(out_dims, fill_value=padding_value)
 
     for i, seq in enumerate(sequences):
         length = seq.shape[0] if seq.shape[0] <= max_len else max_len
@@ -310,7 +310,7 @@ class SpeechT5GroupNormConvLayer(nn.Cell):
         )
         self.activation = ACT2FN[config.feat_extract_activation]
 
-        self.layer_norm = nn.GroupNorm(num_groups=self.out_conv_dim, num_channels=self.out_conv_dim, affine=True)
+        self.layer_norm = mint.nn.GroupNorm(num_groups=self.out_conv_dim, num_channels=self.out_conv_dim, affine=True)
 
     def construct(self, hidden_states):
         hidden_states = self.conv(hidden_states)
@@ -348,12 +348,12 @@ class SpeechT5SinusoidalPositionalEmbedding(nn.Cell):
         """
         half_dim = embedding_dim // 2
         emb = math.log(10000) / (half_dim - 1)
-        emb = ops.exp(ops.arange(half_dim, dtype=ms.int64).float() * -emb)
-        emb = ops.arange(num_embeddings, dtype=ms.int64).float().unsqueeze(1) * emb.unsqueeze(0)
-        emb = ops.cat([ops.sin(emb), ops.cos(emb)], axis=1).view(num_embeddings, -1)
+        emb = mint.exp(mint.arange(half_dim, dtype=ms.int64).float() * -emb)
+        emb = mint.arange(num_embeddings, dtype=ms.int64).float().unsqueeze(1) * emb.unsqueeze(0)
+        emb = mint.cat([mint.sin(emb), mint.cos(emb)], dim=1).view(num_embeddings, -1)
         if embedding_dim % 2 == 1:
             # zero pad
-            emb = ops.cat([emb, ops.zeros(num_embeddings, 1)], axis=1)
+            emb = mint.cat([emb, mint.zeros(num_embeddings, 1)], dim=1)
         if padding_idx is not None:
             emb[padding_idx, :] = 0
         return emb
@@ -383,7 +383,7 @@ class SpeechT5SinusoidalPositionalEmbedding(nn.Cell):
         """
         # The series of casts and type-conversions here are carefully balanced to both work with ONNX export and XLA.
         mask = input_ids.ne(padding_idx).int()
-        incremental_indices = (ops.cumsum(mask, axis=1).type_as(mask) + past_key_values_length) * mask
+        incremental_indices = (mint.cumsum(mask, dim=1).type_as(mask) + past_key_values_length) * mask
         return incremental_indices.long() + padding_idx
 
 
@@ -427,15 +427,15 @@ class SpeechT5ScaledPositionalEncoding(nn.Cell):
     """
 
     def __init__(self, dropout, dim, max_len=5000):
-        pe = ops.zeros(max_len, dim)
-        position = ops.arange(0, max_len).unsqueeze(1)
-        div_term = ops.exp((ops.arange(0, dim, 2, dtype=ms.int64).float() * -(math.log(10000.0) / dim)))
-        pe[:, 0::2] = ops.sin(position.float() * div_term)
-        pe[:, 1::2] = ops.cos(position.float() * div_term)
+        pe = mint.zeros(max_len, dim)
+        position = mint.arange(0, max_len).unsqueeze(1)
+        div_term = mint.exp((mint.arange(0, dim, 2, dtype=ms.int64).float() * -(math.log(10000.0) / dim)))
+        pe[:, 0::2] = mint.sin(position.float() * div_term)
+        pe[:, 1::2] = mint.cos(position.float() * div_term)
         pe = pe.unsqueeze(0)
         super().__init__()
         self.pe = pe
-        self.dropout = nn.Dropout(p=dropout)
+        self.dropout = mint.nn.Dropout(p=dropout)
         self.dim = dim
         self.alpha = Parameter(ms.Tensor(1.0))
 
@@ -450,11 +450,11 @@ class SpeechT5RelativePositionalEncoding(nn.Cell):
         super().__init__()
         self.dim = dim
         self.max_length = max_length
-        self.pe_k = nn.Embedding(2 * max_length, dim)
+        self.pe_k = mint.nn.Embedding(2 * max_length, dim)
 
     def construct(self, hidden_states):
         seq_len = hidden_states.shape[1]
-        pos_seq = ops.arange(0, seq_len).long()
+        pos_seq = mint.arange(0, seq_len).long()
         pos_seq = pos_seq[:, None] - pos_seq[None, :]
 
         pos_seq[pos_seq < -self.max_length] = -self.max_length
@@ -528,8 +528,8 @@ class SpeechT5FeatureProjection(nn.Cell):
     def __init__(self, config):
         super().__init__()
         self.layer_norm = LayerNorm(config.conv_dim[-1], eps=config.layer_norm_eps)
-        self.projection = nn.Dense(config.conv_dim[-1], config.hidden_size)
-        self.dropout = nn.Dropout(p=config.feat_proj_dropout)
+        self.projection = mint.nn.Linear(config.conv_dim[-1], config.hidden_size)
+        self.dropout = mint.nn.Dropout(p=config.feat_proj_dropout)
 
     def construct(self, hidden_states):
         # non-projected hidden states are needed for quantization
@@ -587,7 +587,7 @@ class SpeechT5SpeechEncoderPrenet(nn.Cell):
         if attention_mask is not None:
             padding_mask = attention_mask.ne(1).long()
         else:
-            padding_mask = ops.zeros(hidden_states.shape[:2], dtype=ms.int64)
+            padding_mask = mint.zeros(hidden_states.shape[:2], dtype=ms.int64)
 
         positional_sinusoidal_embeddings = self.pos_sinusoidal_embed(padding_mask)
         hidden_states = hidden_states + positional_sinusoidal_embeddings
@@ -602,9 +602,9 @@ class SpeechT5SpeechEncoderPrenet(nn.Cell):
         output_lengths = self._get_feat_extract_output_lengths(non_padded_lengths).to(ms.int64)
         batch_size = attention_mask.shape[0]
 
-        attention_mask = ops.zeros((batch_size, feature_vector_length), dtype=attention_mask.dtype)
+        attention_mask = mint.zeros((batch_size, feature_vector_length), dtype=attention_mask.dtype)
         # these two operations makes sure that all values before the output lengths idxs are attended to
-        attention_mask[(ops.arange(attention_mask.shape[0]), output_lengths - 1)] = 1
+        attention_mask[(mint.arange(attention_mask.shape[0]), output_lengths - 1)] = 1
         attention_mask = attention_mask.flip([-1]).cumsum(-1).flip([-1]).bool()
         return attention_mask
 
@@ -617,7 +617,7 @@ class SpeechT5SpeechEncoderPrenet(nn.Cell):
         def _conv_out_length(input_length, kernel_size, stride):
             # 1D convolutional layer output length formula taken
             # from https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html
-            return ops.div(input_length - kernel_size, stride, rounding_mode="floor") + 1
+            return mint.div(input_length - kernel_size, stride, rounding_mode="floor") + 1
 
         for kernel_size, stride in zip(self.config.conv_kernel, self.config.conv_stride):
             input_lengths = _conv_out_length(input_lengths, kernel_size, stride)
@@ -679,7 +679,7 @@ class SpeechT5SpeechDecoderPrenet(nn.Cell):
 
         self.layers = nn.CellList(
             [
-                nn.Dense(
+                mint.nn.Linear(
                     config.num_mel_bins if i == 0 else config.speech_decoder_prenet_units,
                     config.speech_decoder_prenet_units,
                 )
@@ -687,18 +687,18 @@ class SpeechT5SpeechDecoderPrenet(nn.Cell):
             ]
         )
 
-        self.final_layer = nn.Dense(config.speech_decoder_prenet_units, config.hidden_size)
+        self.final_layer = mint.nn.Linear(config.speech_decoder_prenet_units, config.hidden_size)
         self.encode_positions = SpeechT5ScaledPositionalEncoding(
             config.positional_dropout,
             config.hidden_size,
             config.max_speech_positions,
         )
-        self.speaker_embeds_layer = nn.Dense(config.speaker_embedding_dim + config.hidden_size, config.hidden_size)
+        self.speaker_embeds_layer = mint.nn.Linear(config.speaker_embedding_dim + config.hidden_size, config.hidden_size)
 
     def _consistent_dropout(self, inputs_embeds, p):
         mask = ops.bernoulli(inputs_embeds[0], p=p)
         all_masks = mask.unsqueeze(0).repeat(inputs_embeds.size(0), 1, 1)
-        return ops.where(all_masks == 1, inputs_embeds, 0) * 1 / (1 - p)
+        return mint.where(all_masks == 1, inputs_embeds, 0) * 1 / (1 - p)
 
     def construct(
         self,
@@ -709,7 +709,7 @@ class SpeechT5SpeechDecoderPrenet(nn.Cell):
 
         inputs_embeds = input_values
         for layer in self.layers:
-            inputs_embeds = ops.relu(layer(inputs_embeds))
+            inputs_embeds = mint.nn.functional.relu(layer(inputs_embeds))
             inputs_embeds = self._consistent_dropout(inputs_embeds, self.config.speech_decoder_prenet_dropout)
 
         inputs_embeds = self.final_layer(inputs_embeds)
@@ -719,8 +719,8 @@ class SpeechT5SpeechDecoderPrenet(nn.Cell):
             normalize = ops.L2Normalize(axis=1, eps=1e-12)
             speaker_embeddings = normalize(speaker_embeddings)
             speaker_embeddings = speaker_embeddings.unsqueeze(1).expand(-1, inputs_embeds.size(1), -1)
-            inputs_embeds = ops.cat([inputs_embeds, speaker_embeddings], axis=-1)
-            inputs_embeds = ops.relu(self.speaker_embeds_layer(inputs_embeds))
+            inputs_embeds = mint.cat([inputs_embeds, speaker_embeddings], dim=-1)
+            inputs_embeds = mint.nn.functional.relu(self.speaker_embeds_layer(inputs_embeds))
 
         return inputs_embeds
 
@@ -755,7 +755,7 @@ class SpeechT5BatchNormConvLayer(nn.Cell):
         else:
             self.activation = None
 
-        self.dropout = nn.Dropout(p=config.speech_decoder_postnet_dropout)
+        self.dropout = mint.nn.Dropout(p=config.speech_decoder_postnet_dropout)
 
     def construct(self, hidden_states):
         hidden_states = self.conv(hidden_states)
@@ -771,8 +771,8 @@ class SpeechT5SpeechDecoderPostnet(nn.Cell):
         super().__init__()
         self.config = config
 
-        self.feat_out = nn.Dense(config.hidden_size, config.num_mel_bins * config.reduction_factor)
-        self.prob_out = nn.Dense(config.hidden_size, config.reduction_factor)
+        self.feat_out = mint.nn.Linear(config.hidden_size, config.num_mel_bins * config.reduction_factor)
+        self.prob_out = mint.nn.Linear(config.hidden_size, config.reduction_factor)
 
         self.layers = nn.CellList(
             [SpeechT5BatchNormConvLayer(config, i) for i in range(config.speech_decoder_postnet_layers)]
@@ -795,7 +795,7 @@ class SpeechT5TextEncoderPrenet(nn.Cell):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, config.pad_token_id)
+        self.embed_tokens = mint.nn.Embedding(config.vocab_size, config.hidden_size, config.pad_token_id)
         self.encode_positions = SpeechT5ScaledPositionalEncoding(
             config.positional_dropout,
             config.hidden_size,
@@ -818,10 +818,10 @@ class SpeechT5TextDecoderPrenet(nn.Cell):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.dropout = nn.Dropout(p=config.positional_dropout)
+        self.dropout = mint.nn.Dropout(p=config.positional_dropout)
         self.embed_scale = math.sqrt(config.hidden_size) if config.scale_embedding else 1.0
 
-        self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, config.pad_token_id)
+        self.embed_tokens = mint.nn.Embedding(config.vocab_size, config.hidden_size, config.pad_token_id)
 
         self.embed_positions = SpeechT5SinusoidalPositionalEmbedding(
             config.max_text_positions + config.pad_token_id + 1,
@@ -861,7 +861,7 @@ class SpeechT5TextDecoderPostnet(nn.Cell):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.lm_head = nn.Dense(config.hidden_size, config.vocab_size, bias=False)
+        self.lm_head = mint.nn.Linear(config.hidden_size, config.vocab_size, bias=False)
 
     def construct(self, hidden_states: ms.Tensor):
         return self.lm_head(hidden_states)
@@ -901,10 +901,10 @@ class SpeechT5Attention(nn.Cell):
         self.scaling = self.head_dim**-0.5
         self.is_decoder = is_decoder
 
-        self.k_proj = nn.Dense(embed_dim, embed_dim, bias=bias)
-        self.v_proj = nn.Dense(embed_dim, embed_dim, bias=bias)
-        self.q_proj = nn.Dense(embed_dim, embed_dim, bias=bias)
-        self.out_proj = nn.Dense(embed_dim, embed_dim, bias=bias)
+        self.k_proj = mint.nn.Linear(embed_dim, embed_dim, bias=bias)
+        self.v_proj = mint.nn.Linear(embed_dim, embed_dim, bias=bias)
+        self.q_proj = mint.nn.Linear(embed_dim, embed_dim, bias=bias)
+        self.out_proj = mint.nn.Linear(embed_dim, embed_dim, bias=bias)
 
     def _shape(self, tensor: ms.Tensor, seq_len: int, bsz: int):
         return tensor.view(bsz, seq_len, self.num_heads, self.head_dim).swapaxes(1, 2).contiguous()
@@ -942,8 +942,8 @@ class SpeechT5Attention(nn.Cell):
             # reuse k, v, self_attention
             key_states = self._shape(self.k_proj(hidden_states), -1, bsz)
             value_states = self._shape(self.v_proj(hidden_states), -1, bsz)
-            key_states = ops.cat([past_key_value[0], key_states], axis=2)
-            value_states = ops.cat([past_key_value[1], value_states], axis=2)
+            key_states = mint.cat([past_key_value[0], key_states], dim=2)
+            value_states = mint.cat([past_key_value[1], value_states], dim=2)
         else:
             # self_attention
             key_states = self._shape(self.k_proj(hidden_states), -1, bsz)
@@ -965,7 +965,7 @@ class SpeechT5Attention(nn.Cell):
         value_states = value_states.view(*proj_shape)
 
         src_len = key_states.size(1)
-        attn_weights = ops.bmm(query_states, key_states.swapaxes(1, 2))
+        attn_weights = mint.bmm(query_states, key_states.swapaxes(1, 2))
 
         if attn_weights.shape != (bsz * self.num_heads, tgt_len, src_len):
             raise ValueError(
@@ -976,7 +976,7 @@ class SpeechT5Attention(nn.Cell):
         # relative attention bias
         if position_bias is not None:
             reshape_q = query_states.contiguous().view(bsz * self.num_heads, -1, self.head_dim).swapaxes(0, 1)
-            rel_pos_bias = ops.matmul(reshape_q, position_bias.swapaxes(-2, -1))
+            rel_pos_bias = mint.matmul(reshape_q, position_bias.swapaxes(-2, -1))
             rel_pos_bias = rel_pos_bias.swapaxes(0, 1).view(
                 bsz * self.num_heads, position_bias.size(0), position_bias.size(1)
             )
@@ -990,7 +990,7 @@ class SpeechT5Attention(nn.Cell):
             attn_weights = attn_weights.view(bsz, self.num_heads, tgt_len, src_len) + attention_mask
             attn_weights = attn_weights.view(bsz * self.num_heads, tgt_len, src_len)
 
-        attn_weights = nn.functional.softmax(attn_weights, axis=-1)
+        attn_weights = mint.nn.functional.softmax(attn_weights, dim=-1)
 
         if layer_head_mask is not None:
             if layer_head_mask.shape != (self.num_heads,):
@@ -1011,9 +1011,9 @@ class SpeechT5Attention(nn.Cell):
         else:
             attn_weights_reshaped = None
 
-        attn_probs = nn.functional.dropout(attn_weights, p=self.dropout, training=self.training)
+        attn_probs = mint.nn.functional.dropout(attn_weights, p=self.dropout, training=self.training)
 
-        attn_output = ops.bmm(attn_probs, value_states)
+        attn_output = mint.bmm(attn_probs, value_states)
 
         if attn_output.shape != (bsz * self.num_heads, tgt_len, self.head_dim):
             raise ValueError(
@@ -1036,16 +1036,16 @@ class SpeechT5Attention(nn.Cell):
 class SpeechT5FeedForward(nn.Cell):
     def __init__(self, config, intermediate_size):
         super().__init__()
-        self.intermediate_dropout = nn.Dropout(p=config.activation_dropout)
+        self.intermediate_dropout = mint.nn.Dropout(p=config.activation_dropout)
 
-        self.intermediate_dense = nn.Dense(config.hidden_size, intermediate_size)
+        self.intermediate_dense = mint.nn.Linear(config.hidden_size, intermediate_size)
         if isinstance(config.hidden_act, str):
             self.intermediate_act_fn = ACT2FN[config.hidden_act]
         else:
             self.intermediate_act_fn = config.hidden_act
 
-        self.output_dense = nn.Dense(intermediate_size, config.hidden_size)
-        self.output_dropout = nn.Dropout(p=config.hidden_dropout)
+        self.output_dense = mint.nn.Linear(intermediate_size, config.hidden_size)
+        self.output_dropout = mint.nn.Dropout(p=config.hidden_dropout)
 
     def construct(self, hidden_states):
         hidden_states = self.intermediate_dense(hidden_states)
@@ -1066,7 +1066,7 @@ class SpeechT5EncoderLayer(nn.Cell):
             dropout=config.attention_dropout,
             is_decoder=False,
         )
-        self.dropout = nn.Dropout(p=config.hidden_dropout)
+        self.dropout = mint.nn.Dropout(p=config.hidden_dropout)
         self.layer_norm = LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.feed_forward = SpeechT5FeedForward(config, config.encoder_ffn_dim)
         self.final_layer_norm = LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
@@ -1127,7 +1127,7 @@ class SpeechT5DecoderLayer(nn.Cell):
             dropout=config.attention_dropout,
             is_decoder=True,
         )
-        self.dropout = nn.Dropout(p=config.hidden_dropout)
+        self.dropout = mint.nn.Dropout(p=config.hidden_dropout)
         self.self_attn_layer_norm = LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
         self.encoder_attn = SpeechT5Attention(
@@ -1258,7 +1258,7 @@ class SpeechT5PreTrainedModel(MSPreTrainedModel):
             module.projection.bias.set_data(
                 initializer(Uniform(k), shape=module.projection.bias.shape, dtype=module.projection.bias.dtype)
             )
-        elif isinstance(module, nn.Dense):
+        elif isinstance(module, mint.nn.Linear):
             module.weight.set_data(
                 initializer(
                     Normal(mean=0.0, sigma=self.config.initializer_range),
@@ -1268,7 +1268,7 @@ class SpeechT5PreTrainedModel(MSPreTrainedModel):
             )
             if module.bias is not None:
                 module.bias.set_data(initializer(Zero(), shape=module.bias.shape, dtype=module.bias.dtype))
-        elif isinstance(module, (LayerNorm, nn.GroupNorm)):
+        elif isinstance(module, (LayerNorm, mint.nn.GroupNorm)):
             module.bias.set_data(initializer(Zero(), shape=module.bias.shape, dtype=module.bias.dtype))
             module.weight.set_data(initializer(One(), shape=module.weight.shape, dtype=module.weight.dtype))
         elif isinstance(module, nn.Conv1d):
@@ -1278,7 +1278,7 @@ class SpeechT5PreTrainedModel(MSPreTrainedModel):
                 module.bias.set_data(
                     initializer(Uniform(k), shape=module.projection.bias.shape, dtype=module.projection.bias.dtype)
                 )
-        elif isinstance(module, nn.Embedding):
+        elif isinstance(module, mint.nn.Embedding):
             module.embedding_table.set_data(
                 initializer(
                     Normal(sigma=self.config.initializer_range, mean=0.0),
@@ -1298,7 +1298,7 @@ class SpeechT5Encoder(SpeechT5PreTrainedModel):
     def __init__(self, config: SpeechT5Config):
         super().__init__(config)
         self.layer_norm = LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
-        self.dropout = nn.Dropout(p=config.hidden_dropout)
+        self.dropout = mint.nn.Dropout(p=config.hidden_dropout)
         self.layerdrop = config.encoder_layerdrop
 
         self.layers = nn.CellList([SpeechT5EncoderLayer(config) for _ in range(config.encoder_layers)])
@@ -1384,7 +1384,7 @@ class SpeechT5Encoder(SpeechT5PreTrainedModel):
             # add LayerDrop (see https://arxiv.org/abs/1909.11556 for description)
             skip_the_layer = False
             if self.training:
-                dropout_probability = ops.rand([])
+                dropout_probability = mint.rand([])
                 skip_the_layer = dropout_probability < self.layerdrop
 
             if not skip_the_layer or deepspeed_zero3_is_enabled:
@@ -1680,7 +1680,7 @@ class SpeechT5Decoder(SpeechT5PreTrainedModel):
             # add LayerDrop (see https://arxiv.org/abs/1909.11556 for description)
             skip_the_layer = False
             if self.training:
-                dropout_probability = ops.rand([])
+                dropout_probability = mint.rand([])
                 skip_the_layer = dropout_probability < self.layerdrop
             if skip_the_layer and not deepspeed_zero3_is_enabled:
                 continue
@@ -1899,16 +1899,16 @@ class SpeechT5GuidedMultiheadAttentionLoss(nn.Cell):
         self.sigma = config.guided_attention_loss_sigma
         self.scale = config.guided_attention_loss_scale
 
-    def construct(self, attentions: ms.Tensor, input_masks: ops.Tensor, output_masks: ops.Tensor) -> ms.Tensor:
+    def construct(self, attentions: ms.Tensor, input_masks: ms.Tensor, output_masks: ms.Tensor) -> ms.Tensor:
         """
         Compute the attention loss.
 
         Args:
             attentions (`ms.Tensor` of shape `(batch_size, layers * heads, output_sequence_length, input_sequence_length)`):
                 Batch of multi-head attention weights
-            input_masks (`ops.Tensor` of shape `(batch_size, input_sequence_length)`):
+            input_masks (`ms.Tensor` of shape `(batch_size, input_sequence_length)`):
                 Input attention mask as booleans.
-            output_masks (`ops.Tensor` of shape `(batch_size, output_sequence_length)`):
+            output_masks (`ms.Tensor` of shape `(batch_size, output_sequence_length)`):
                 Target attention mask as booleans.
 
         Returns:
@@ -1919,14 +1919,14 @@ class SpeechT5GuidedMultiheadAttentionLoss(nn.Cell):
         masks = masks.to(attentions).unsqueeze(1)
 
         losses = guided_attn_masks * attentions
-        loss = ops.mean(losses.masked_select(masks))
+        loss = mint.mean(losses.masked_select(masks))
         return self.scale * loss
 
     def _make_guided_attention_masks(self, input_masks, output_masks):
         input_lengths = input_masks.sum(-1)
         output_lengths = output_masks.sum(-1)
 
-        guided_attn_masks = ops.zeros((len(input_masks), output_masks.shape[1], input_masks.shape[1]))
+        guided_attn_masks = mint.zeros((len(input_masks), output_masks.shape[1], input_masks.shape[1]))
 
         for idx, (ilen, olen) in enumerate(zip(input_lengths, output_lengths)):
             guided_attn_masks[idx, :olen, :ilen] = self._make_guided_attention_mask(ilen, olen, self.sigma)
@@ -1935,14 +1935,14 @@ class SpeechT5GuidedMultiheadAttentionLoss(nn.Cell):
 
     @staticmethod
     def _make_guided_attention_mask(input_length, output_length, sigma):
-        grid_y, grid_x = ops.meshgrid(
-            ops.arange(input_length),
-            ops.arange(output_length),
+        grid_y, grid_x = mint.meshgrid(
+            mint.arange(input_length),
+            mint.arange(output_length),
             indexing="xy",
         )
         grid_x = grid_x.float() / output_length
         grid_y = grid_y.float() / input_length
-        return 1.0 - ops.exp(-((grid_y - grid_x) ** 2) / (2 * (sigma**2)))
+        return 1.0 - mint.exp(-((grid_y - grid_x) ** 2) / (2 * (sigma**2)))
 
 
 class SpeechT5SpectrogramLoss(nn.Cell):
@@ -1983,7 +1983,7 @@ class SpeechT5SpectrogramLoss(nn.Cell):
 
         # construct stop labels from the padding mask
         masks = padding_mask[:, :, 0]
-        stop_labels = ops.cat([~masks * 1.0, ops.ones(masks.size(0), 1)], axis=1)
+        stop_labels = mint.cat([~masks * 1.0, mint.ones(masks.size(0), 1)], dim=1)
         stop_labels = stop_labels[:, 1:].masked_select(masks)
         logits = logits.masked_select(masks)
 
@@ -1995,7 +1995,7 @@ class SpeechT5SpectrogramLoss(nn.Cell):
 
         # guided attention loss
         if self.use_guided_attention_loss:
-            attn = ops.cat([x[:, : self.guided_attention_loss_num_heads] for x in cross_attentions], axis=1)
+            attn = mint.cat([x[:, : self.guided_attention_loss_num_heads] for x in cross_attentions], dim=1)
             input_masks = attention_mask == 1
             output_masks = padding_mask[:, :, 0]
             if self.reduction_factor > 1:
@@ -2559,7 +2559,7 @@ def _generate_speech(
         )
 
         if output_cross_attentions:
-            cross_attentions.append(ops.cat(decoder_out.cross_attentions, axis=0))
+            cross_attentions.append(mint.cat(decoder_out.cross_attentions, dim=0))
 
         last_decoder_output = decoder_out.last_hidden_state.squeeze(1)
         past_key_values = decoder_out.past_key_values
@@ -2571,9 +2571,9 @@ def _generate_speech(
 
         # Extend the output sequence with the new mel spectrum.
         new_spectrogram = spectrum[:, -1, :].view(bsz, 1, model.config.num_mel_bins)
-        output_sequence = ops.cat((output_sequence, new_spectrogram), axis=1)
+        output_sequence = mint.cat((output_sequence, new_spectrogram), dim=1)
         # Predict the probability that this is the stop token.
-        prob = ops.sigmoid(model.speech_decoder_postnet.prob_out(last_decoder_output))
+        prob = mint.sigmoid(model.speech_decoder_postnet.prob_out(last_decoder_output))
 
         if idx < minlen:
             continue
@@ -2581,13 +2581,13 @@ def _generate_speech(
             # If the generation loop is less than maximum length time, check the ones in the batch that have met
             # the prob threshold. Otherwise, assume all have met thresholds and fill other spectrograms for the batch.
             if idx < maxlen:
-                meet_thresholds = ops.sum(prob, axis=-1) >= threshold
-                meet_indexes = ops.where(meet_thresholds)[0].tolist()
+                meet_thresholds = mint.sum(prob, dim=-1) >= threshold
+                meet_indexes = mint.where(meet_thresholds)[0].tolist()
             else:
                 meet_indexes = range(len(prob))
             meet_indexes = [i for i in meet_indexes if i not in result_spectrogram]
             if len(meet_indexes) > 0:
-                spectrograms = ops.stack(spectrogram)
+                spectrograms = mint.stack(spectrogram)
                 spectrograms = spectrograms.swapaxes(0, 1).flatten(1, 2)
                 spectrograms = model.speech_decoder_postnet.postnet(spectrograms)
                 for meet_index in meet_indexes:
@@ -2602,7 +2602,7 @@ def _generate_speech(
         else:
             outputs = spectrogram
         if output_cross_attentions:
-            cross_attentions = ops.cat(cross_attentions, axis=2)
+            cross_attentions = mint.cat(cross_attentions, dim=2)
             if bsz > 1:
                 cross_attentions = cross_attentions.view(
                     bsz, int(cross_attentions.size(0) / bsz), *cross_attentions.shape[-3:]
@@ -2623,7 +2623,7 @@ def _generate_speech(
             waveform_lengths = [int(waveforms.size(1) / max(spectrogram_lengths)) * i for i in spectrogram_lengths]
             outputs = (waveforms, waveform_lengths)
         if output_cross_attentions:
-            cross_attentions = ops.cat(cross_attentions, axis=2)
+            cross_attentions = mint.cat(cross_attentions, dim=2)
             cross_attentions = cross_attentions.view(
                 bsz, int(cross_attentions.size(0) / bsz), *cross_attentions.shape[-3:]
             )
@@ -3180,7 +3180,7 @@ class SpeechT5ForSpeechToSpeech(SpeechT5PreTrainedModel):
                 output_sequence_length, input_sequence_length)` -- The outputs of the decoder's cross-attention layers.
         """
         if speaker_embeddings is None:
-            speaker_embeddings = ops.zeros((1, 512))
+            speaker_embeddings = mint.zeros((1, 512))
 
         return _generate_speech(
             self,
@@ -3267,9 +3267,9 @@ class HifiGanResidualBlock(nn.Cell):
     def construct(self, hidden_states):
         for conv1, conv2 in zip(self.convs1, self.convs2):
             residual = hidden_states
-            hidden_states = ops.leaky_relu(hidden_states, self.leaky_relu_slope)
+            hidden_states = mint.nn.functional.leaky_relu(hidden_states, self.leaky_relu_slope)
             hidden_states = conv1(hidden_states)
-            hidden_states = ops.leaky_relu(hidden_states, self.leaky_relu_slope)
+            hidden_states = mint.nn.functional.leaky_relu(hidden_states, self.leaky_relu_slope)
             hidden_states = conv2(hidden_states)
             hidden_states = hidden_states + residual
         return hidden_states
@@ -3315,15 +3315,15 @@ class SpeechT5HifiGan(MSPreTrainedModel):
 
         self.conv_post = nn.Conv1d(channels, 1, kernel_size=7, stride=1, pad_mode="pad", padding=3, has_bias=True)
 
-        self.mean = ops.zeros(config.model_in_dim)
-        self.scale = ops.ones(config.model_in_dim)
+        self.mean = mint.zeros(config.model_in_dim)
+        self.scale = mint.ones(config.model_in_dim)
 
         # Initialize weights and apply final processing
         self.post_init()
 
     def _init_weights(self, module):
         """Initialize the weights."""
-        if isinstance(module, (nn.Dense, nn.Conv1d)):
+        if isinstance(module, (mint.nn.Linear, nn.Conv1d)):
             module.weight.set_data(
                 initializer(
                     Normal(mean=0.0, sigma=self.config.initializer_range),
@@ -3376,7 +3376,7 @@ class SpeechT5HifiGan(MSPreTrainedModel):
 
         hidden_states = self.conv_pre(hidden_states)
         for i in range(self.num_upsamples):
-            hidden_states = ops.leaky_relu(hidden_states, self.config.leaky_relu_slope)
+            hidden_states = mint.nn.functional.leaky_relu(hidden_states, self.config.leaky_relu_slope)
             hidden_states = self.upsampler[i](hidden_states)
 
             res_state = self.resblocks[i * self.num_kernels](hidden_states)
@@ -3384,9 +3384,9 @@ class SpeechT5HifiGan(MSPreTrainedModel):
                 res_state += self.resblocks[i * self.num_kernels + j](hidden_states)
             hidden_states = res_state / self.num_kernels
 
-        hidden_states = ops.leaky_relu(hidden_states, 0.01)
+        hidden_states = mint.nn.functional.leaky_relu(hidden_states, 0.01)
         hidden_states = self.conv_post(hidden_states)
-        hidden_states = ops.tanh(hidden_states)
+        hidden_states = mint.nn.functional.tanh(hidden_states)
 
         if not is_batched:
             # remove batch dim and collapse tensor to 1-d audio waveform

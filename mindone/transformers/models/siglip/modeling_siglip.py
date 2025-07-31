@@ -154,13 +154,13 @@ class SiglipVisionEmbeddings(nn.Cell):
         self.image_size = config.image_size
         self.patch_size = config.patch_size
 
-        self.patch_embedding = nn.Conv2d(
+        self.patch_embedding = mint.nn.Conv2d(
             in_channels=config.num_channels,
             out_channels=self.embed_dim,
             kernel_size=self.patch_size,
             stride=self.patch_size,
             pad_mode="valid",
-            has_bias=True,
+            bias=True,
         )
 
         self.num_patches = (self.image_size // self.patch_size) ** 2
