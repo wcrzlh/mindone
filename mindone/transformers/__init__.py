@@ -646,3 +646,12 @@ if version.parse(transformers.__version__) >= version.parse("4.53.0"):
         MiniMaxPreTrainedModel,
     )
     from .models.vjepa2 import VJEPA2ForVideoClassification, VJEPA2Model, VJEPA2PreTrainedModel
+
+if version.parse(transformers.__version__) >= version.parse("4.56.0.dev0"):
+    from .models.glm4v_moe import (
+        Glm4vMoeTextModel,
+        Glm4vMoeVisionModel,
+        Glm4vMoeForConditionalGeneration,
+        Glm4vMoeModel,
+        Glm4vMoePreTrainedModel,
+    )
