@@ -450,7 +450,7 @@ class AssistedCandidateGeneratorDifferentTokenizers(AssistedCandidateGenerator):
         if not isinstance(compare_mat, ms.Tensor):
             compare_mat = ms.Tensor(compare_mat)
 
-        compare_mat_int = compare_mat.to(int)
+        compare_mat_int = compare_mat.to(ms.int32)
 
         if not compare_mat_int.any().item():
             # empty intersection between prompt and prompt_plus_new_tokens
