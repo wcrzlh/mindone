@@ -678,7 +678,7 @@ class AssistantToTargetTranslator:
             if target_id is not None:
                 assistant_to_target_input_ids[assistant_id] = target_id
                 target_to_assistant_input_ids[target_id] = assistant_id
-        return assistant_to_target_input_ids.to(self._assistant_model_device), target_to_assistant_input_ids
+        return assistant_to_target_input_ids, target_to_assistant_input_ids
 
     def _get_suppress_input_ids(self) -> list[int]:
         """
