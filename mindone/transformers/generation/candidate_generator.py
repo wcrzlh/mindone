@@ -671,7 +671,7 @@ class AssistantToTargetTranslator:
                     }
 
         max_assistant_index = max(assistant_vocab.values())
-        assistant_to_target_input_ids = ops.full((max_assistant_index + 1,), self.SUPPRESS_TOKEN_ID, dtype=int)
+        assistant_to_target_input_ids = ops.full((max_assistant_index + 1,), self.SUPPRESS_TOKEN_ID, dtype=ms.int32)
         target_to_assistant_input_ids: dict[int, int] = {}
         for tok, assistant_id in assistant_vocab.items():
             target_id = target_vocab.get(tok)
