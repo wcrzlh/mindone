@@ -290,8 +290,8 @@ class StoppingCriteriaTestCase(unittest.TestCase):
         tokenizer.pad_token_id = tokenizer.eos_token_id
         tokenizer.padding_side = "left"
         inputs = tokenizer(text, return_tensors="np", padding="longest", add_special_tokens=False)
-        for key in input_ids.keys():
-            input_ids[key] = ms.tensor(input_ids[key])
+        for key in inputs.keys():
+            inputs[key] = ms.tensor(inputs[key])
 
         scores = None
         criteria = StoppingCriteriaList(

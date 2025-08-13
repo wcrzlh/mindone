@@ -113,13 +113,11 @@ class TestAssistantVocabTranslatorCache(unittest.TestCase):
         translator1 = AssistantVocabTranslatorCache.get_translator(
             self.target_tokenizer,
             self.assistant_tokenizer,
-            assistant_model_device=self.assistant_model_device,
             target_vocab_size=self.target_vocab_size,
         )
         translator2 = AssistantVocabTranslatorCache.get_translator(
             self.target_tokenizer,
             self.assistant_tokenizer,
-            assistant_model_device=self.assistant_model_device,
             target_vocab_size=self.target_vocab_size,
         )
         self.assertIs(translator1, translator2, "Translators should be cached and identical")
@@ -129,13 +127,11 @@ class TestAssistantVocabTranslatorCache(unittest.TestCase):
         translator1 = AssistantVocabTranslatorCache.get_translator(
             self.target_tokenizer,
             self.assistant_tokenizer,
-            assistant_model_device=self.assistant_model_device,
             target_vocab_size=self.target_vocab_size,
         )
         translator2 = AssistantVocabTranslatorCache.get_translator(
             self.other_target_tokenizer,
             self.other_assistant_tokenizer,
-            assistant_model_device=self.assistant_model_device,
             target_vocab_size=self.target_vocab_size,
         )
         self.assertIsNot(translator1, translator2, "Translators should differ for different tokenizers")
@@ -150,7 +146,6 @@ class TestAssistantVocabTranslatorCache(unittest.TestCase):
         translator = AssistantVocabTranslatorCache.get_translator(
             target_tokenizer,
             assistant_tokenizer,
-            assistant_model_device=self.assistant_model_device,
             target_vocab_size=self.target_vocab_size,
         )
         self.assertEqual(len(AssistantVocabTranslatorCache._cache), initial_cache_size + 1)
@@ -178,7 +173,6 @@ class TestAssistantVocabTranslatorCache(unittest.TestCase):
             translator = AssistantVocabTranslatorCache.get_translator(
                 target_tokenizer,
                 assistant_tokenizer,
-                assistant_model_device=self.assistant_model_device,
                 target_vocab_size=self.target_vocab_size,
             )
             # Create weak references before returning

@@ -24,7 +24,7 @@ import numpy as np
 from transformers import is_sklearn_available
 
 import mindspore as ms
-from mindspore import mint
+from mindspore import mint, ops
 from mindspore import numpy as mnp
 
 from ..cache_utils import DynamicCache
@@ -671,7 +671,7 @@ class AssistantToTargetTranslator:
                     }
 
         max_assistant_index = max(assistant_vocab.values())
-        assistant_to_target_input_ids = mint.full((max_assistant_index + 1,), self.SUPPRESS_TOKEN_ID, dtype=int)
+        assistant_to_target_input_ids = ops.full((max_assistant_index + 1,), self.SUPPRESS_TOKEN_ID, dtype=int)
         target_to_assistant_input_ids: dict[int, int] = {}
         for tok, assistant_id in assistant_vocab.items():
             target_id = target_vocab.get(tok)
@@ -706,7 +706,7 @@ class AssistantToTargetTranslator:
         """
 
         target_shape: tuple[int, ...] = (*assistant_logits.shape[:-1], self.target_vocab_size)
-        target_logits: ms.Tensor = mint.full(target_shape, self.FILTER_VALUE)
+        target_logits: ms.Tensor = ops.full(target_shape, self.FILTER_VALUE)
         # Mask for valid indices
         assistant_indices_mask = self._assistant_to_target_input_ids != self.SUPPRESS_TOKEN_ID
         # Exclude invalid indices
@@ -732,7 +732,6 @@ class AssistantVocabTranslatorCache:
         target_tokenizer: "PreTrainedTokenizerBase",
         assistant_tokenizer: "PreTrainedTokenizerBase",
         target_vocab_size: int,
-        assistant_model_device: str = "cpu",
     ) -> AssistantToTargetTranslator:
         assistant_dict = cls._cache.get(target_tokenizer)
         if assistant_dict is None:
@@ -742,7 +741,7 @@ class AssistantVocabTranslatorCache:
         mapping = assistant_dict.get(assistant_tokenizer)
         if mapping is None:
             mapping = AssistantToTargetTranslator(
-                target_tokenizer, assistant_tokenizer, target_vocab_size, assistant_model_device
+                target_tokenizer, assistant_tokenizer, target_vocab_size,
             )
             assistant_dict[assistant_tokenizer] = mapping
 
