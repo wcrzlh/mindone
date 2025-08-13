@@ -482,7 +482,7 @@ class AssistedCandidateGeneratorDifferentTokenizers(AssistedCandidateGenerator):
             The converted token IDs.
         """
         text = source_tokenizer.batch_decode(input_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True)
-        dest_ids = destination_tokenizer(text, add_special_tokens=True, return_tensors="pt")["input_ids"]
+        dest_ids = ms.tensor(destination_tokenizer(text, add_special_tokens=True, return_tensors="np")["input_ids"])
         return dest_ids
 
     def get_candidates(self, input_ids: ms.Tensor) -> tuple[ms.Tensor, Optional[ms.Tensor]]:
@@ -862,9 +862,9 @@ class UniversalSpeculativeDecodingGenerator(AssistedCandidateGeneratorDifferentT
             target_new_text = self.target_tokenizer.batch_decode(
                 target_new_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True
             )
-            assistant_new_ids = self.assistant_tokenizer(
-                target_new_text, add_special_tokens=False, return_tensors="pt"
-            )["input_ids"]
+            assistant_new_ids = ms.tensor(self.assistant_tokenizer(
+                target_new_text, add_special_tokens=False, return_tensors="np"
+            )["input_ids"])
         else:
             assistant_new_ids = ms.Tensor([[assistant_new_ids]])
 
