@@ -20,7 +20,7 @@ from transformers import AutoTokenizer
 from mindone.transformers.utils import is_mindspore_available
 from mindone.transformers.testing_utils import require_mindspore
 
-from ..test_modeling_common import ids_tensor
+from tests.transformers_tests.test_modeling_common import ids_tensor
 
 
 if is_mindspore_available():
