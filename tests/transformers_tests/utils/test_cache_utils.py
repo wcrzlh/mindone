@@ -40,17 +40,16 @@ if is_mindspore_available():
     from mindspore import mint
 
     from mindone.transformers import (
-        AutoModelForCausalLM,
-        AutoTokenizer,
-        DynamicCache,
-        GenerationConfig,
         GPT2LMHeadModel,
-        LlamaConfig,
-        SinkCache,
-        StaticCache,
-        convert_and_export_with_cache,
     )
-    from mindone.transformers.utils import is_torch_greater_or_equal
+    from mindone.transformers.cache_utils import (
+        DynamicCache,
+        StaticCache,
+    )
+    from transformers import (
+        AutoTokenizer,
+        LlamaConfig,
+    )
 
 
 @require_mindspore
@@ -119,7 +118,7 @@ class CacheTest(unittest.TestCase):
 
         # Let's create some dummy beam indices. From the shape above, it is equivalent to the case where num_beams=4
         # and batch_size=1
-        beam_idx = mint.randint(low=0, high=4, size=(4,))
+        beam_idx = mint.randint(0, 4, (4,))
 
         legacy_cache_reordered = legacy_reorder_fn(legacy_cache, beam_idx)
         new_cache.reorder_cache(beam_idx)
