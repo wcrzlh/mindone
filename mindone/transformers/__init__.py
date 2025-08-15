@@ -25,6 +25,7 @@ __version__ = "4.50.0"
 import transformers
 from packaging import version
 
+from .cache_utils import *
 # Feature Extractor
 from .feature_extraction_utils import BatchFeature, FeatureExtractionMixin
 from .image_processing_base import ImageProcessingMixin

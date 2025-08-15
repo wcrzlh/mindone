@@ -246,7 +246,7 @@ class CacheTest(unittest.TestCase):
     #     model = AutoModelForCausalLM.from_pretrained(
     #         "google/gemma-2b",
     #         device_map=device,
-    #         torch_dtype=dtype,
+    #         mindspore_dtype=dtype,
     #         attn_implementation=attn_implementation,
     #         generation_config=GenerationConfig(
     #             use_cache=True,
@@ -290,7 +290,7 @@ class CacheTest(unittest.TestCase):
 #     def test_dynamic_cache_hard(self):
 #         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf", padding_side="left")
 #         model = AutoModelForCausalLM.from_pretrained(
-#             "meta-llama/Llama-2-7b-hf", device_map="auto", torch_dtype=ms.float16
+#             "meta-llama/Llama-2-7b-hf", device_map="auto", mindspore_dtype=ms.float16
 #         )
 #         inputs = tokenizer(["Here's everything I know about cats. Cats"], return_tensors="pt").to(model.device)
 #
@@ -320,7 +320,7 @@ class CacheTest(unittest.TestCase):
 #         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf", padding_side="left")
 #         tokenizer.pad_token = tokenizer.eos_token
 #         model = AutoModelForCausalLM.from_pretrained(
-#             "meta-llama/Llama-2-7b-hf", device_map="auto", torch_dtype=torch.float16
+#             "meta-llama/Llama-2-7b-hf", device_map="auto", mindspore_dtype=torch.float16
 #         )
 #         inputs = tokenizer(["A sequence: 1, 2, 3, 4, 5", "A sequence: A, B, C"], padding=True, return_tensors="pt").to(
 #             model.device
@@ -334,7 +334,7 @@ class CacheTest(unittest.TestCase):
 #     def test_dynamic_cache_beam_search(self):
 #         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf", padding_side="left")
 #         model = AutoModelForCausalLM.from_pretrained(
-#             "meta-llama/Llama-2-7b-hf", device_map="auto", torch_dtype=torch.float16
+#             "meta-llama/Llama-2-7b-hf", device_map="auto", mindspore_dtype=torch.float16
 #         )
 #
 #         inputs = tokenizer(["The best color is"], return_tensors="pt").to(model.device)
@@ -357,7 +357,7 @@ class CacheTest(unittest.TestCase):
 #         model = AutoModelForCausalLM.from_pretrained(
 #             "google/gemma-2-9b",
 #             device_map="auto",
-#             torch_dtype=torch.bfloat16,
+#             mindspore_dtype=torch.bfloat16,
 #             attn_implementation="eager",
 #         )
 #
@@ -396,7 +396,7 @@ class CacheTest(unittest.TestCase):
 #         """Tests that SinkCache supports more than one new token at once, when shifting the cache"""
 #         tokenizer = AutoTokenizer.from_pretrained("HuggingFaceH4/zephyr-7b-beta")
 #         model = AutoModelForCausalLM.from_pretrained(
-#             "HuggingFaceH4/zephyr-7b-beta", device_map="auto", torch_dtype=torch.float16
+#             "HuggingFaceH4/zephyr-7b-beta", device_map="auto", mindspore_dtype=torch.float16
 #         )
 #         prompt = (
 #             "Compose an engaging travel blog post about a recent trip to Hawaii, highlighting cultural experiences "
@@ -452,7 +452,7 @@ class CacheTest(unittest.TestCase):
 #         )
 #         model = AutoModelForCausalLM.from_pretrained(
 #             "NousResearch/Llama-2-7b-chat-hf",
-#             torch_dtype=torch.bfloat16,
+#             mindspore_dtype=torch.bfloat16,
 #             attn_implementation=attn_implementation,
 #         ).to(torch_device)
 #         inputs = tokenizer(
@@ -497,7 +497,7 @@ class CacheTest(unittest.TestCase):
 #         )
 #         model = AutoModelForCausalLM.from_pretrained(
 #             "NousResearch/Llama-2-7b-chat-hf",
-#             torch_dtype=torch.bfloat16,
+#             mindspore_dtype=torch.bfloat16,
 #             attn_implementation=attn_implementation,
 #         ).to(torch_device)
 #         inputs = tokenizer(
@@ -529,7 +529,7 @@ class CacheTest(unittest.TestCase):
 #         )
 #         model = AutoModelForCausalLM.from_pretrained(
 #             "NousResearch/Llama-2-7b-chat-hf",
-#             torch_dtype=torch.bfloat16,
+#             mindspore_dtype=torch.bfloat16,
 #         ).to(torch_device)
 #         inputs = tokenizer(
 #             ["The best color is", "We should not undermind the issues at hand"], padding=True, return_tensors="pt"
@@ -568,7 +568,7 @@ class CacheTest(unittest.TestCase):
 #         )
 #         model = AutoModelForCausalLM.from_pretrained(
 #             "NousResearch/Llama-2-7b-chat-hf",
-#             torch_dtype=torch.bfloat16,
+#             mindspore_dtype=torch.bfloat16,
 #         ).to(torch_device)
 #         inputs = tokenizer(
 #             ["The best color is", "We should not undermind the issues at hand"], padding=True, return_tensors="pt"
@@ -601,7 +601,7 @@ class CacheTest(unittest.TestCase):
 #         """Tests that OffloadedCache produces the same result as the default DynamicCache"""
 #         model_name = "microsoft/Phi-3-mini-4k-instruct"
 #         tokenizer = AutoTokenizer.from_pretrained(model_name)
-#         model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", torch_dtype=torch.float16)
+#         model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", mindspore_dtype=torch.float16)
 #         device = model.device
 #
 #         if not is_torch_greater_or_equal("2.7", accept_dev=True) and device.type == "xpu":
@@ -629,7 +629,7 @@ class CacheTest(unittest.TestCase):
 #         """Tests that OffloadedCache uses less memory than the default DynamicCache"""
 #         model_name = "microsoft/Phi-3-mini-4k-instruct"
 #         tokenizer = AutoTokenizer.from_pretrained(model_name)
-#         model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", torch_dtype=torch.float16)
+#         model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", mindspore_dtype=torch.float16)
 #         device = model.device
 #
 #         if not is_torch_greater_or_equal("2.7", accept_dev=True) and device.type == "xpu":
@@ -667,7 +667,7 @@ class CacheTest(unittest.TestCase):
 #     def test_cache_copy(self):
 #         model_name = "microsoft/Phi-3-mini-4k-instruct"
 #         tokenizer = AutoTokenizer.from_pretrained(model_name)
-#         model = AutoModelForCausalLM.from_pretrained(model_name, device_map="cuda", torch_dtype=torch.bfloat16)
+#         model = AutoModelForCausalLM.from_pretrained(model_name, device_map="cuda", mindspore_dtype=torch.bfloat16)
 #
 #         prompt_cache = StaticCache(
 #             config=model.config, max_batch_size=1, max_cache_len=1024, device="cuda", dtype=torch.bfloat16
@@ -760,7 +760,7 @@ class CacheTest(unittest.TestCase):
 #     #
 #     #     model = AutoModelForCausalLM.from_pretrained(
 #     #         model_id,
-#     #         torch_dtype="bfloat16",
+#     #         mindspore_dtype="bfloat16",
 #     #         device_map=device_map,
 #     #     )
 #     #     inputs = tokenizer("Today is a beautiful day!", return_tensors="pt").to(0)
