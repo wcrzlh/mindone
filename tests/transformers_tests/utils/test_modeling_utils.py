@@ -333,7 +333,7 @@ class ModelUtilsTest(TestCasePlus):
         super().setUp()
 
     def tearDown(self):
-        self.to(self.old_dtype)
+        # fixme how to align with transformers on "torch.set_default_dtype"
         super().tearDown()
 
     def test_hub_retry(self):
