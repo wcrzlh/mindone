@@ -115,7 +115,7 @@ if is_mindspore_available():
         _prepare_4d_causal_attention_mask,
         dtype_to_min,
     )
-    from transformers.modeling_utils import (
+    from mindone.transformers.modeling_utils import (
         _find_disjoint,
         _find_identical,
         dtype_byte_size,
