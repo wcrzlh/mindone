@@ -2570,8 +2570,8 @@ class AttentionMaskTester(unittest.TestCase):
         self.assertTrue(mint.equal(expanded_mask, result))
 
 
-@require_mindspore
-class TestAttentionImplementation(unittest.TestCase):
+# @require_mindspore
+# class TestAttentionImplementation(unittest.TestCase):
     # fixme need to find specfic reason
     # def test_error_no_sdpa_available(self):
     #     with self.assertRaises(ValueError) as cm:
