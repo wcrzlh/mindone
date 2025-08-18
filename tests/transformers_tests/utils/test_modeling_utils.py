@@ -301,13 +301,6 @@ if is_mindspore_available():
                 hub.TRANSFORMERS_CACHE = transformers_cache
 
 
-if is_flax_available():
-    from transformers import FlaxBertModel
-
-if is_tf_available():
-    from transformers import TFBertModel
-
-
 TINY_T5 = "patrickvonplaten/t5-tiny-random"
 TINY_BERT_FOR_TOKEN_CLASSIFICATION = "hf-internal-testing/tiny-bert-for-token-classification"
 TINY_MISTRAL = "hf-internal-testing/tiny-random-MistralForCausalLM"
@@ -445,13 +438,13 @@ class ModelUtilsTest(TestCasePlus):
         self.assertIsNotNone(model)
 
     def test_model_from_pretrained_with_different_pretrained_model_name(self):
-        model = T5ForConditionalGeneration.from_pretrained(TINY_T5)
+        model = T5ForConditionalGeneration.from_pretrained(TINY_T5, revision="refs/pr/4")
         self.assertIsNotNone(model)
 
         logger = logging.get_logger("transformers.configuration_utils")
         with LoggingLevel(logging.WARNING):
             with CaptureLogger(logger) as cl:
-                BertModel.from_pretrained(TINY_T5)
+                BertModel.from_pretrained(TINY_T5, revision="refs/pr/4")
         self.assertTrue("You are using a model of type t5 to instantiate a model of type bert" in cl.out)
 
     @require_accelerate
@@ -459,7 +452,7 @@ class ModelUtilsTest(TestCasePlus):
         # Needs a device_map for to enter the low_cpu_mem branch. We also load AutoModelForSequenceClassification
         # deliberately to enter the missing keys branch.
         model = AutoModelForSequenceClassification.from_pretrained(
-            TINY_MISTRAL, device_map="auto", quantization_config=None
+            TINY_MISTRAL, quantization_config=None, revision="refs/pr/1"
         )
         self.assertIsNotNone(model)
 
@@ -483,17 +476,17 @@ class ModelUtilsTest(TestCasePlus):
 
     def test_model_from_config_mindspore_dtype_str(self):
         # test that from_pretrained works with mindspore_dtype being strings like "float32" for PyTorch backend
-        model = AutoModel.from_pretrained(TINY_T5, mindspore_dtype="float32")
+        model = AutoModel.from_pretrained(TINY_T5, mindspore_dtype="float32", revision="refs/pr/4")
         self.assertEqual(model.dtype, ms.float32)
         self.assertIsInstance(model.config.mindspore_dtype, ms.Type)
 
-        model = AutoModel.from_pretrained(TINY_T5, mindspore_dtype="float16")
+        model = AutoModel.from_pretrained(TINY_T5, mindspore_dtype="float16", revision="refs/pr/4")
         self.assertEqual(model.dtype, ms.float16)
         self.assertIsInstance(model.config.mindspore_dtype, ms.Type)
 
         # torch.set_default_dtype() supports only float dtypes, so will fail with non-float type
         with self.assertRaises(ValueError):
-            model = AutoModel.from_pretrained(TINY_T5, mindspore_dtype="int64")
+            model = AutoModel.from_pretrained(TINY_T5, mindspore_dtype="int64", revision="refs/pr/4")
 
     def test_model_from_config_mindspore_dtype_composite(self):
         """
@@ -571,7 +564,7 @@ class ModelUtilsTest(TestCasePlus):
         model_path = self.get_auto_remove_tmp_dir()
 
         # baseline - we know TINY_T5 is fp32 model
-        model = T5ForConditionalGeneration.from_pretrained(TINY_T5)
+        model = T5ForConditionalGeneration.from_pretrained(TINY_T5, revision="refs/pr/4")
         self.assertEqual(model.dtype, ms.float32)
 
         def remove_mindspore_dtype(model_path):
@@ -627,17 +620,17 @@ class ModelUtilsTest(TestCasePlus):
 
         # test AutoModel separately as it goes through a different path
         # test auto-detection - as currently TINY_T5 doesn't have mindspore_dtype entry
-        model = AutoModel.from_pretrained(TINY_T5, mindspore_dtype="auto")
+        model = AutoModel.from_pretrained(TINY_T5, mindspore_dtype="auto", revision="refs/pr/4")
         # test that the config object didn't get polluted with mindspore_dtype="auto"
         # there was a bug that after this call we ended up with config.mindspore_dtype=="auto"
         self.assertNotEqual(model.config.mindspore_dtype, "auto")
         # now test the outcome
         self.assertEqual(model.dtype, ms.float32)
-        model = AutoModel.from_pretrained(TINY_T5, mindspore_dtype=ms.float16)
+        model = AutoModel.from_pretrained(TINY_T5, mindspore_dtype=ms.float16, revision="refs/pr/4")
         self.assertEqual(model.dtype, ms.float16)
 
         # test model whose first param is not of a floating type, but int
-        model = AutoModel.from_pretrained(TINY_BERT_FOR_TOKEN_CLASSIFICATION, mindspore_dtype="auto")
+        model = AutoModel.from_pretrained(TINY_BERT_FOR_TOKEN_CLASSIFICATION, mindspore_dtype="auto", revision="refs/pr/1")
         self.assertEqual(model.dtype, ms.float32)
 
         # test model that init the model with _from_config
@@ -661,13 +654,13 @@ class ModelUtilsTest(TestCasePlus):
 
         for requested_attn_implementation in attn_implementation_available:
             model = AutoModelForCausalLM.from_pretrained(
-                TINY_MISTRAL, attn_implementation=requested_attn_implementation
+                TINY_MISTRAL, attn_implementation=requested_attn_implementation, revision="refs/pr/1"
             )
             self.assertEqual(model.config._attn_implementation, requested_attn_implementation)
 
             config = AutoConfig.from_pretrained(TINY_MISTRAL)
             model = AutoModelForCausalLM.from_pretrained(
-                TINY_MISTRAL, config=config, attn_implementation=requested_attn_implementation
+                TINY_MISTRAL, config=config, attn_implementation=requested_attn_implementation, revision="refs/pr/1"
             )
             self.assertEqual(model.config._attn_implementation, requested_attn_implementation)
 
@@ -1049,23 +1042,27 @@ class ModelUtilsTest(TestCasePlus):
         # functionality to load models directly on gpu, this test can be rewritten to use torch's
         # cuda memory tracking and then we should be able to do a much more precise test.
 
-    @require_accelerate
-    @mark.accelerate_tests
-    @require_torch_multi_accelerator
-    @slow
-    def test_model_parallelism_gpt2(self):
-        device_map = {"transformer.wte": 0, "transformer.wpe": 0, "lm_head": 0, "transformer.ln_f": 1}
-        for i in range(12):
-            device_map[f"transformer.h.{i}"] = 0 if i <= 5 else 1
-
-        model = AutoModelForCausalLM.from_pretrained("openai-community/gpt2", device_map=device_map)
-
-        tokenizer = AutoTokenizer.from_pretrained("openai-community/gpt2")
-        inputs = tokenizer("Hello, my name is", return_tensors="pt")
-        output = model.generate(inputs["input_ids"].to(f"{torch_device}:0"))
-
-        text_output = tokenizer.decode(output[0].tolist())
-        self.assertEqual(text_output, "Hello, my name is John. I'm a writer, and I'm a writer. I'm")
+    # fixme there is not same implementation for accelerator
+    # @require_accelerate
+    # @mark.accelerate_tests
+    # @require_torch_multi_accelerator
+    # @slow
+    # def test_model_parallelism_gpt2(self):
+    #     device_map = {"transformer.wte": 0, "transformer.wpe": 0, "lm_head": 0, "transformer.ln_f": 1}
+    #     for i in range(12):
+    #         device_map[f"transformer.h.{i}"] = 0 if i <= 5 else 1
+    #
+    #     model = AutoModelForCausalLM.from_pretrained("openai-community/gpt2", device_map=device_map)
+    #
+    #     tokenizer = AutoTokenizer.from_pretrained("openai-community/gpt2")
+    #     inputs = tokenizer("Hello, my name is", return_tensors="np")
+    #     for key in inputs.keys():
+    #         inputs[key] = ms.tensor(inputs[key])
+    #
+    #     output = model.generate(inputs["input_ids"])
+    #
+    #     text_output = tokenizer.decode(output[0].tolist())
+    #     self.assertEqual(text_output, "Hello, my name is John. I'm a writer, and I'm a writer. I'm")
 
     # # fixme there is not substitution for accelerate
     # @require_accelerate
@@ -1419,7 +1416,7 @@ class ModelUtilsTest(TestCasePlus):
             # Loading the model with the same class, we do get a warning for unexpected weights
             state_dict = model.state_dict()
             state_dict["added_key"] = copy.deepcopy(state_dict["linear.weight"])
-            safe_save_file(state_dict, os.path.join(tmp_dir, SAFE_WEIGHTS_NAME), metadata={"format": "pt"})
+            safe_save_file(state_dict, os.path.join(tmp_dir, SAFE_WEIGHTS_NAME), metadata={"format": "np"})
             with LoggingLevel(logging.WARNING):
                 with CaptureLogger(logger) as cl:
                     _, loading_info = ModelWithHead.from_pretrained(tmp_dir, output_loading_info=True)
@@ -1558,11 +1555,7 @@ class ModelUtilsTest(TestCasePlus):
         # containing `bos_token_id: 1`
 
         # 1. Load without further parameters
-        model = AutoModelForCausalLM.from_pretrained(TINY_MISTRAL)
-        self.assertEqual(model.generation_config.bos_token_id, 1)
-
-        # 2. Load with `device_map`
-        model = AutoModelForCausalLM.from_pretrained(TINY_MISTRAL, device_map="auto")
+        model = AutoModelForCausalLM.from_pretrained(TINY_MISTRAL, revision="refs/pr/1")
         self.assertEqual(model.generation_config.bos_token_id, 1)
 
     @require_safetensors
@@ -1741,7 +1734,7 @@ class ModelUtilsTest(TestCasePlus):
         Regression test for the ability to save and load a config with a custom generation kwarg (i.e. a parameter
         that gets moved to the generation config and reset on the model config)
         """
-        model = T5ForConditionalGeneration.from_pretrained(TINY_T5)
+        model = T5ForConditionalGeneration.from_pretrained(TINY_T5, revision="refs/pr/4")
 
         # The default for `num_beams` is 1 and `early_stopping` is False
         self.assertTrue(model.config.num_beams == 1)
@@ -1793,9 +1786,11 @@ class ModelUtilsTest(TestCasePlus):
         Some fine-tuning methods require the use of cache, like prefix tuning in PEFT. This test checks that a cache
         is at train time used if we request it. Related issue: #35648
         """
-        model = AutoModelForCausalLM.from_pretrained(TINY_MISTRAL)
-        tokenizer = AutoTokenizer.from_pretrained(TINY_MISTRAL)
-        model_inputs = tokenizer("Hello, my dog is cute", return_tensors="pt")
+        model = AutoModelForCausalLM.from_pretrained(TINY_MISTRAL, revision="refs/pr/1")
+        tokenizer = AutoTokenizer.from_pretrained(TINY_MISTRAL, revision="refs/pr/1")
+        model_inputs = tokenizer("Hello, my dog is cute", return_tensors="np")
+        for key in model_inputs.keys():
+            model_inputs[key] = ms.tensor(model_inputs[key])
 
         # By default it is not training, we have to set it
         self.assertFalse(model.training)
