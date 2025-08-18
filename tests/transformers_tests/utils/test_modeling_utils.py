@@ -639,10 +639,11 @@ class ModelUtilsTest(TestCasePlus):
         # 1. explicit from_pretrained's attn_implementation argument
         # 2. explicit from_pretrained's attn_implementation argument with a config argument
         attn_implementation_available = ["eager"]
-        if is_torch_sdpa_available():
-            attn_implementation_available.append("sdpa")
+        # fixme there is not the same implementation for sdpa in mindspore
+        # if is_torch_sdpa_available():
+        #     attn_implementation_available.append("sdpa")
 
-        if is_flash_attn_2_available():
+        if is_mindspore_available():
             attn_implementation_available.append("flash_attention_2")
 
         for requested_attn_implementation in attn_implementation_available:
@@ -667,7 +668,7 @@ class ModelUtilsTest(TestCasePlus):
         # if is_torch_sdpa_available():
         #     attn_implementation_available.append("sdpa")
 
-        if is_flash_attn_2_available():
+        if is_mindspore_available():
             attn_implementation_available.append("flash_attention_2")
 
         for requested_attn_implementation in attn_implementation_available:
@@ -1502,10 +1503,10 @@ class ModelUtilsTest(TestCasePlus):
                     model.warn_if_padding_and_no_attention_mask(input_ids, attention_mask=None)
             self.assertIn("You may ignore this warning if your `pad_token_id`", cl.out)
 
-        if not is_torchdynamo_available():
-            self.skipTest(reason="torchdynamo is not available")
+        # if not is_torchdynamo_available():
+        #     self.skipTest(reason="torchdynamo is not available")
 
-        # there is not substitution for torch._dynamo
+        # fixme there is not substitution for torch._dynamo
         # with self.subTest("Ensure that the warning code is skipped when compiling with torchdynamo."):
         #     logger.warning_once.cache_clear()
         #     from torch._dynamo import config, testing
