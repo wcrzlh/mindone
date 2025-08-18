@@ -312,7 +312,7 @@ LOG = logging.get_logger(__name__)
 
 def check_models_equal(model1, model2):
     models_are_equal = True
-    for model1_p, model2_p in zip(model1.parameters(), model2.parameters()):
+    for model1_p, model2_p in zip(model1.named_parameters(), model2.named_parameters()):
         if model1_p.data.ne(model2_p.data).sum() > 0:
             models_are_equal = False
 
@@ -755,7 +755,7 @@ class ModelUtilsTest(TestCasePlus):
     #
     #             # Finally, check the model can be reloaded
     #             new_model = BertModel.from_pretrained(tmp_dir)
-    #             for p1, p2 in zip(model.parameters(), new_model.parameters()):
+    #             for p1, p2 in zip(model.named_parameters(), new_model.named_parameters()):
     #                 torch.testing.assert_close(p1, p2)
 
     # # fixme there is not substitution for torch testing assert_close
@@ -763,7 +763,7 @@ class ModelUtilsTest(TestCasePlus):
     #     model = BertModel.from_pretrained("hf-internal-testing/tiny-random-bert-sharded")
     #     # the model above is the same as the model below, just a sharded version.
     #     ref_model = BertModel.from_pretrained("hf-internal-testing/tiny-random-bert")
-    #     for p1, p2 in zip(model.parameters(), ref_model.parameters()):
+    #     for p1, p2 in zip(model.named_parameters(), ref_model.named_parameters()):
     #         torch.testing.assert_close(p1, p2)
 
     # # fixme there is not substitution for torch testing assert_close
@@ -784,7 +784,7 @@ class ModelUtilsTest(TestCasePlus):
     #
     #         new_model = BertModel.from_pretrained(tmp_dir, variant="v2")
     #
-    #     for p1, p2 in zip(model.parameters(), new_model.parameters()):
+    #     for p1, p2 in zip(model.named_parameters(), new_model.named_parameters()):
     #         torch.testing.assert_close(p1, p2)
 
     # # fixme there is not substitution for torch testing assert_close
@@ -809,7 +809,7 @@ class ModelUtilsTest(TestCasePlus):
     #
     #         new_model = BertModel.from_pretrained(tmp_dir, variant="v2")
     #
-    #     for p1, p2 in zip(model.parameters(), new_model.parameters()):
+    #     for p1, p2 in zip(model.named_parameters(), new_model.named_parameters()):
     #         torch.testing.assert_close(p1, p2)
 
     # # fixme there is not substitution for torch testing assert_close
@@ -831,7 +831,7 @@ class ModelUtilsTest(TestCasePlus):
     #
     #         new_model = BertModel.from_pretrained(tmp_dir, variant="v2")
     #
-    #     for p1, p2 in zip(model.parameters(), new_model.parameters()):
+    #     for p1, p2 in zip(model.named_parameters(), new_model.named_parameters()):
     #         torch.testing.assert_close(p1, p2)
 
     # # fixme there is not substitution for torch testing assert_close
@@ -857,7 +857,7 @@ class ModelUtilsTest(TestCasePlus):
     #
     #         new_model = BertModel.from_pretrained(tmp_dir, variant="v2")
     #
-    #     for p1, p2 in zip(model.parameters(), new_model.parameters()):
+    #     for p1, p2 in zip(model.named_parameters(), new_model.named_parameters()):
     #         torch.testing.assert_close(p1, p2)
 
     # # fixme there is not substitution for torch testing assert_close
@@ -891,7 +891,7 @@ class ModelUtilsTest(TestCasePlus):
     #         # We can load the model without specifying use_safetensors
     #         new_model = BertModel.from_pretrained(tmp_dir)
     #
-    #     for p1, p2 in zip(model.parameters(), new_model.parameters()):
+    #     for p1, p2 in zip(model.named_parameters(), new_model.named_parameters()):
     #         torch.testing.assert_close(p1, p2)
 
     # # fixme there is not substitution for torch testing assert_close
@@ -925,7 +925,7 @@ class ModelUtilsTest(TestCasePlus):
     #         # We can load the model without specifying use_safetensors
     #         new_model = BertModel.from_pretrained(tmp_dir)
     #
-    #     for p1, p2 in zip(model.parameters(), new_model.parameters()):
+    #     for p1, p2 in zip(model.named_parameters(), new_model.named_parameters()):
     #         torch.testing.assert_close(p1, p2)
 
     def test_checkpoint_variant_hub(self):
@@ -1034,7 +1034,7 @@ class ModelUtilsTest(TestCasePlus):
 
         # if you want to compare things manually, let's first look at the size of the model in bytes
         # model = AutoModel.from_pretrained(mname, low_cpu_mem_usage=False)
-        # total_numel = sum(dict((p.data_ptr(), p.numel()) for p in model.parameters()).values())
+        # total_numel = sum(dict((p.data_ptr(), p.numel()) for p in model.named_parameters()).values())
         # total_bytes = total_numel * 4
         # Now the diff_bytes should be very close to total_bytes, but the reports are inconsistent.
         # The easiest way to test this is to switch the model and torch.load to do all the work on
@@ -1308,7 +1308,7 @@ class ModelUtilsTest(TestCasePlus):
     #         new_model = BertModel.from_pretrained(tmp_dir)
     #
     #         # Check models are equal
-    #         for p1, p2 in zip(model.parameters(), new_model.parameters()):
+    #         for p1, p2 in zip(model.named_parameters(), new_model.named_parameters()):
     #             torch.testing.assert_close(p1, p2)
 
     # # fixme there is no substituation for torch.testing.assert_close
@@ -1318,7 +1318,7 @@ class ModelUtilsTest(TestCasePlus):
     #     pytorch_model = BertModel.from_pretrained("hf-internal-testing/tiny-random-bert")
     #
     #     # Check models are equal
-    #     for p1, p2 in zip(safetensors_model.parameters(), pytorch_model.parameters()):
+    #     for p1, p2 in zip(safetensors_model.named_parameters(), pytorch_model.named_parameters()):
     #         torch.testing.assert_close(p1, p2)
 
     # # fixme there is no substituation for torch.testing.assert_close
@@ -1337,7 +1337,7 @@ class ModelUtilsTest(TestCasePlus):
     #         new_model = BertModel.from_pretrained(tmp_dir)
     #
     #         # Check models are equal
-    #         for p1, p2 in zip(model.parameters(), new_model.parameters()):
+    #         for p1, p2 in zip(model.named_parameters(), new_model.named_parameters()):
     #             torch.testing.assert_close(p1, p2)
 
     # # fixme there is no substituation for torch.testing.assert_close
@@ -1347,7 +1347,7 @@ class ModelUtilsTest(TestCasePlus):
     #     pytorch_model = BertModel.from_pretrained("hf-internal-testing/tiny-random-bert-sharded")
     #
     #     # Check models are equal
-    #     for p1, p2 in zip(safetensors_model.parameters(), pytorch_model.parameters()):
+    #     for p1, p2 in zip(safetensors_model.named_parameters(), pytorch_model.named_parameters()):
     #         torch.testing.assert_close(p1, p2)
 
     # # fixme there is no substituation for torch.testing.assert_close
@@ -1358,7 +1358,7 @@ class ModelUtilsTest(TestCasePlus):
     #
     #         # Can load a base model in a model with head
     #         model = ModelWithHead.from_pretrained(tmp_dir)
-    #         for p1, p2 in zip(model.base.parameters(), base_model.parameters()):
+    #         for p1, p2 in zip(model.base.named_parameters(), base_model.named_parameters()):
     #             torch.testing.assert_close(p1, p2)
     #
     #         # It doesn't work if the state dict has a mix of keys of the head and base without prefix though.
@@ -1560,24 +1560,24 @@ class ModelUtilsTest(TestCasePlus):
 
     @require_safetensors
     def test_safetensors_torch_from_torch(self):
-        model = BertModel.from_pretrained("hf-internal-testing/tiny-bert-pt-only")
+        model = BertModel.from_pretrained("hf-internal-testing/tiny-bert-pt-only", revision="refs/pr/1")
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             model.save_pretrained(tmp_dir, safe_serialization=True)
             new_model = BertModel.from_pretrained(tmp_dir)
 
-        for p1, p2 in zip(model.parameters(), new_model.parameters()):
+        for p1, p2 in zip(model.named_parameters(), new_model.named_parameters()):
             self.assertTrue(mint.equal(p1, p2))
 
     @require_safetensors
     def test_safetensors_torch_from_torch_sharded(self):
-        model = BertModel.from_pretrained("hf-internal-testing/tiny-bert-pt-only")
+        model = BertModel.from_pretrained("hf-internal-testing/tiny-bert-pt-only", revision="refs/pr/1")
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             model.save_pretrained(tmp_dir, safe_serialization=True, max_shard_size="100kB")
             new_model = BertModel.from_pretrained(tmp_dir)
 
-        for p1, p2 in zip(model.parameters(), new_model.parameters()):
+        for p1, p2 in zip(model.named_parameters(), new_model.named_parameters()):
             self.assertTrue(mint.equal(p1, p2))
 
     def test_modifying_model_config_gets_moved_to_generation_config(self):
@@ -1967,7 +1967,7 @@ class ModelOnTheFlyConversionTester(unittest.TestCase):
         converted_model = BertModel.from_pretrained(self.repo_name, use_safetensors=True)
 
         with self.subTest("Initial and converted models are equal"):
-            for p1, p2 in zip(initial_model.parameters(), converted_model.parameters()):
+            for p1, p2 in zip(initial_model.named_parameters(), converted_model.named_parameters()):
                 self.assertTrue(mint.equal(p1, p2))
 
         with self.subTest("PR was open with the safetensors account"):
@@ -1986,7 +1986,7 @@ class ModelOnTheFlyConversionTester(unittest.TestCase):
         converted_model = BertModel.from_pretrained(self.repo_name, use_safetensors=True, token=self.token)
 
         with self.subTest("Initial and converted models are equal"):
-            for p1, p2 in zip(initial_model.parameters(), converted_model.parameters()):
+            for p1, p2 in zip(initial_model.named_parameters(), converted_model.named_parameters()):
                 self.assertTrue(mint.equal(p1, p2))
 
         with self.subTest("PR was open with the safetensors account"):
@@ -2009,7 +2009,7 @@ class ModelOnTheFlyConversionTester(unittest.TestCase):
         converted_model = BertModel.from_pretrained(self.repo_name, use_safetensors=True, token=self.token)
 
         with self.subTest("Initial and converted models are equal"):
-            for p1, p2 in zip(initial_model.parameters(), converted_model.parameters()):
+            for p1, p2 in zip(initial_model.named_parameters(), converted_model.named_parameters()):
                 self.assertTrue(mint.equal(p1, p2))
 
         with self.subTest("PR was open with the safetensors account"):
@@ -2028,7 +2028,7 @@ class ModelOnTheFlyConversionTester(unittest.TestCase):
         converted_model = BertModel.from_pretrained(self.repo_name, use_safetensors=True)
 
         with self.subTest("Initial and converted models are equal"):
-            for p1, p2 in zip(initial_model.parameters(), converted_model.parameters()):
+            for p1, p2 in zip(initial_model.named_parameters(), converted_model.named_parameters()):
                 self.assertTrue(mint.equal(p1, p2))
 
         with self.subTest("PR was open with the safetensors account"):
@@ -2049,7 +2049,7 @@ class ModelOnTheFlyConversionTester(unittest.TestCase):
         converted_model = BertModel.from_pretrained(self.repo_name, use_safetensors=True, token=self.token)
 
         with self.subTest("Initial and converted models are equal"):
-            for p1, p2 in zip(initial_model.parameters(), converted_model.parameters()):
+            for p1, p2 in zip(initial_model.named_parameters(), converted_model.named_parameters()):
                 self.assertTrue(mint.equal(p1, p2))
 
         with self.subTest("PR was open with the safetensors account"):
@@ -2072,7 +2072,7 @@ class ModelOnTheFlyConversionTester(unittest.TestCase):
         converted_model = BertModel.from_pretrained(self.repo_name, use_safetensors=True, token=self.token)
 
         with self.subTest("Initial and converted models are equal"):
-            for p1, p2 in zip(initial_model.parameters(), converted_model.parameters()):
+            for p1, p2 in zip(initial_model.named_parameters(), converted_model.named_parameters()):
                 self.assertTrue(mint.equal(p1, p2))
 
         with self.subTest("PR was open with the safetensors account"):
@@ -2197,7 +2197,7 @@ class ModelPushToHubTester(unittest.TestCase):
             model.push_to_hub(tmp_repo.repo_id, token=self._token)
 
             new_model = BertModel.from_pretrained(tmp_repo.repo_id)
-            for p1, p2 in zip(model.parameters(), new_model.parameters()):
+            for p1, p2 in zip(model.named_parameters(), new_model.named_parameters()):
                 self.assertTrue(mint.equal(p1, p2))
 
     @unittest.skip(reason="This test is flaky")
@@ -2212,7 +2212,7 @@ class ModelPushToHubTester(unittest.TestCase):
                 model.save_pretrained(tmp_dir, repo_id=tmp_repo.repo_id, push_to_hub=True, token=self._token)
 
             new_model = BertModel.from_pretrained(tmp_repo.repo_id)
-            for p1, p2 in zip(model.parameters(), new_model.parameters()):
+            for p1, p2 in zip(model.named_parameters(), new_model.named_parameters()):
                 self.assertTrue(mint.equal(p1, p2))
 
     def test_push_to_hub_with_description(self):
@@ -2243,7 +2243,7 @@ The commit description supports markdown synthax see:
             model.push_to_hub(tmp_repo.repo_id, token=self._token)
 
             new_model = BertModel.from_pretrained(tmp_repo.repo_id)
-            for p1, p2 in zip(model.parameters(), new_model.parameters()):
+            for p1, p2 in zip(model.named_parameters(), new_model.named_parameters()):
                 self.assertTrue(mint.equal(p1, p2))
 
     @unittest.skip(reason="This test is flaky")
@@ -2258,7 +2258,7 @@ The commit description supports markdown synthax see:
                 model.save_pretrained(tmp_dir, push_to_hub=True, token=self._token, repo_id=tmp_repo.repo_id)
 
             new_model = BertModel.from_pretrained(tmp_repo.repo_id)
-            for p1, p2 in zip(model.parameters(), new_model.parameters()):
+            for p1, p2 in zip(model.named_parameters(), new_model.named_parameters()):
                 self.assertTrue(mint.equal(p1, p2))
 
 
