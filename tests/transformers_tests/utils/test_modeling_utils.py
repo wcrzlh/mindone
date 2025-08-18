@@ -103,8 +103,10 @@ if is_mindspore_available():
         BertModel,
         CLIPTextModel,
         GenerationMixin,
-        PreTrainedModel,
         T5ForConditionalGeneration,
+    )
+    from mindone.transformers.modeling_utils import (
+        PreTrainedModel,
     )
     from mindone.transformers.modeling_attn_mask_utils import (
         AttentionMaskConverter,
