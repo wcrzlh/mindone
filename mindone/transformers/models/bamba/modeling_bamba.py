@@ -465,10 +465,11 @@ def segment_sum(input_tensor):
     """
     More stable segment sum calculation. Uses cumulative sums and masking instead of direct subtractions.
     """
-    chunk_size = input_tensor.shape[-1]
+    # input tensor shape[bsz, num_heads, -1, chunk_size]
+    bs, num_heads, seq_len, chunk_size = input_tensor.shape[-1]
     # 1. expand input tensor to have an additional dimension and repeat along that dimension
     # [..., chunk_size] -> [..., chunk_size, chunk_size]
-    input_tensor = input_tensor[..., None].broadcast_to(*input_tensor.shape, chunk_size)
+    input_tensor = input_tensor[..., None].broadcast_to((bs, num_heads, seq_len, chunk_size, chunk_size))
     # 2. create a lower triangular mask with the diagonal set to 0 to 0 out elements above diag
     mask = mint.tril(mint.ones((chunk_size, chunk_size), dtype=ms.bool_), diagonal=-1)
     input_tensor = input_tensor.masked_fill(~mask, 0)
@@ -746,7 +747,7 @@ class BambaMixer(nn.Cell):
         return out
 
     # fmt: off
-    def torch_forward(
+    def mindspore_forward(
         self,
         input_states,
         cache_params: Optional[HybridMambaAttentionDynamicCache] = None,
@@ -964,7 +965,7 @@ class BambaMixer(nn.Cell):
             # tune out hidden states for pad tokens, see https://github.com/state-spaces/mamba/issues/66
             hidden_states = (hidden_states * attention_mask[:, :, None]).to(dtype)
 
-        return self.torch_forward(hidden_states, cache_params, cache_position, attention_mask)
+        return self.mindspore_forward(hidden_states, cache_params, cache_position, attention_mask)
 
 
 class BambaMLP(nn.Cell):
