@@ -465,17 +465,10 @@ def segment_sum(input_tensor):
     """
     More stable segment sum calculation. Uses cumulative sums and masking instead of direct subtractions.
     """
-    # input tensor shape[bsz, num_heads, -1, chunk_size]
-    if len(input_tensor.shape) == 4:
-        bs, num_heads, seq_len, chunk_size = input_tensor.shape
-        # 1. expand input tensor to have an additional dimension and repeat along that dimension
-        # [..., chunk_size] -> [..., chunk_size, chunk_size]
-        input_tensor = input_tensor[..., None].broadcast_to((bs, num_heads, seq_len, chunk_size, chunk_size))
-    elif len(input_tensor.shape) == 3:
-        bs, num_heads, chunk_size = input_tensor.shape
-        # 1. expand input tensor to have an additional dimension and repeat along that dimension
-        # [..., chunk_size] -> [..., chunk_size, chunk_size]
-        input_tensor = input_tensor[..., None].broadcast_to((bs, num_heads, chunk_size, chunk_size))
+    chunk_size = input_tensor.shape[-1]
+    # 1. expand input tensor to have an additional dimension and repeat along that dimension
+    # [..., chunk_size] -> [..., chunk_size, chunk_size]
+    input_tensor = input_tensor[..., None].broadcast_to((input_tensor.shape + (chunk_size,)))
     # 2. create a lower triangular mask with the diagonal set to 0 to 0 out elements above diag
     mask = mint.tril(mint.ones((chunk_size, chunk_size), dtype=ms.bool_), diagonal=-1)
     input_tensor = input_tensor.masked_fill(~mask, 0)
