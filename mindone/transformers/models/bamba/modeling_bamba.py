@@ -78,8 +78,8 @@ class HybridMambaAttentionDynamicCache(modeling_jamba.HybridMambaAttentionDynami
     and `ssm_states` represents the ssm state and has a shape of `(batch_size, d_inner, d_state)`.
     """
 
-    def __init__(self, config: BambaConfig, batch_size, dtype=ms.float16, device=None):
-        super().__init__(config, batch_size, dtype, device)
+    def __init__(self, config: BambaConfig, batch_size, dtype=ms.float16):
+        super().__init__(config, batch_size, dtype)
         self.layers_block_type = config.layers_block_type
         self.has_previous_state = False  # only used by mamba
         conv_kernel_size = config.mamba_d_conv
@@ -107,16 +107,16 @@ class HybridMambaAttentionDynamicCache(modeling_jamba.HybridMambaAttentionDynami
                     )
                 ]
             else:
-                self.conv_states += [ms.Tensor([[]] * batch_size, device=device)]
-                self.ssm_states += [ms.Tensor([[]] * batch_size, device=device)]
+                self.conv_states += [ms.Tensor([[]] * batch_size)]
+                self.ssm_states += [ms.Tensor([[]] * batch_size)]
                 self.transformer_layers.append(i)
 
-        self.key_cache = [ms.Tensor([[]] * batch_size, device=device) for _ in range(config.num_hidden_layers)]
-        self.value_cache = [ms.Tensor([[]] * batch_size, device=device) for _ in range(config.num_hidden_layers)]
+        self.key_cache = [ms.Tensor([[]] * batch_size) for _ in range(config.num_hidden_layers)]
+        self.value_cache = [ms.Tensor([[]] * batch_size) for _ in range(config.num_hidden_layers)]
 
 
 class BambaRotaryEmbedding(nn.Cell):
-    def __init__(self, config: BambaConfig, device=None):
+    def __init__(self, config: BambaConfig):
         super().__init__()
         # BC: "rope_type" was originally "type"
         if hasattr(config, "rope_scaling") and config.rope_scaling is not None:
@@ -129,7 +129,7 @@ class BambaRotaryEmbedding(nn.Cell):
         self.config = config
         self.rope_init_fn = ROPE_INIT_FUNCTIONS[self.rope_type]
 
-        inv_freq, self.attention_scaling = self.rope_init_fn(self.config, device)
+        inv_freq, self.attention_scaling = self.rope_init_fn(self.config)
         self.register_buffer("inv_freq", inv_freq, persistent=False)
         self.original_inv_freq = self.inv_freq
 
@@ -159,7 +159,7 @@ class BambaRotaryEmbedding(nn.Cell):
         position_ids_expanded = position_ids[:, None, :].float()
         # Force float32 (see https://github.com/huggingface/transformers/pull/29285)
 
-        freqs = (inv_freq_expanded.float().to(x.device) @ position_ids_expanded.float()).swapaxes(1, 2)
+        freqs = (inv_freq_expanded.float() @ position_ids_expanded.float()).swapaxes(1, 2)
         emb = mint.cat((freqs, freqs), dim=-1)
         cos = emb.cos()
         sin = emb.sin()
@@ -699,10 +699,10 @@ class BambaMixer(nn.Cell):
         # 2. Convolution sequence transformation
         if use_precomputed_states:
             cache_params.conv_states[self.layer_idx] = cache_params.conv_states[self.layer_idx].roll(shifts=-1, dims=-1)
-            cache_params.conv_states[self.layer_idx][:, :, -1] = hidden_states_B_C[:, 0, :].to(cache_params.conv_states[self.layer_idx].device)
+            cache_params.conv_states[self.layer_idx][:, :, -1] = hidden_states_B_C[:, 0, :]
 
             # We need to guarantee that anything regarding the cache is on the same device
-            conv_states = cache_params.conv_states[self.layer_idx].to(device=self.conv1d.weight.device)
+            conv_states = cache_params.conv_states[self.layer_idx]
 
             hidden_states_B_C = mint.sum(
                 conv_states * self.conv1d.weight.squeeze(1), dim=-1
@@ -832,7 +832,7 @@ class BambaMixer(nn.Cell):
             # 3. Compute the inter-chunk SSM recurrence; produces correct SSM states at chunk boundaries
             # (middle term of factorization of off-diag blocks; A terms)
             if use_precomputed_states:
-                previous_states = cache_params.ssm_states[self.layer_idx][:, None, ...].to(device=states.device)
+                previous_states = cache_params.ssm_states[self.layer_idx][:, None, ...]
             else:
                 previous_states = mint.zeros_like(states[:, :1])
             states = mint.cat([previous_states, states], dim=1)
@@ -879,7 +879,7 @@ class BambaMixer(nn.Cell):
         cache_position: Optional[ms.Tensor] = None,
         attention_mask: Optional[ms.Tensor] = None,
     ):
-        if is_fast_path_available and "cuda" in self.in_proj.weight.device.type:
+        if is_fast_path_available:
             return self.cuda_kernels_forward(hidden_states, cache_params, cache_position, attention_mask)
         dtype = hidden_states.dtype
         if attention_mask is not None and attention_mask.shape[1] > 1 and attention_mask.shape[0] > 1:
@@ -1319,7 +1319,7 @@ class BambaModel(BambaPreTrainedModel):
             ):
                 return None
 
-        dtype, device = input_tensor.dtype, input_tensor.device
+        dtype = input_tensor.dtype
         sequence_length = input_tensor.shape[1]
         target_length = (
             attention_mask.shape[-1]
@@ -1333,7 +1333,6 @@ class BambaModel(BambaPreTrainedModel):
             sequence_length=sequence_length,
             target_length=target_length,
             dtype=dtype,
-            device=device,
             cache_position=cache_position,
             batch_size=input_tensor.shape[0],
         )
@@ -1341,7 +1340,6 @@ class BambaModel(BambaPreTrainedModel):
         if (
             self.config._attn_implementation == "sdpa"
             and attention_mask is not None
-            and attention_mask.device.type in ["cuda", "xpu"]
             and not output_attentions
         ):
             # Attend to all tokens in fully masked rows in the causal_mask, for example the relevant first rows when
@@ -1569,7 +1567,7 @@ class BambaForCausalLM(BambaPreTrainedModel, GenerationMixin):
                 input_ids = input_ids[:, cache_position]
         else:
             past_key_values = HybridMambaAttentionDynamicCache(
-                self.config, input_ids.shape[0], self.dtype, device=self.device
+                self.config, input_ids.shape[0], self.dtype
             )
 
         if attention_mask is not None and position_ids is None:
