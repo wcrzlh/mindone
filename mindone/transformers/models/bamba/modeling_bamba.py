@@ -1051,6 +1051,7 @@ class BambaPreTrainedModel(PreTrainedModel):
     _supports_sdpa = True
     _supports_cache_class = True  # Note: only supports HybridMambaAttentionDynamicCache
     _is_stateful = True
+    _supports_dynamic_input = True
 
     def _init_weights(self, module):
         std = self.config.initializer_range
