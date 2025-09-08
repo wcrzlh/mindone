@@ -464,6 +464,7 @@ class BambaMixer(nn.Cell):
             kernel_size=self.conv_kernel_size,
             group=self.conv_dim,
             padding=self.conv_kernel_size - 1,
+            pad_mode="pad",
         )
 
         # projection of the input hidden states
