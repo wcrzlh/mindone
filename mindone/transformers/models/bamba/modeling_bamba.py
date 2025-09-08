@@ -466,7 +466,7 @@ def segment_sum(input_tensor):
     More stable segment sum calculation. Uses cumulative sums and masking instead of direct subtractions.
     """
     # input tensor shape[bsz, num_heads, -1, chunk_size]
-    bs, num_heads, seq_len, chunk_size = input_tensor.shape[-1]
+    bs, num_heads, seq_len, chunk_size = input_tensor.shape
     # 1. expand input tensor to have an additional dimension and repeat along that dimension
     # [..., chunk_size] -> [..., chunk_size, chunk_size]
     input_tensor = input_tensor[..., None].broadcast_to((bs, num_heads, seq_len, chunk_size, chunk_size))
