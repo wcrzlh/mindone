@@ -45,6 +45,7 @@ from mindspore import Parameter, mint, nn, ops
 from ...cache_utils import Cache  # we need __iter__ and __len__ of pkv
 from ...generation import GenerationMixin
 from ...mindspore_adapter import dtype_to_min
+from ...mindspore_adapter._conv import Conv1d
 from ...modeling_attn_mask_utils import AttentionMaskConverter
 from ...modeling_flash_attention_utils import FlashAttentionKwargs
 from ...modeling_outputs import BaseModelOutputWithPast, CausalLMOutputWithPast
@@ -535,14 +536,13 @@ class BambaMixer(nn.Cell):
         self.time_step_max = 0.1
 
         self.conv_dim = self.intermediate_size + 2 * self.n_groups * self.ssm_state_size
-        self.conv1d = nn.Conv1d(
+        self.conv1d = Conv1d(
             in_channels=self.conv_dim,
             out_channels=self.conv_dim,
-            has_bias=config.mamba_conv_bias,
+            bias=config.mamba_conv_bias,
             kernel_size=self.conv_kernel_size,
-            group=self.conv_dim,
+            groups=self.conv_dim,
             padding=self.conv_kernel_size - 1,
-            pad_mode="pad",
         )
 
         # projection of the input hidden states
