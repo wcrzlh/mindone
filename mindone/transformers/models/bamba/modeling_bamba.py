@@ -460,7 +460,7 @@ class BambaMixer(nn.Cell):
         self.conv1d = nn.Conv1d(
             in_channels=self.conv_dim,
             out_channels=self.conv_dim,
-            bias=config.mamba_conv_bias,
+            has_bias=config.mamba_conv_bias,
             kernel_size=self.conv_kernel_size,
             groups=self.conv_dim,
             padding=self.conv_kernel_size - 1,
