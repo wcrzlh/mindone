@@ -29,7 +29,7 @@
 
 from typing import Any, Callable, Optional, Tuple, Union
 
-from transformers.activations import ACT2FN
+from mindone.transformers.activations import ACT2FN
 from transformers.models.bamba.configuration_bamba import BambaConfig
 from transformers.utils import (
     add_start_docstrings,
