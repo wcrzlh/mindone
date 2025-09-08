@@ -27,9 +27,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Tuple, Union
 
-import transformers.models.jamba.modeling_jamba as modeling_jamba
 from transformers.activations import ACT2FN
 from transformers.models.bamba.configuration_bamba import BambaConfig
 from transformers.utils import (
@@ -62,9 +61,88 @@ logger = logging.get_logger(__name__)
 
 _CONFIG_FOR_DOC = "BambaConfig"
 
+class Jamba_HybridMambaAttentionDynamicCache:
+    """
+    A dynamic cache that can handle both the attention cache (which has a seq_len dimension) and the mamba cache
+    (which has a constant shape regardless of seq_len).
+
+    This cache has two sets of lists of tensors: `key_cache` and `value_cache` for attention cache and `conv_states`
+    and `ssm_states` for mamba cache. Each of these lists has `num_layers` tensors. The expected shape for each tensor
+    For attention layers, `key_cache` and `value_cache` have a shape of `(batch_size, num_heads, seq_len, head_dim)`,
+    while `conv_states` and `ssm_states` have a shape of `(batch_size, 0)` (empty tensors).
+    For mamba layers, `key_cache` and `value_cache` have a shape of `(batch_size, 0)` (empty tensors),
+    while `conv_states` represents the convolution state and has a shape of `(batch_size, d_inner, d_conv)`,
+    and `ssm_states` represents the ssm state and has a shape of `(batch_size, d_inner, d_state)`.
+    """
+
+    is_compileable = False
+
+    def __init__(self, config, batch_size, dtype=ms.float16):
+        self.dtype = dtype
+        self.layers_block_type = config.layers_block_type
+        self.has_previous_state = False  # only used by mamba
+        intermediate_size = config.mamba_expand * config.hidden_size
+        ssm_state_size = config.mamba_d_state
+        conv_kernel_size = config.mamba_d_conv
+        self.conv_states = []
+        self.ssm_states = []
+        self.transformer_layers = []
+        for i in range(config.num_hidden_layers):
+            if self.layers_block_type[i] == "mamba":
+                self.conv_states += [
+                    mint.zeros((batch_size, intermediate_size, conv_kernel_size), dtype=dtype)
+                ]
+                self.ssm_states += [
+                    mint.zeros((batch_size, intermediate_size, ssm_state_size), dtype=dtype)
+                ]
+            else:
+                self.conv_states += [ms.tensor([[]] * batch_size)]
+                self.ssm_states += [ms.tensor([[]] * batch_size)]
+                self.transformer_layers.append(i)
+
+        self.key_cache = [ms.tensor([[]] * batch_size) for _ in range(config.num_hidden_layers)]
+        self.value_cache = [ms.tensor([[]] * batch_size) for _ in range(config.num_hidden_layers)]
+
+    def update(
+        self,
+        key_states: ms.Tensor,
+        value_states: ms.Tensor,
+        layer_idx: int,
+        cache_kwargs: Optional[dict[str, Any]] = None,
+    ) -> tuple[ms.Tensor, ms.Tensor]:
+        # Update the cache
+        if self.key_cache[layer_idx].shape[-1] == 0:
+            self.key_cache[layer_idx] = key_states
+            self.value_cache[layer_idx] = value_states
+        else:
+            self.key_cache[layer_idx] = mint.cat([self.key_cache[layer_idx], key_states], dim=2)
+            self.value_cache[layer_idx] = mint.cat([self.value_cache[layer_idx], value_states], dim=2)
+
+        return self.key_cache[layer_idx], self.value_cache[layer_idx]
+
+    def reorder_cache(self, beam_idx: ms.Tensor):
+        """Reorders the cache for beam search, given the selected beam indices."""
+        for layer_idx in range(len(self.key_cache)):
+            device = self.key_cache[layer_idx].device
+            self.key_cache[layer_idx] = self.key_cache[layer_idx].index_select(0, beam_idx.to(device))
+            device = self.value_cache[layer_idx].device
+            self.value_cache[layer_idx] = self.value_cache[layer_idx].index_select(0, beam_idx.to(device))
+
+            device = self.conv_states[layer_idx].device
+            self.conv_states[layer_idx] = self.conv_states[layer_idx].index_select(0, beam_idx.to(device))
+            device = self.ssm_states[layer_idx].device
+            self.ssm_states[layer_idx] = self.ssm_states[layer_idx].index_select(0, beam_idx.to(device))
+
+    def get_seq_length(self, layer_idx: Optional[int] = 0) -> int:
+        """Returns the sequence length of the cached states. A layer index can be optionally passed."""
+        # take any layer that contains cache and not empty tensor
+        layer_idx = self.transformer_layers[0] if layer_idx not in self.transformer_layers else layer_idx
+        if len(self.key_cache) <= layer_idx:
+            return 0
+        return self.key_cache[layer_idx].shape[-2]
 
 # Adapted from transformers.models.jamba.modeling_jamba.HybridMambaAttentionDynamicCache for the v2 mixer
-class HybridMambaAttentionDynamicCache(modeling_jamba.HybridMambaAttentionDynamicCache):
+class HybridMambaAttentionDynamicCache(Jamba_HybridMambaAttentionDynamicCache):
     """
     A dynamic cache that can handle both the attention cache (which has a seq_len dimension) and the mamba cache
     (which has a constant shape regardless of seq_len).
