@@ -24,7 +24,6 @@ import torch
 from transformers import BambaConfig
 
 import mindspore as ms
-from mindspore import mint
 
 from tests.modeling_test_utils import (
     MS_DTYPE_MAPPING,
@@ -105,8 +104,7 @@ class BambaModelTester:
 
         input_mask = None
         if self.use_input_mask:
-            input_mask = mint.tril(mint.ones_like(input_ids))
-            input_mask = input_mask.asnumpy()
+            input_mask = ids_numpy([self.batch_size, self.seq_length], 1)
 
         token_labels = None
         if self.use_labels:
