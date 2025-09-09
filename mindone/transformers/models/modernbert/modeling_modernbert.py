@@ -336,10 +336,8 @@ class ModernBertAttention(nn.Cell):
         qkv = self.Wqkv(hidden_states)
 
         bs = hidden_states.shape[0]
-        if self.config._attn_implementation == "flash_attention_2":
-            qkv = qkv.view(-1, 3, self.num_heads, self.head_dim)
-        else:
-            qkv = qkv.view(bs, -1, 3, self.num_heads, self.head_dim)
+
+        qkv = qkv.view(bs, -1, 3, self.num_heads, self.head_dim)
 
         attn_outputs = MODERNBERT_ATTENTION_FUNCTION[self.config._attn_implementation](
             self,
@@ -686,25 +684,12 @@ class ModernBertModel(ModernBertPreTrainedModel):
             attention_mask = mint.ones((batch_size, seq_len), dtype=ms.bool_)
 
         repad = False
-        if self.config._attn_implementation == "flash_attention_2":
-            if indices is None and cu_seqlens is None and max_seqlen is None:
-                repad = True
-                if inputs_embeds is None:
-                    with ms._no_grad():
-                        input_ids, indices, cu_seqlens, max_seqlen, *_ = _unpad_modernbert_input(
-                            inputs=input_ids, attention_mask=attention_mask
-                        )
-                else:
-                    inputs_embeds, indices, cu_seqlens, max_seqlen, *_ = _unpad_modernbert_input(
-                        inputs=inputs_embeds, attention_mask=attention_mask
-                    )
-        else:
-            if position_ids is None:
-                position_ids = mint.arange(seq_len).unsqueeze(0)
+        if position_ids is None:
+            position_ids = mint.arange(seq_len).unsqueeze(0)
 
-            attention_mask, sliding_window_mask = self._update_attention_mask(
-                attention_mask, output_attentions=output_attentions
-            )
+        attention_mask, sliding_window_mask = self._update_attention_mask(
+            attention_mask, output_attentions=output_attentions
+        )
 
         hidden_states = self.embeddings(input_ids=input_ids, inputs_embeds=inputs_embeds)
 
@@ -713,16 +698,7 @@ class ModernBertModel(ModernBertPreTrainedModel):
                 all_hidden_states = all_hidden_states + (hidden_states,)
 
             if self.gradient_checkpointing and self.training:
-                layer_outputs = self._gradient_checkpointing_func(
-                    encoder_layer.__call__,
-                    hidden_states,
-                    attention_mask,
-                    sliding_window_mask,
-                    position_ids,
-                    cu_seqlens,
-                    max_seqlen,
-                    output_attentions,
-                )
+                raise NotImplementedError
             else:
                 layer_outputs = encoder_layer(
                     hidden_states,
@@ -859,27 +835,6 @@ class ModernBertForMaskedLM(ModernBertPreTrainedModel):
     ) -> Union[Tuple[ms.Tensor], MaskedLMOutput]:
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
         self._maybe_set_compile()
-
-        if self.config._attn_implementation == "flash_attention_2":
-            if indices is None and cu_seqlens is None and max_seqlen is None:
-                if batch_size is None and seq_len is None:
-                    if inputs_embeds is not None:
-                        batch_size, seq_len = inputs_embeds.shape[:2]
-                    else:
-                        batch_size, seq_len = input_ids.shape[:2]
-
-                if attention_mask is None:
-                    attention_mask = mint.ones((batch_size, seq_len), dtype=ms.bool_)
-
-                if inputs_embeds is None:
-                    with ms._no_grad():
-                        input_ids, indices, cu_seqlens, max_seqlen, position_ids, labels = _unpad_modernbert_input(
-                            inputs=input_ids, attention_mask=attention_mask, position_ids=position_ids, labels=labels
-                        )
-                else:
-                    inputs_embeds, indices, cu_seqlens, max_seqlen, position_ids, labels = _unpad_modernbert_input(
-                        inputs=inputs_embeds, attention_mask=attention_mask, position_ids=position_ids, labels=labels
-                    )
 
         outputs = self.model(
             input_ids=input_ids,
