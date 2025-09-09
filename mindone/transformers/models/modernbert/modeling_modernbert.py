@@ -433,44 +433,7 @@ class ModernBertPreTrainedModel(PreTrainedModel):
     _supports_flex_attn = False
 
     def _init_weights(self, module: nn.Cell):
-        cutoff_factor = self.config.initializer_cutoff_factor
-        if cutoff_factor is None:
-            cutoff_factor = 3
-
-        def init_weight(module: nn.Cell, std: float):
-            nn.init.trunc_normal_(
-                module.weight,
-                mean=0.0,
-                std=std,
-                a=-cutoff_factor * std,
-                b=cutoff_factor * std,
-            )
-
-            if isinstance(module, mint.nn.Linear):
-                if module.bias is not None:
-                    nn.init.zeros_(module.bias)
-
-        stds = {
-            "in": self.config.initializer_range,
-            "out": self.config.initializer_range / math.sqrt(2.0 * self.config.num_hidden_layers),
-            "embedding": self.config.initializer_range,
-            "final_out": self.config.hidden_size**-0.5,
-        }
-
-        if isinstance(module, ModernBertEmbeddings):
-            init_weight(module.tok_embeddings, stds["embedding"])
-        elif isinstance(module, ModernBertMLP):
-            init_weight(module.Wi, stds["in"])
-            init_weight(module.Wo, stds["out"])
-        elif isinstance(module, ModernBertAttention):
-            init_weight(module.Wqkv, stds["in"])
-            init_weight(module.Wo, stds["out"])
-        elif isinstance(module, ModernBertPredictionHead):
-            init_weight(module.dense, stds["out"])
-        elif isinstance(module, ModernBertForMaskedLM):
-            init_weight(module.decoder, stds["out"])
-        elif isinstance(module, (ModernBertForSequenceClassification, ModernBertForTokenClassification)):
-            init_weight(module.classifier, stds["final_out"])
+        pass
 
     @classmethod
     def _autoset_attn_implementation(
