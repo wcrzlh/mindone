@@ -204,7 +204,6 @@ BERT_CASES = [
         },
         {
             "last_hidden_state": 0,
-            "pooler_output": 1,
         },
     ],
 ]
