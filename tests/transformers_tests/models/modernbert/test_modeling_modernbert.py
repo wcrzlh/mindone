@@ -155,7 +155,7 @@ BERT_CASES = [
             "attention_mask": input_mask,
         },
         {
-            "logits": 1,
+            "logits": 0,
         },
     ],
     [
@@ -169,7 +169,7 @@ BERT_CASES = [
             "attention_mask": input_mask,
         },
         {
-            "logits": 1,
+            "logits": 0,
         },
     ],
     [
@@ -183,7 +183,7 @@ BERT_CASES = [
             "attention_mask": input_mask,
         },
         {
-            "logits": 1,
+            "logits": 0,
         },
     ],
     [
