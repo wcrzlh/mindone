@@ -60,6 +60,7 @@ class ModernBertModelTester:
         num_labels=3,
         num_choices=4,
         scope=None,
+        attn_implementation="eager",
     ):
         self.batch_size = batch_size
         self.seq_length = seq_length
@@ -84,6 +85,7 @@ class ModernBertModelTester:
         self.num_labels = num_labels
         self.num_choices = num_choices
         self.scope = scope
+        self.attn_implementation = attn_implementation
 
     def prepare_config_and_inputs(self):
         input_ids = ids_numpy([self.batch_size, self.seq_length], self.vocab_size)
@@ -124,6 +126,7 @@ class ModernBertModelTester:
             type_vocab_size=self.type_vocab_size,
             is_decoder=False,
             initializer_range=self.initializer_range,
+            _attn_implementation=self.attn_implementation,
         )
         return config
 
