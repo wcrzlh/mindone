@@ -166,7 +166,6 @@ BERT_CASES = [
         (input_ids,),
         {
             "attention_mask": input_mask,
-            "token_type_ids": token_type_ids,
             "labels": sequence_labels,
         },
         {
@@ -183,7 +182,6 @@ BERT_CASES = [
         (input_ids,),
         {
             "attention_mask": input_mask,
-            "token_type_ids": token_type_ids,
             "labels": token_labels,
         },
         {
@@ -200,7 +198,6 @@ BERT_CASES = [
         (input_ids,),
         {
             "attention_mask": input_mask,
-            "token_type_ids": token_type_ids,
         },
         {
             "last_hidden_state": 0,
