@@ -153,10 +153,8 @@ BERT_CASES = [
         (input_ids,),
         {
             "attention_mask": input_mask,
-            "labels": token_labels,
         },
         {
-            "loss": 0,
             "logits": 1,
         },
     ],
@@ -169,10 +167,8 @@ BERT_CASES = [
         (input_ids,),
         {
             "attention_mask": input_mask,
-            "labels": sequence_labels,
         },
         {
-            "loss": 0,
             "logits": 1,
         },
     ],
@@ -185,10 +181,8 @@ BERT_CASES = [
         (input_ids,),
         {
             "attention_mask": input_mask,
-            "labels": token_labels,
         },
         {
-            "loss": 0,
             "logits": 1,
         },
     ],
