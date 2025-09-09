@@ -266,7 +266,7 @@ def flash_attention_forward(
         key,
         value,
         head_num=num_head,
-        attn_mask=attention_mask,
+        attn_mask=attention_mask.to(ms.uint8),
         scalar_value=scale,
         input_layout=input_layout,
     )
