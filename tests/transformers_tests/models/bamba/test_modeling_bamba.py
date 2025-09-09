@@ -24,6 +24,7 @@ import torch
 from transformers import BambaConfig
 
 import mindspore as ms
+from mindspore import mint
 
 from tests.modeling_test_utils import (
     MS_DTYPE_MAPPING,
@@ -42,102 +43,122 @@ class BambaModelTester:
     config_class = BambaConfig
 
     def __init__(
-        self,
-        batch_size=14,
-        num_heads=8,
-        n_groups=8,
-        state_size=2,
-        head_dim=8,
-        conv_kernel=4,
-        chunk_size=8,
-        seq_length=7,
-        is_training=True,
-        use_labels=True,
-        vocab_size=99,
-        hidden_size=32,
-        num_hidden_layers=2,
-        hidden_act="silu",
-        hidden_dropout_prob=0.1,
-        max_position_embeddings=512,
-        type_vocab_size=16,
-        type_sequence_label_size=2,
-        num_labels=3,
-        num_choices=4,
-        scope=None,
-        tie_word_embeddings=False,
+            self,
+            batch_size=13,
+            seq_length=7,
+            is_training=True,
+            use_input_mask=True,
+            use_labels=True,
+            vocab_size=99,
+            hidden_size=32,
+            num_hidden_layers=4,
+            num_attention_heads=4,
+            num_key_value_heads=2,
+            intermediate_size=64,
+            hidden_act="silu",
+            attention_dropout=0.0,
+            attn_layer_indices=None,
+            attn_rotary_emb=8,
+            max_position_embeddings=512,
+            type_vocab_size=16,
+            initializer_range=0.02,
+            num_labels=3,
+            pad_token_id=0,
+            mamba_n_groups=1,
+            mamba_n_heads=16,
+            mamba_d_state=16,
+            mamba_d_conv=4,
+            mamba_expand=2,
+            mamba_chunk_size=16,
+            scope=None,
     ):
-        self.num_heads = num_heads
-        self.n_groups = n_groups
-        self.head_dim = head_dim
-        self.state_size = state_size
-        self.conv_kernel = conv_kernel
-        self.chunk_size = chunk_size
         self.batch_size = batch_size
         self.seq_length = seq_length
         self.is_training = is_training
+        self.use_input_mask = use_input_mask
         self.use_labels = use_labels
         self.vocab_size = vocab_size
         self.hidden_size = hidden_size
         self.num_hidden_layers = num_hidden_layers
+        self.num_attention_heads = num_attention_heads
+        self.num_key_value_heads = num_key_value_heads
+        self.intermediate_size = intermediate_size
         self.hidden_act = hidden_act
-        self.hidden_dropout_prob = hidden_dropout_prob
+        self.attention_dropout = attention_dropout
+        self.attn_layer_indices = attn_layer_indices
+        self.attn_rotary_emb = attn_rotary_emb
         self.max_position_embeddings = max_position_embeddings
         self.type_vocab_size = type_vocab_size
-        self.type_sequence_label_size = type_sequence_label_size
+        self.initializer_range = initializer_range
         self.num_labels = num_labels
-        self.num_choices = num_choices
+        self.pad_token_id = pad_token_id
         self.scope = scope
-        self.bos_token_id = vocab_size - 1
-        self.eos_token_id = vocab_size - 1
-        self.pad_token_id = vocab_size - 1
-        self.tie_word_embeddings = tie_word_embeddings
+        self.mamba_n_groups = mamba_n_groups
+        self.mamba_n_heads = mamba_n_heads
+        self.mamba_d_state = mamba_d_state
+        self.mamba_d_conv = mamba_d_conv
+        self.mamba_expand = mamba_expand
+        self.mamba_chunk_size = mamba_chunk_size
 
     def prepare_config_and_inputs(self):
         input_ids = ids_numpy([self.batch_size, self.seq_length], self.vocab_size)
+        input_ids = ms.tensor(input_ids)
 
-        # Only left padding is valid
-        attention_mask = np.ones(shape=(self.batch_size, self.seq_length), dtype=np.int64)
-        attention_mask[0, :1] = 0
+        input_mask = None
+        if self.use_input_mask:
+            input_mask = mint.tril(mint.ones_like(input_ids))
 
-        sequence_labels = None
         token_labels = None
-        choice_labels = None
         if self.use_labels:
-            sequence_labels = ids_numpy([self.batch_size], self.type_sequence_label_size)
             token_labels = ids_numpy([self.batch_size, self.seq_length], self.num_labels)
-            choice_labels = ids_numpy([self.batch_size], self.num_choices)
+            token_labels = ms.tensor(token_labels)
 
         config = self.get_config()
 
-        return (
+        return config, input_ids, input_mask, token_labels
+
+    def prepare_config_and_inputs_for_common(self):
+        config_and_inputs = self.prepare_config_and_inputs()
+        (
             config,
             input_ids,
-            attention_mask,
-            sequence_labels,
+            input_mask,
             token_labels,
-            choice_labels,
-        )
+        ) = config_and_inputs
+        inputs_dict = {"input_ids": input_ids, "attention_mask": input_mask}
+        return config, inputs_dict
 
     def get_config(self):
-        return self.config_class(
-            head_dim=self.head_dim,
-            num_heads=self.num_heads,
-            n_groups=self.n_groups,
-            state_size=self.state_size,
-            conv_kernel=self.conv_kernel,
-            chunk_size=self.chunk_size,
+        # Fix for SDPA tests, force at least 4 layers
+        if self.num_hidden_layers < 4:
+            self.num_hidden_layers = 4
+        if self.attn_layer_indices is None:
+            d = [x for x in range(2, self.num_hidden_layers) if self.num_hidden_layers % x == 0]
+            if len(d) == 0:
+                raise ValueError("num_hidden_layers is prime, cannot automatically set attn_layer_indices.")
+            d = d[-1]  # get the largest divisor
+            self.attn_layer_indices = [x + 1 for x in range(0, self.num_hidden_layers, d)]
+
+        return BambaConfig(
             vocab_size=self.vocab_size,
             hidden_size=self.hidden_size,
             num_hidden_layers=self.num_hidden_layers,
-            activation_function=self.hidden_act,
-            n_positions=self.max_position_embeddings,
-            type_vocab_size=self.type_vocab_size,
-            use_cache=True,
-            bos_token_id=self.bos_token_id,
-            eos_token_id=self.eos_token_id,
+            num_attention_heads=self.num_attention_heads,
+            num_key_value_heads=self.num_key_value_heads,
+            intermediate_size=self.intermediate_size,
+            hidden_act=self.hidden_act,
+            attention_dropout=self.attention_dropout,
+            attn_layer_indices=self.attn_layer_indices,
+            attn_rotary_emb=self.attn_rotary_emb,
+            max_position_embeddings=self.max_position_embeddings,
+            initializer_range=self.initializer_range,
             pad_token_id=self.pad_token_id,
-            gradient_checkpointing=False,
-            tie_word_embeddings=self.tie_word_embeddings,
+            mamba_n_groups=self.mamba_n_groups,
+            mamba_n_heads=self.mamba_n_heads,
+            mamba_d_state=self.mamba_d_state,
+            mamba_d_conv=self.mamba_d_conv,
+            mamba_expand=self.mamba_expand,
+            mamba_chunk_size=self.mamba_chunk_size,
         )
 
 
@@ -146,9 +167,7 @@ model_tester = BambaModelTester()
     config,
     input_ids,
     attention_mask,
-    sequence_labels,
     token_labels,
-    choice_labels,
 ) = model_tester.prepare_config_and_inputs()
 
 
