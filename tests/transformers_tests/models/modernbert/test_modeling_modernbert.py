@@ -150,7 +150,6 @@ BERT_CASES = [
         (input_ids,),
         {
             "attention_mask": input_mask,
-            "token_type_ids": token_type_ids,
             "labels": token_labels,
         },
         {
