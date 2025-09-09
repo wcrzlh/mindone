@@ -447,6 +447,13 @@ from .models.mobilebert import (
     MobileBertModel,
     MobileBertPreTrainedModel,
 )
+from .models.modernbert import (
+    ModernBertForTokenClassification,
+    ModernBertForSequenceClassification,
+    ModernBertPreTrainedModel,
+    ModernBertModel,
+    ModernBertForMaskedLM,
+)
 from .models.mpt import (
     MptForCausalLM,
     MptForQuestionAnswering,
