@@ -245,6 +245,9 @@ def flash_attention_forward(
     # query, key, value: [batch_size, heads, seq_len, head_dim]
     query, key = apply_rotary_pos_emb(query, key, cos, sin)
 
+    scale = module.head_dim ** -0.5
+    num_head = query.shape[1]
+
     # BNSD -> BSND
     query = query.swapaxes(1, 2)
     key = key.swapaxes(1, 2)
@@ -258,8 +261,6 @@ def flash_attention_forward(
         key = key.to(ms.float16)
         value = value.to(ms.float16)
 
-    scale = module.head_dim ** -0.5
-    num_head = query.shape[1]
     attn_output = ops.flash_attention_score(
         query,
         key,
