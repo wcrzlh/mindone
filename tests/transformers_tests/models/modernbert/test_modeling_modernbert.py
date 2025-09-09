@@ -34,23 +34,25 @@ DTYPE_AND_THRESHOLDS = {"fp32": 5e-4, "fp16": 5e-3}
 MODES = [1]
 
 
-class BertModelTester:
+class ModernBertModelTester:
     def __init__(
         self,
         batch_size=13,
         seq_length=7,
         is_training=True,
         use_input_mask=True,
-        use_token_type_ids=True,
         use_labels=True,
         vocab_size=99,
+        pad_token_id=0,
         hidden_size=32,
         num_hidden_layers=2,
         num_attention_heads=4,
         intermediate_size=37,
-        hidden_act="gelu",
-        hidden_dropout_prob=0.1,
-        attention_probs_dropout_prob=0.1,
+        hidden_activation="gelu",
+        mlp_dropout=0.0,
+        attention_dropout=0.0,
+        embedding_dropout=0.0,
+        classifier_dropout=0.0,
         max_position_embeddings=512,
         type_vocab_size=16,
         type_sequence_label_size=2,
@@ -63,16 +65,18 @@ class BertModelTester:
         self.seq_length = seq_length
         self.is_training = is_training
         self.use_input_mask = use_input_mask
-        self.use_token_type_ids = use_token_type_ids
         self.use_labels = use_labels
         self.vocab_size = vocab_size
+        self.pad_token_id = pad_token_id
         self.hidden_size = hidden_size
         self.num_hidden_layers = num_hidden_layers
         self.num_attention_heads = num_attention_heads
         self.intermediate_size = intermediate_size
-        self.hidden_act = hidden_act
-        self.hidden_dropout_prob = hidden_dropout_prob
-        self.attention_probs_dropout_prob = attention_probs_dropout_prob
+        self.hidden_activation = hidden_activation
+        self.mlp_dropout = mlp_dropout
+        self.attention_dropout = attention_dropout
+        self.embedding_dropout = embedding_dropout
+        self.classifier_dropout = classifier_dropout
         self.max_position_embeddings = max_position_embeddings
         self.type_vocab_size = type_vocab_size
         self.type_sequence_label_size = type_sequence_label_size
@@ -88,10 +92,6 @@ class BertModelTester:
         if self.use_input_mask:
             input_mask = random_attention_mask([self.batch_size, self.seq_length])
 
-        token_type_ids = None
-        if self.use_token_type_ids:
-            token_type_ids = ids_numpy([self.batch_size, self.seq_length], self.type_vocab_size)
-
         sequence_labels = None
         token_labels = None
         choice_labels = None
@@ -101,29 +101,34 @@ class BertModelTester:
             choice_labels = ids_numpy([self.batch_size], self.num_choices)
 
         config = self.get_config()
-        return config, input_ids, token_type_ids, input_mask, sequence_labels, token_labels, choice_labels
+
+        return config, input_ids, input_mask, sequence_labels, token_labels, choice_labels
 
     def get_config(self):
         """
         Returns a tiny configuration by default.
         """
-        return ModernBertConfig(
+        config = ModernBertConfig(
             vocab_size=self.vocab_size,
+            pad_token_id=self.pad_token_id,
             hidden_size=self.hidden_size,
             num_hidden_layers=self.num_hidden_layers,
             num_attention_heads=self.num_attention_heads,
             intermediate_size=self.intermediate_size,
-            hidden_act=self.hidden_act,
-            hidden_dropout_prob=self.hidden_dropout_prob,
-            attention_probs_dropout_prob=self.attention_probs_dropout_prob,
+            hidden_activation=self.hidden_activation,
+            mlp_dropout=self.mlp_dropout,
+            attention_dropout=self.attention_dropout,
+            embedding_dropout=self.embedding_dropout,
+            classifier_dropout=self.classifier_dropout,
             max_position_embeddings=self.max_position_embeddings,
             type_vocab_size=self.type_vocab_size,
             is_decoder=False,
             initializer_range=self.initializer_range,
         )
+        return config
 
 
-model_tester = BertModelTester()
+model_tester = ModernBertModelTester()
 (
     config,
     input_ids,
