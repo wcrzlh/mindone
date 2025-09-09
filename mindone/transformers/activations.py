@@ -20,7 +20,7 @@ from collections import OrderedDict
 from functools import partial
 
 import mindspore as ms
-from mindspore import Tensor, nn, ops
+from mindspore import Tensor, mint, nn, ops
 
 
 class PytorchGELUTanh(nn.Cell):
@@ -198,7 +198,7 @@ class ClassInstantier(OrderedDict):
 
 
 ACT2CLS = {
-    "gelu": partial(nn.GELU, approximate=False),
+    "gelu": mint.nn.GELU,
     "gelu_10": (ClippedGELUActivation, {"min": -10, "max": 10}),
     "gelu_fast": FastGELUActivation,
     "gelu_new": NewGELUActivation,
