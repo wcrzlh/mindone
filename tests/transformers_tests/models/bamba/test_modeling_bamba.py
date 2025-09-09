@@ -102,16 +102,15 @@ class BambaModelTester:
 
     def prepare_config_and_inputs(self):
         input_ids = ids_numpy([self.batch_size, self.seq_length], self.vocab_size)
-        input_ids = ms.tensor(input_ids)
 
         input_mask = None
         if self.use_input_mask:
             input_mask = mint.tril(mint.ones_like(input_ids))
+            input_mask = input_mask.asnumpy()
 
         token_labels = None
         if self.use_labels:
             token_labels = ids_numpy([self.batch_size, self.seq_length], self.num_labels)
-            token_labels = ms.tensor(token_labels)
 
         config = self.get_config()
 
