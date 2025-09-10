@@ -118,7 +118,8 @@ class RwkvSelfAttention(nn.Cell):
         self.time_mix_value = Parameter(mint.empty(1, 1, hidden_size))
         self.time_mix_receptance = Parameter(mint.empty(1, 1, hidden_size))
 
-        self.time_shift = mint.nn.ZeroPad2d((0, 0, 1, -1))
+        # TODO mint.nn.ZeroPad2d does not support -1 padding value
+        self.time_shift = mint.nn.ZeroPad2d((0, 0, 1, 0))
         self.key = mint.nn.Linear(hidden_size, attention_hidden_size, bias=False)
         self.value = mint.nn.Linear(hidden_size, attention_hidden_size, bias=False)
         self.receptance = mint.nn.Linear(hidden_size, attention_hidden_size, bias=False)
@@ -130,7 +131,8 @@ class RwkvSelfAttention(nn.Cell):
         if hidden.shape[1] == 1 and state is not None:
             shifted = state[1][:, :, self.layer_id]
         else:
-            shifted = self.time_shift(hidden)
+            # TODO mint.nn.ZeroPad2d does not support -1 padding value
+            shifted = self.time_shift(hidden)[:, :-1]
             if state is not None:
                 shifted[:, 0] = state[1][:, :, self.layer_id]
         key = hidden * self.time_mix_key + shifted * (1 - self.time_mix_key)
@@ -174,7 +176,8 @@ class RwkvFeedForward(nn.Cell):
             config.intermediate_size if config.intermediate_size is not None else 4 * config.hidden_size
         )
 
-        self.time_shift = mint.nn.ZeroPad2d((0, 0, 1, -1))
+        # TODO mint.nn.ZeroPad2d does not support -1 padding value
+        self.time_shift = mint.nn.ZeroPad2d((0, 0, 1, 0))
         self.time_mix_key = Parameter(mint.empty(1, 1, hidden_size))
         self.time_mix_receptance = Parameter(mint.empty(1, 1, hidden_size))
 
@@ -186,7 +189,8 @@ class RwkvFeedForward(nn.Cell):
         if hidden.shape[1] == 1 and state is not None:
             shifted = state[0][:, :, self.layer_id]
         else:
-            shifted = self.time_shift(hidden)
+            # TODO mint.nn.ZeroPad2d does not support -1 padding value
+            shifted = self.time_shift(hidden)[:, :-1]
             if state is not None:
                 shifted[:, 0] = state[0][:, :, self.layer_id]
         key = hidden * self.time_mix_key + shifted * (1 - self.time_mix_key)
