@@ -678,6 +678,12 @@ from .models.xlm_roberta_xl import (
     XLMRobertaXLPreTrainedModel,
 )
 from .models.yolos import YolosForObjectDetection, YolosImageProcessor, YolosModel, YolosPreTrainedModel
+from .models.zamba import (
+    ZambaModel,
+    ZambaForSequenceClassification,
+    ZambaPreTrainedModel,
+    ZambaForCausalLM,
+)
 from .pipelines import (
     ImageToImagePipeline,
     ImageToTextPipeline,
