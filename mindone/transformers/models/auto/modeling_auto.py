@@ -224,6 +224,7 @@ MODEL_FOR_CAUSAL_LM_MAPPING_NAMES = OrderedDict(
         ("xlm-roberta", "XLMRobertaForCausalLM"),
         ("xlm-roberta-xl", "XLMRobertaXLForCausalLM"),
         ("cohere2", "Cohere2ForCausalLM"),
+        ("zamba", "ZambaForCausalLM"),
     ]
 )
 
