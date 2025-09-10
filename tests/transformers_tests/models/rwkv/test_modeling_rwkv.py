@@ -154,7 +154,7 @@ BERT_CASES = [
             "attention_mask": input_mask,
         },
         {
-            "logits": 0,
+            "last_hidden_states": 0,
         },
     ],
 ]
