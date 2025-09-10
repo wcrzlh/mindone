@@ -497,7 +497,7 @@ class RwkvModel(RwkvPreTrainedModel):
             shape = (inputs_embeds.shape[0], self.config.hidden_size, self.config.num_hidden_layers)
             state = [
                 mint.zeros(
-                    *shape, dtype=inputs_embeds.dtype if i <= 1 else ms.float32
+                    shape, dtype=inputs_embeds.dtype if i <= 1 else ms.float32
                 )
                 for i in range(5)
             ]
