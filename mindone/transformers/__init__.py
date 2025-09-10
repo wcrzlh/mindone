@@ -566,6 +566,7 @@ from .models.roberta import (
 from .models.rwkv import (
     RwkvModel,
     RwkvPreTrainedModel,
+    RwkvForCausalLM,
 )
 from .models.segformer import (
     SegformerDecodeHead,
