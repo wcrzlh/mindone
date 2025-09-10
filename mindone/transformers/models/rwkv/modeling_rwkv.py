@@ -284,12 +284,12 @@ class RwkvPreTrainedModel(PreTrainedModel):
             )
 
             with ms._no_grad():
-                module.time_decay.data = decay_speed
-                module.time_first.data = mint.ones_like(module.time_first * math.log(0.3) + zigzag)
+                module.time_decay = decay_speed
+                module.time_first = mint.ones_like(module.time_first * math.log(0.3) + zigzag)
 
-                module.time_mix_key.data = mint.pow(time_weight, ratio_1_to_almost0)
-                module.time_mix_value.data = mint.pow(time_weight, ratio_1_to_almost0) + 0.3 * ratio_0_to_1
-                module.time_mix_receptance.data = mint.pow(time_weight, 0.5 * ratio_1_to_almost0)
+                module.time_mix_key = mint.pow(time_weight, ratio_1_to_almost0)
+                module.time_mix_value = mint.pow(time_weight, ratio_1_to_almost0) + 0.3 * ratio_0_to_1
+                module.time_mix_receptance = mint.pow(time_weight, 0.5 * ratio_1_to_almost0)
         elif isinstance(module, RwkvFeedForward):
             layer_id = module.layer_id
             num_hidden_layers = module.config.num_hidden_layers
@@ -304,8 +304,8 @@ class RwkvPreTrainedModel(PreTrainedModel):
             time_weight = time_weight[None, None, :]
 
             with ms._no_grad():
-                module.time_mix_key.data = mint.pow(time_weight, ratio_1_to_almost0)
-                module.time_mix_receptance.data = mint.pow(time_weight, ratio_1_to_almost0)
+                module.time_mix_key = mint.pow(time_weight, ratio_1_to_almost0)
+                module.time_mix_receptance = mint.pow(time_weight, ratio_1_to_almost0)
 
 
 @dataclass
