@@ -279,7 +279,6 @@ class RwkvPreTrainedModel(PreTrainedModel):
                 ms.tensor(
                     [(i + 1) % 3 - 1 for i in range(attention_hidden_size)],
                     dtype=module.time_first.dtype,
-                    device=module.time_first.device,
                 )
                 * 0.5
             )
