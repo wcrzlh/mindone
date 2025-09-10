@@ -29,7 +29,6 @@
 
 from typing import Any, Callable, Optional, Tuple, Union
 
-from mindone.transformers.activations import ACT2FN
 from transformers.models.bamba.configuration_bamba import BambaConfig
 from transformers.utils import (
     add_start_docstrings,
@@ -41,6 +40,8 @@ from transformers.utils.deprecation import deprecate_kwarg
 
 import mindspore as ms
 from mindspore import Parameter, mint, nn, ops
+
+from mindone.transformers.activations import ACT2FN
 
 from ...cache_utils import Cache  # we need __iter__ and __len__ of pkv
 from ...generation import GenerationMixin
@@ -61,6 +62,7 @@ causal_conv1d_update, causal_conv1d_fn = None, None
 logger = logging.get_logger(__name__)
 
 _CONFIG_FOR_DOC = "BambaConfig"
+
 
 class Jamba_HybridMambaAttentionDynamicCache:
     """
@@ -90,12 +92,8 @@ class Jamba_HybridMambaAttentionDynamicCache:
         self.transformer_layers = []
         for i in range(config.num_hidden_layers):
             if self.layers_block_type[i] == "mamba":
-                self.conv_states += [
-                    mint.zeros((batch_size, intermediate_size, conv_kernel_size), dtype=dtype)
-                ]
-                self.ssm_states += [
-                    mint.zeros((batch_size, intermediate_size, ssm_state_size), dtype=dtype)
-                ]
+                self.conv_states += [mint.zeros((batch_size, intermediate_size, conv_kernel_size), dtype=dtype)]
+                self.ssm_states += [mint.zeros((batch_size, intermediate_size, ssm_state_size), dtype=dtype)]
             else:
                 self.conv_states += [ms.tensor([[]] * batch_size)]
                 self.ssm_states += [ms.tensor([[]] * batch_size)]
@@ -141,6 +139,7 @@ class Jamba_HybridMambaAttentionDynamicCache:
         if len(self.key_cache) <= layer_idx:
             return 0
         return self.key_cache[layer_idx].shape[-2]
+
 
 # Adapted from transformers.models.jamba.modeling_jamba.HybridMambaAttentionDynamicCache for the v2 mixer
 class HybridMambaAttentionDynamicCache(Jamba_HybridMambaAttentionDynamicCache):
@@ -1415,11 +1414,7 @@ class BambaModel(BambaPreTrainedModel):
             batch_size=input_tensor.shape[0],
         )
 
-        if (
-            self.config._attn_implementation == "sdpa"
-            and attention_mask is not None
-            and not output_attentions
-        ):
+        if self.config._attn_implementation == "sdpa" and attention_mask is not None and not output_attentions:
             # Attend to all tokens in fully masked rows in the causal_mask, for example the relevant first rows when
             # using left padding. This is required by F.scaled_dot_product_attention memory-efficient attention path.
             # Details: https://github.com/pytorch/pytorch/issues/110213
@@ -1644,9 +1639,7 @@ class BambaForCausalLM(BambaPreTrainedModel, GenerationMixin):
             elif input_ids.shape[1] != cache_position.shape[0]:  # Default case (the "else", a no op, is Exception 2)
                 input_ids = input_ids[:, cache_position]
         else:
-            past_key_values = HybridMambaAttentionDynamicCache(
-                self.config, input_ids.shape[0], self.dtype
-            )
+            past_key_values = HybridMambaAttentionDynamicCache(self.config, input_ids.shape[0], self.dtype)
 
         if attention_mask is not None and position_ids is None:
             # create position_ids on the fly for batch generation

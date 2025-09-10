@@ -25,6 +25,14 @@ import math
 from contextlib import nullcontext
 from typing import Dict, Optional, Tuple, Union
 
+from transformers.models.modernbert.configuration_modernbert import ModernBertConfig
+from transformers.utils import (
+    add_code_sample_docstrings,
+    add_start_docstrings,
+    add_start_docstrings_to_model_forward,
+    logging,
+)
+
 import mindspore as ms
 import mindspore.mint.nn.functional as F
 from mindspore import mint, nn, ops
@@ -36,14 +44,6 @@ from ...modeling_attn_mask_utils import _prepare_4d_attention_mask
 from ...modeling_outputs import BaseModelOutput, MaskedLMOutput, SequenceClassifierOutput, TokenClassifierOutput
 from ...modeling_rope_utils import ROPE_INIT_FUNCTIONS
 from ...modeling_utils import PreTrainedModel
-from transformers.utils import (
-    add_code_sample_docstrings,
-    add_start_docstrings,
-    add_start_docstrings_to_model_forward,
-    logging,
-)
-from transformers.models.modernbert.configuration_modernbert import ModernBertConfig
-
 
 RotaryEmbedding = object
 
@@ -68,9 +68,7 @@ class ModernBertEmbeddings(nn.Cell):
     def compiled_embeddings(self, input_ids: ms.Tensor) -> ms.Tensor:
         return self.drop(self.norm(self.tok_embeddings(input_ids)))
 
-    def construct(
-        self, input_ids: ms.Tensor = None, inputs_embeds: Optional[ms.Tensor] = None
-    ) -> ms.Tensor:
+    def construct(self, input_ids: ms.Tensor = None, inputs_embeds: Optional[ms.Tensor] = None) -> ms.Tensor:
         if inputs_embeds is not None:
             hidden_states = self.drop(self.norm(inputs_embeds))
         else:
@@ -245,7 +243,7 @@ def flash_attention_forward(
     # query, key, value: [batch_size, heads, seq_len, head_dim]
     query, key = apply_rotary_pos_emb(query, key, cos, sin)
 
-    scale = module.head_dim ** -0.5
+    scale = module.head_dim**-0.5
     num_head = query.shape[1]
 
     # BNSD -> BSND
@@ -320,7 +318,6 @@ class ModernBertAttention(nn.Cell):
             if config.local_rope_theta is not None:
                 rope_theta = config.local_rope_theta
             max_position_embeddings = config.local_attention
-
 
         self.rotary_emb = ModernBertRotaryEmbedding(config=config, dim=self.head_dim, base=rope_theta)
 
@@ -760,9 +757,7 @@ class ModernBertModel(ModernBertPreTrainedModel):
         distance = mint.abs(rows - rows.T)
 
         # Create sliding window mask (1 for positions within window, 0 outside)
-        window_mask = (
-            (distance <= self.config.local_attention // 2).unsqueeze(0).unsqueeze(0)
-        )
+        window_mask = (distance <= self.config.local_attention // 2).unsqueeze(0).unsqueeze(0)
         # Combine with existing mask
         sliding_window_mask = global_attention_mask.masked_fill(window_mask.logical_not(), dtype_to_min(self.dtype))
 
