@@ -49,7 +49,7 @@ rwkv_cuda_kernel = None
 
 # TODO there is not substitution for cuda implementation
 class RwkvLinearAttention:
-    raise NotImplementedError
+    pass
 
 
 def rwkv_linear_attention_cpu(time_decay, time_first, key, value, state=None, return_state=False):
