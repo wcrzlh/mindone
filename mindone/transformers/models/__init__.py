@@ -84,6 +84,7 @@ from . import (
     qwen2_audio,
     qwen2_vl,
     roberta,
+    rwkv,
     segformer,
     siglip,
     smolvlm,
