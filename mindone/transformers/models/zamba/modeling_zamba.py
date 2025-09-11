@@ -819,6 +819,7 @@ class ZambaPreTrainedModel(PreTrainedModel):
     _supports_sdpa = False
     _supports_cache_class = True  # Note: only supports ZambaHybridDynamicCache
     _is_stateful = True
+    _supports_dynamic_input = True
 
     def _init_weights(self, module):
         pass
