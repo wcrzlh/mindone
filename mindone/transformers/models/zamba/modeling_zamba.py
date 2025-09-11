@@ -1090,8 +1090,9 @@ class ZambaModel(ZambaPreTrainedModel):
         min_dtype = dtype_to_min(dtype)
         sequence_length = input_tensor.shape[1]
         target_length = cache_position[-1] + 1
+        target_length = target_length.item()
 
-        causal_mask = ops.full((sequence_length, target_length.item()), fill_value=min_dtype, dtype=dtype)
+        causal_mask = ops.full((sequence_length, target_length), fill_value=min_dtype, dtype=dtype)
         if sequence_length != 1:
             causal_mask = mint.triu(causal_mask, diagonal=1)
         causal_mask *= mint.arange(target_length) > cache_position.reshape(-1, 1)
