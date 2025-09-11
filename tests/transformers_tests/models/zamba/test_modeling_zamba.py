@@ -70,6 +70,7 @@ class ZambaModelTester:
         mamba_expand=2,
         mamba_chunk_size=16,
         scope=None,
+        use_mamba_kernels=False,
     ):
         self.batch_size = batch_size
         self.seq_length = seq_length
@@ -98,6 +99,7 @@ class ZambaModelTester:
         self.mamba_d_conv = mamba_d_conv
         self.mamba_expand = mamba_expand
         self.mamba_chunk_size = mamba_chunk_size
+        self.use_mamba_kernels = use_mamba_kernels
 
     def prepare_config_and_inputs(self):
         input_ids = ids_numpy([self.batch_size, self.seq_length], self.vocab_size)
@@ -156,6 +158,7 @@ class ZambaModelTester:
             mamba_d_conv=self.mamba_d_conv,
             mamba_expand=self.mamba_expand,
             mamba_chunk_size=self.mamba_chunk_size,
+            use_mamba_kernels=self.use_mamba_kernels,
         )
 
 
