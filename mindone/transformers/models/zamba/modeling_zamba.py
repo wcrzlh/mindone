@@ -332,7 +332,7 @@ class ZambaMambaMixer(nn.Cell):
         self.activation = config.hidden_mamba_act
         self.act = ACT2FN[config.hidden_mamba_act]
 
-        self.use_fast_kernels = config.use_mamba_kernels
+        self.use_fast_kernels = False
 
         # projection of the input hidden states
         self.in_proj = mint.nn.Linear(self.hidden_size, self.intermediate_size * 2, bias=self.use_bias)
