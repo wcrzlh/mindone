@@ -335,7 +335,7 @@ class ZambaMambaMixer(nn.Cell):
         self.use_fast_kernels = config.use_mamba_kernels
 
         # projection of the input hidden states
-        self.in_proj = nn.Linear(self.hidden_size, self.intermediate_size * 2, bias=self.use_bias)
+        self.in_proj = mint.nn.Linear(self.hidden_size, self.intermediate_size * 2, bias=self.use_bias)
         # weight associated to the selective projection used to make dt, B and C input dependent
         # each mamba head is processed independently
         self.x_proj_weight = Parameter(
@@ -530,7 +530,7 @@ class ZambaMambaMixer(nn.Cell):
             :, None, :, None
         ]
 
-        discrete_time_step = nn.functional.softplus(discrete_time_step)
+        discrete_time_step = mint.nn.functional.softplus(discrete_time_step)
 
         # 3.b. Discretization: B and C to [batch, seq_len, intermediate_size, ssm_state_size] (SRAM)
         A = -mint.exp(self.A_log.float())
