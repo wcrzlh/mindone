@@ -821,35 +821,7 @@ class ZambaPreTrainedModel(PreTrainedModel):
     _is_stateful = True
 
     def _init_weights(self, module):
-        std = self.config.initializer_range
-        if isinstance(module, (mint.nn.Linear, Conv1d)):
-            module.weight.data.normal_(mean=0.0, std=std)
-            if module.bias is not None:
-                module.bias.data.zero_()
-        elif isinstance(module, mint.nn.Embedding):
-            module.weight.data.normal_(mean=0.0, std=std)
-            if module.padding_idx is not None:
-                module.weight.data[module.padding_idx].zero_()
-        elif isinstance(module, ZambaMambaMixer):
-            module.A_log._no_weight_decay = True
-            module.D._no_weight_decay = True
-
-            module.x_proj_weight.data.normal_(mean=0.0, std=std)
-            dt_init_std = self.config.mamba_dt_rank**-0.5
-            nn.init.uniform_(module.dt_proj_weight, -dt_init_std, dt_init_std)
-
-            mamba_head_dim = self.config.mamba_expand * self.config.hidden_size // self.config.n_mamba_heads
-            dt = mint.exp(
-                mint.rand(self.config.n_mamba_heads, mamba_head_dim)
-                * (math.log(self.config.time_step_max) - math.log(self.config.time_step_min))
-                + math.log(self.config.time_step_min)
-            ).clamp(min=self.config.time_step_floor)
-            # # Inverse of softplus: https://github.com/pytorch/pytorch/issues/72759
-            inv_dt = dt + mint.log(-mint.expm1(-dt))
-
-            with ms._no_grad():
-                module.dt_proj_bias.copy_(inv_dt)
-            module.dt_proj_bias._no_reinit = True
+        pass
 
     @classmethod
     def _check_and_enable_flash_attn_2(
