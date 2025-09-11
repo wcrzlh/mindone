@@ -98,7 +98,7 @@ def repeat_kv(hidden_states: ms.Tensor, n_rep: int) -> ms.Tensor:
     batch, num_key_value_heads, slen, head_dim = hidden_states.shape
     if n_rep == 1:
         return hidden_states
-    hidden_states = hidden_states[:, :, None, :, :].expand(batch, num_key_value_heads, n_rep, slen, head_dim)
+    hidden_states = hidden_states[:, :, None, :, :].broadcast_to((batch, num_key_value_heads, n_rep, slen, head_dim))
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
@@ -358,7 +358,7 @@ class ZambaMambaMixer(nn.Cell):
         # S4D real initialization. These are not discretized!
         # The core is to load them, compute the discrete states, then write the updated state. Keeps the memory bounded
         A = mint.arange(1, self.ssm_state_size + 1, dtype=ms.float32)[None, :]
-        A = A.expand(self.intermediate_size, -1).contiguous()
+        A = A.broadcast_to((self.intermediate_size, -1)).contiguous()
         self.A_log = Parameter(mint.log(A).reshape(self.n_mamba_heads, self.mamba_head_dim, -1))
         self.D = Parameter(mint.ones((self.n_mamba_heads, self.mamba_head_dim)))
         self.out_proj = mint.nn.Linear(self.intermediate_size, self.hidden_size, bias=self.use_bias)
@@ -1122,7 +1122,7 @@ class ZambaModel(ZambaPreTrainedModel):
         if sequence_length != 1:
             causal_mask = mint.triu(causal_mask, diagonal=1)
         causal_mask *= mint.arange(target_length) > cache_position.reshape(-1, 1)
-        causal_mask = causal_mask[None, None, :, :].expand(input_tensor.shape[0], 1, -1, -1)
+        causal_mask = causal_mask[None, None, :, :].broadcast_to((input_tensor.shape[0], 1, -1, -1))
         if attention_mask is not None:
             causal_mask = causal_mask.clone()  # copy to contiguous memory for in-place edit
             if attention_mask.dim() == 2:
