@@ -39,9 +39,9 @@ from transformers.utils import (
 
 from .image_processing_utils import BatchFeature, get_size_dict
 from .image_processing_utils_fast import BaseImageProcessorFast
-from .image_utils import ChannelDimension, SizeDict, validate_kwargs
+from .image_utils import ChannelDimension, SizeDict, validate_kwargs, pil_to_tensor
 from .processing_utils import Unpack, VideosKwargs
-from .utils import TensorType, is_mindspore_available, is_vision_available, logging
+from .utils import TensorType, is_mindspore_available, logging
 from .video_utils import (
     VideoInput,
     VideoMetadata,
@@ -57,7 +57,6 @@ from .video_utils import (
 if is_mindspore_available():
     import mindspore as ms
     from mindspore import mint
-    from mindspore.mint.nn.functional import F
 
 
 logger = logging.get_logger(__name__)
@@ -297,7 +296,7 @@ class BaseVideoProcessor(BaseImageProcessorFast):
             if isinstance(videos[0], list):
                 # Videos sometimes are passed as a list of image URLs, especially through templates
                 videos = [
-                    mint.stack([F.pil_to_tensor(image) for image in images], dim=0)
+                    mint.stack([pil_to_tensor(image) for image in images], dim=0)
                     for images in self.fetch_images(videos)
                 ]
                 if do_sample_frames:
