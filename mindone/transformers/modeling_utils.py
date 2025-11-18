@@ -30,7 +30,6 @@ from typing import Any, Callable, MutableMapping, Optional, Union
 
 from transformers.configuration_utils import PretrainedConfig
 from transformers.dynamic_module_utils import custom_object_save
-from transformers.generation.configuration_utils import GenerationConfig
 from transformers.safetensors_conversion import auto_conversion
 from transformers.utils import (
     ADAPTER_SAFE_WEIGHTS_NAME,
@@ -62,6 +61,8 @@ from transformers.utils.hub import convert_file_size_to_int, get_checkpoint_shar
 import mindspore as ms
 from mindspore import Parameter, Tensor, mint, nn, ops
 from mindspore.nn import CrossEntropyLoss, Identity
+
+from mindone.transformers.generation.configuration_utils import CompileConfig, GenerationConfig
 
 from .activations import get_activation
 from .generation.utils import GenerationMixin
@@ -167,21 +168,22 @@ def _convert_state_dict(m, state_dict_pt, prefix=""):
     state_dict_ms = {}
     while state_dict_pt:
         name_pt, data_pt = state_dict_pt.popitem()
-        for name, param in m.parameters_and_names():
-            name_ms = param.name
-            length = len(prefix) + 1
-            if name_pt.startswith(prefix):
-                # When name_ms and name_pt match and name_pt has prefix, name_pt would be sliced
-                if name_ms.rsplit(".", 1)[0] == name_pt.rsplit(".", 1)[0][length:] or name_ms == name_pt[length:]:
-                    name_pt = name_pt[length:]
-            elif not name_pt.startswith(prefix):
-                # When name_ms and name_pt match and name_ms has prefix, prefix would be added to name_pt
-                if name_pt.rsplit(".", 1)[0] == name_ms.rsplit(".", 1)[0][length:] or name_pt == name_ms[length:]:
-                    name_pt = ".".join([prefix, name_pt])
         name_ms, data_mapping = pt2ms_mappings.get(name_pt, (name_pt, lambda x: x))
         data_ms = data_mapping(data_pt)
         if name_ms is not None:
             state_dict_ms[name_ms] = data_ms
+
+    length = len(prefix) + 1
+    model_ckpt_key = m.state_dict().keys()
+    for key in list(state_dict_ms.keys()):
+        # When model name and state dict name match and state dict name has prefix, state dict name would be sliced
+        if key[length:] in model_ckpt_key:
+            data_ms = state_dict_ms.pop(key)
+            state_dict_ms[key[length:]] = data_ms
+        # When model name and state dict name match and model name has prefix, prefix would be added to state dict name
+        elif ".".join([prefix, key]) in model_ckpt_key:
+            data_ms = state_dict_ms.pop(key)
+            state_dict_ms[".".join([prefix, key])] = data_ms
     return state_dict_ms
 
 
@@ -1593,7 +1595,7 @@ class PreTrainedModel(
         Recursively (for all submodels) tie all the weights of the model.
         """
         # Note that `self` is included in `self.modules` so we also apply to current PreTrainedModel with this call
-        for module in self.modules():
+        for name, module in self.cells_and_names():
             # If it's a PreTrainedModel, may need to tie the embeddings and/or encoder/decoder weights
             if isinstance(module, PreTrainedModel):
                 module.tie_embeddings_and_encoder_decoder()
@@ -3171,6 +3173,7 @@ class PreTrainedModel(
                 loading_task_model_from_base_state_dict,
                 loading_base_model_from_task_state_dict,
                 ignore_mismatched_sizes,
+                prefix,
             )
             error_msgs = _load_state_dict_into_model(model_to_load, state_dict, start_prefix, is_sharded=False)
         else:
@@ -3287,7 +3290,7 @@ class PreTrainedModel(
 
         return retrieved_modules
 
-    def get_compiled_call(self) -> Callable:
+    def get_compiled_call(self, compile_config: Optional[CompileConfig]) -> Callable:
         """Return a `mindspore.jit`'d version of `self.__call__`. This is useful to dynamically choose between
         non-compiled/compiled `forward` during inference, especially to switch between prefill (where we don't
         want to use compiled version to avoid recomputing the graph with new shapes) and iterative decoding
@@ -3295,10 +3298,15 @@ class PreTrainedModel(
         # Only reset it if not present or different from previous config
         if "llama4" in self.config.model_type:  # TODO try to enable for FULL COMPILE HYBRID CACHE SUPPORT
             return self.__call__
-        raise NotImplementedError(
-            "mindone.transformers does not support operator like 'torch.compile' right now."
-            "Please add @jit decorator in model constuct func instead!"
-        )
+        compile_config = compile_config or CompileConfig()
+        default_config = getattr(self.generation_config, "compile_config", None) or CompileConfig()
+        if (
+            not hasattr(self, "_compiled_call")
+            or getattr(self, "_last_compile_config", default_config) != compile_config
+        ):
+            self._last_compile_config = compile_config
+            self._compiled_call = ms.jit(self, **compile_config.to_dict())
+        return self._compiled_call
 
     def _adjust_missing_and_unexpected_keys(
         self, missing_keys: list[str], unexpected_keys: list[str], loading_task_model_from_base_state_dict: bool

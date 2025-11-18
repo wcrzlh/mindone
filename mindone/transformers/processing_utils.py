@@ -38,7 +38,7 @@ from transformers.utils.chat_template_utils import render_jinja_template
 
 from .audio_utils import AudioInput, load_audio
 from .feature_extraction_utils import BatchFeature
-from .image_utils import ChannelDimension, ImageInput, is_vision_available, load_image
+from .image_utils import ChannelDimension, ImageInput, is_vision_available
 from .video_utils import VideoInput, VideoMetadata
 
 if is_vision_available():
@@ -1093,15 +1093,6 @@ class ProcessorMixin(PushToHubMixin):
             except json.JSONDecodeError:
                 raise OSError(f"It looks like the config file at '{resolved_processor_file}' is not a valid JSON file.")
 
-        try:
-            # Load processor dict
-            with open(resolved_processor_file, encoding="utf-8") as reader:
-                text = reader.read()
-            processor_dict = json.loads(text)
-
-        except json.JSONDecodeError:
-            raise OSError(f"It looks like the config file at '{resolved_processor_file}' is not a valid JSON file.")
-
         if is_local:
             logger.info(f"loading configuration file {resolved_processor_file}")
         else:
@@ -1648,9 +1639,6 @@ class ProcessorMixin(PushToHubMixin):
                         if key in vision_info and vision_info["type"] == "video"
                     ]
                     videos.extend(video_fnames)
-
-                    for fname in image_fnames:
-                        images.append(load_image(fname))
 
                     # Audio models do not accept nested list of audios (yet!) so we construct a flat input audio list
                     if not mm_load_kwargs["load_audio_from_video"]:
