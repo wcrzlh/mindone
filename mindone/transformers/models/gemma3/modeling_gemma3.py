@@ -425,7 +425,8 @@ class Gemma3PreTrainedModel(PreTrainedModel):
         super()._init_weights(module)
         if isinstance(module, Gemma3MultiModalProjector):
             # module.mm_input_projection_weight.data.zero_()
-            zeros_(module.mm_input_projection_weight.weight)
+            # zero init done in Gemma3MultiModalProjector.__init__
+            pass
         # We initialize with 0s to be 1 centered as the RMSNorm here does (1 + weight)
         elif "RMSNorm" in module.__class__.__name__:
             zeros_(module.weight)
@@ -685,7 +686,7 @@ class Gemma3ForCausalLM(Gemma3PreTrainedModel, GenerationMixin):
         )
 
 
-class Gemma3MultiModalProjector(nn.Module):
+class Gemma3MultiModalProjector(nn.Cell):
     def __init__(self, config: Gemma3Config):
         super().__init__()
 
@@ -884,9 +885,7 @@ class Gemma3Model(Gemma3PreTrainedModel):
 
         if cache_position is None:
             past_seen_tokens = past_key_values.get_seq_length() if past_key_values is not None else 0
-            cache_position = mint.arange(
-                past_seen_tokens, past_seen_tokens + inputs_embeds.shape[1], device=inputs_embeds.device
-            )
+            cache_position = mint.arange(past_seen_tokens, past_seen_tokens + inputs_embeds.shape[1])
 
         # Merge text and images
         if pixel_values is not None:
@@ -1196,7 +1195,7 @@ class Gemma3ForConditionalGeneration(Gemma3PreTrainedModel, GenerationMixin):
             image_group_ids = mint.cumsum(new_image_start.int(), dim=1) - 1
             image_group_ids = mint.where(is_image, image_group_ids, mint.full_like(token_type_ids, -1))
             mask_kwargs["or_mask_function"] = token_type_ids_mask_function(
-                token_type_ids.to(cache_position.device), image_group_ids, config.mm_tokens_per_image
+                token_type_ids, image_group_ids, config.mm_tokens_per_image
             )
 
         return create_masks_for_generate(**mask_kwargs)
