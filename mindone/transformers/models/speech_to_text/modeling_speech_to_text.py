@@ -411,7 +411,7 @@ class Speech2TextDecoderLayer(GradientCheckpointingLayer):
         self.activation_dropout = config.activation_dropout
 
         self.self_attn_layer_norm = mint.nn.LayerNorm(self.embed_dim)
-        self.encoder_attn = Speech2TextAttention[config._attn_implementation](
+        self.encoder_attn = Speech2TextAttention(
             self.embed_dim,
             config.decoder_attention_heads,
             dropout=config.attention_dropout,
@@ -745,7 +745,7 @@ class Speech2TextDecoder(Speech2TextPreTrainedModel):
             self.padding_idx,
         )
 
-        self.layers = nn.CellList([Speech2TextDecoderLayer(config) for _ in range(config.decoder_layers)])
+        self.layers = nn.CellList([Speech2TextDecoderLayer(config, layer_idx=i) for i in range(config.decoder_layers)])
 
         self.layer_norm = mint.nn.LayerNorm(config.d_model)
 
