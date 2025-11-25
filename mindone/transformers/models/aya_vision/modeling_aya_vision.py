@@ -243,7 +243,7 @@ class AyaVisionModel(AyaVisionPreTrainedModel):
             special_image_mask = input_ids == self.config.image_token_id
 
         n_image_tokens = special_image_mask.sum()
-        special_image_mask = special_image_mask.unsqueeze(-1).expand_as(inputs_embeds).to(inputs_embeds.device)
+        special_image_mask = special_image_mask.unsqueeze(-1).expand_as(inputs_embeds)
         n_image_features = image_features.shape[0] * image_features.shape[1]
         if inputs_embeds[special_image_mask].numel() != image_features.numel():
             raise ValueError(
@@ -287,7 +287,7 @@ class AyaVisionModel(AyaVisionPreTrainedModel):
                 vision_feature_layer=vision_feature_layer,
                 vision_feature_select_strategy=vision_feature_select_strategy,
             )
-            image_features = image_features.to(inputs_embeds.device, inputs_embeds.dtype)
+            image_features = image_features.to(inputs_embeds.dtype)
             special_image_mask = self.get_placeholder_mask(
                 input_ids, inputs_embeds=inputs_embeds, image_features=image_features
             )

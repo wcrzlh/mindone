@@ -351,7 +351,7 @@ class Cohere2Model(Cohere2PreTrainedModel):
         self.vocab_size = config.vocab_size
 
         self.embed_tokens = mint.nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
-        self.layers = nn.CellList(
+        self.layers = ms.nn.CellList(
             [Cohere2DecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
         )
         self.norm = Cohere2LayerNorm(hidden_size=(config.hidden_size), eps=config.layer_norm_eps)

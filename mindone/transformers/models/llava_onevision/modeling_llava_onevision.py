@@ -125,7 +125,7 @@ class LlavaOnevisionPreTrainedModel(PreTrainedModel):
             module.image_newline.data.normal_(mean=0.0, std=embed_std)
 
 
-class LlavaOnevisionMultiModalProjector(nn.Module):
+class LlavaOnevisionMultiModalProjector(nn.Cell):
     def __init__(self, config: LlavaOnevisionConfig):
         super().__init__()
         # We have hidden_size * the number of vision feature layers
@@ -460,14 +460,14 @@ class LlavaOnevisionModel(LlavaOnevisionPreTrainedModel):
             special_video_mask = input_ids == self.config.video_token_id
 
         n_image_tokens = special_image_mask.sum()
-        special_image_mask = special_image_mask.unsqueeze(-1).expand_as(inputs_embeds).to(inputs_embeds.device)
+        special_image_mask = special_image_mask.unsqueeze(-1).expand_as(inputs_embeds)
         if image_features is not None and inputs_embeds[special_image_mask].numel() != image_features.numel():
             raise ValueError(
                 f"Image features and image tokens do not match: tokens: {n_image_tokens}, features {image_features.shape[0]}"
             )
 
         n_video_tokens = special_video_mask.sum()
-        special_video_mask = special_video_mask.unsqueeze(-1).expand_as(inputs_embeds).to(inputs_embeds.device)
+        special_video_mask = special_video_mask.unsqueeze(-1).expand_as(inputs_embeds)
         if video_features is not None and inputs_embeds[special_video_mask].numel() != video_features.numel():
             raise ValueError(
                 f"Videos features and image tokens do not match: tokens: {n_video_tokens}, features {video_features.shape[0]}"
@@ -540,7 +540,7 @@ class LlavaOnevisionModel(LlavaOnevisionPreTrainedModel):
                 batch_num_images=batch_num_images,
             )
             image_features = mint.cat(image_features, dim=0)
-            image_features = image_features.to(inputs_embeds.device, inputs_embeds.dtype)
+            image_features = image_features.to(inputs_embeds.dtype)
             special_image_mask, _ = self.get_placeholder_mask(
                 input_ids, inputs_embeds=inputs_embeds, image_features=image_features
             )
@@ -555,7 +555,7 @@ class LlavaOnevisionModel(LlavaOnevisionPreTrainedModel):
             )
             image_newline = self.image_newline[None, None, :].repeat(video_features.shape[0], 1, 1)
             video_features = mint.cat((video_features, image_newline), dim=1)
-            video_features = video_features.flatten(0, 1).to(inputs_embeds.device, inputs_embeds.dtype)
+            video_features = video_features.flatten(0, 1).to(inputs_embeds.dtype)
             _, special_video_mask = self.get_placeholder_mask(
                 input_ids, inputs_embeds=inputs_embeds, video_features=video_features
             )
@@ -907,12 +907,10 @@ class LlavaOnevisionForConditionalGeneration(LlavaOnevisionPreTrainedModel, Gene
             causal_mask = attention_mask
         else:
             min_dtype = dtype_to_min(dtype)
-            causal_mask = mint.full(
-                (sequence_length, target_length), fill_value=min_dtype, dtype=dtype, device=cache_position.device
-            )
+            causal_mask = mint.full((sequence_length, target_length), fill_value=min_dtype, dtype=dtype)
             if sequence_length != 1:
                 causal_mask = mint.triu(causal_mask, diagonal=1)
-            causal_mask *= mint.arange(target_length, device=cache_position.device) > cache_position.reshape(-1, 1)
+            causal_mask *= mint.arange(target_length) > cache_position.reshape(-1, 1)
             causal_mask = causal_mask[None, None, :, :].expand(batch_size, 1, -1, -1)
             if attention_mask is not None:
                 causal_mask = causal_mask.copy()  # copy to contiguous memory for in-place edit
