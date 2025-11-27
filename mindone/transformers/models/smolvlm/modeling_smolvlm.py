@@ -18,11 +18,11 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import Callable, List, Optional, Union, tuple
+from typing import Callable, Optional, Union
 
+import numpy as np
 from transformers.generation import GenerationConfig
 from transformers.models.smolvlm import SmolVLMConfig, SmolVLMVisionConfig
-from transformers.utils import logging
 
 import mindspore as ms
 from mindspore import mint, nn, ops
@@ -30,6 +30,7 @@ from mindspore import mint, nn, ops
 from ...activations import ACT2FN
 from ...cache_utils import Cache, DynamicCache
 from ...generation import GenerationMixin
+from ...mindspore_adapter.utils import unfold
 from ...modeling_attn_mask_utils import _prepare_4d_attention_mask
 from ...modeling_flash_attention_utils import FlashAttentionKwargs
 from ...modeling_layers import GradientCheckpointingLayer
@@ -137,17 +138,19 @@ class SmolVLMVisionEmbeddings(nn.Cell):
             nb_patches_h = p_attn_mask[:, 0].sum()
             nb_patches_w = p_attn_mask[0].sum()
 
-            h_indices = mint.arange(nb_patches_h, dtype=pixel_values.dtype)
-            w_indices = mint.arange(nb_patches_w, dtype=pixel_values.dtype)
+            h_indices = mint.arange(nb_patches_h.item(), dtype=pixel_values.dtype)
+            w_indices = mint.arange(nb_patches_w.item(), dtype=pixel_values.dtype)
 
             fractional_coords_h = h_indices / nb_patches_h * (1 - 1e-6)
             fractional_coords_w = w_indices / nb_patches_w * (1 - 1e-6)
 
-            bucket_coords_h = ops.bucketize(fractional_coords_h, boundaries.tolist(), right=True)
-            bucket_coords_w = ops.bucketize(fractional_coords_w, boundaries.tolist(), right=True)
+            # NOTE ops.bucketize does not support bf16/fp16 tensor input
+            bucket_coords_h = ops.bucketize(fractional_coords_h.float(), boundaries.tolist(), right=True)
+            bucket_coords_w = ops.bucketize(fractional_coords_w.float(), boundaries.tolist(), right=True)
 
             pos_ids = (bucket_coords_h[:, None] * self.num_patches_per_side + bucket_coords_w).flatten()
-            position_ids[batch_idx][p_attn_mask.view(-1)] = pos_ids
+            # NOTE int32 asigns to int64 might raise error.
+            position_ids[batch_idx][p_attn_mask.view(-1)] = pos_ids.to(position_ids.dtype)
 
         embeddings = embeddings + self.position_embedding(position_ids)
         return embeddings
@@ -512,9 +515,9 @@ class SmolVLMModel(SmolVLMPreTrainedModel):
         This method aims at merging the token embeddings with the image hidden states into one single sequence of vectors that are fed to the transformer LM.
         The merging happens as follows:
         - The text token sequence is: `tok_1 tok_2 tok_3 <fake_token_around_image> <image> <image> ... <image> <fake_token_around_image> tok_4`.
-        - We get the image hidden states for the image through the vision encoder and that hidden state, after a pixel shuffle operation, is then projected into the text embedding space.
-        We thus have a sequence of image hidden states of size (1, image_seq_len, hidden_dim), where 1 is for batch_size of 1 image and hidden_dim is the hidden_dim of the LM transformer.
-        - The merging happens so that we obtain the following sequence: `vector_tok_1 vector_tok_2 vector_tok_3 vector_fake_tok_around_image {sequence of image_seq_len image hidden states} vector_fake_toke_around_image vector_tok_4`. That sequence is fed to the LM.
+        - We get the image hidden states for the image through the vision encoder and that hidden state, after a pixel shuffle operation, is then projected into the text embedding space. # noqa E501
+        We thus have a sequence of image hidden states of size (1, image_seq_len, hidden_dim), where 1 is for batch_size of 1 image and hidden_dim is the hidden_dim of the LM transformer. # noqa E501
+        - The merging happens so that we obtain the following sequence: `vector_tok_1 vector_tok_2 vector_tok_3 vector_fake_tok_around_image {sequence of image_seq_len image hidden states} vector_fake_toke_around_image vector_tok_4`. That sequence is fed to the LM. # noqa E501
         - To fit the format of that sequence, `input_ids`, `input_embeds`, `attention_mask` are all 3 adapted to insert the image hidden states.
         """
         _, patch_size, _ = image_hidden_states.shape
@@ -561,7 +564,8 @@ class SmolVLMModel(SmolVLMPreTrainedModel):
         pixel_values = pixel_values.view(batch_size * num_images, *pixel_values.shape[2:])
 
         # Remove padding images - padding images are full 0.
-        nb_values_per_image = pixel_values.shape[1:].numel()
+        # NOTE ms.tensor.shape return tuple, so we can not use .numel() as torch.Size().numel() do.
+        nb_values_per_image = int(np.prod(pixel_values.shape[1:]))
         real_images_inds = (pixel_values == 0.0).sum(dim=(-1, -2, -3)) != nb_values_per_image
 
         if not any(real_images_inds):
@@ -574,15 +578,14 @@ class SmolVLMModel(SmolVLMPreTrainedModel):
             pixel_attention_mask = mint.ones(
                 size=[pixel_values.shape[i] for i in (0, 2, 3)],
                 dtype=ms.bool_,
-                device=pixel_values.device,
             )
         else:
             # Remove padding images from the mask
             pixel_attention_mask = pixel_attention_mask.view(batch_size * num_images, *pixel_attention_mask.shape[2:])
             pixel_attention_mask = pixel_attention_mask[real_images_inds].contiguous()
         patch_size = self.config.vision_config.patch_size
-        patches_subgrid = pixel_attention_mask.unfold(dimension=1, size=patch_size, step=patch_size)
-        patches_subgrid = patches_subgrid.unfold(dimension=2, size=patch_size, step=patch_size)
+        patches_subgrid = unfold(pixel_attention_mask, dimension=1, size=patch_size, step=patch_size)
+        patches_subgrid = unfold(patches_subgrid, dimension=2, size=patch_size, step=patch_size)
         patch_attention_mask = (patches_subgrid.sum(dim=(-1, -2)) > 0).bool()
 
         # Get sequence from the vision encoder
@@ -649,7 +652,7 @@ class SmolVLMModel(SmolVLMPreTrainedModel):
             raise ValueError("You cannot specify both pixel_values and image_hidden_states at the same time")
 
         if pixel_values is not None:
-            image_hidden_states = self.get_image_features(pixel_values, pixel_attention_mask).to(inputs_embeds.device)
+            image_hidden_states = self.get_image_features(pixel_values, pixel_attention_mask)
         elif image_hidden_states is not None:
             image_hidden_states = image_hidden_states.to(dtype=self.dtype)
 
