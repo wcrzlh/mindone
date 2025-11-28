@@ -559,6 +559,7 @@ class NllbMoeAttention(mindspore.nn.Cell):
         attention_mask: Optional[mindspore.Tensor] = None,
         layer_head_mask: Optional[mindspore.Tensor] = None,
         output_attentions: bool = False,
+        cache_position: Optional[mindspore.Tensor] = None,
         # TODO: we need a refactor so that the different attention modules can get their specific kwargs
         # ATM, we have mixed things encoder, decoder, and encoder-decoder attn
         **kwargs: Unpack[FlashAttentionKwargs],
@@ -785,6 +786,9 @@ class NllbMoeDecoderLayer(GradientCheckpointingLayer):
                 Whether or not to return the attentions tensors of all attention layers. See `attentions` under
                 returned tensors for more detail.
         """
+        # FIXME no need to cast in original repo
+        hidden_states = hidden_states.to(self.self_attn_layer_norm.weight.dtype)
+
         residual = hidden_states
         hidden_states = self.self_attn_layer_norm(hidden_states)
 
@@ -994,7 +998,6 @@ class NllbMoeEncoder(NllbMoePreTrainedModel):
             inputs_embeds = self.embed_tokens(input_ids)
 
         embed_pos = self.embed_positions(input_ids, inputs_embeds)
-        embed_pos = embed_pos.to(inputs_embeds.device)
 
         hidden_states = inputs_embeds + embed_pos.to(inputs_embeds.dtype)
         hidden_states = mindspore.mint.nn.functional.dropout(hidden_states, p=self.dropout, training=self.training)
