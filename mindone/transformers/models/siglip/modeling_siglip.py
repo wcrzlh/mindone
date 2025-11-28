@@ -114,7 +114,7 @@ class SiglipVisionEmbeddings(nn.Cell):
         self.image_size = config.image_size
         self.patch_size = config.patch_size
 
-        self.patch_embedding = nn.Conv2d(
+        self.patch_embedding = mint.nn.Conv2d(
             in_channels=config.num_channels,
             out_channels=self.embed_dim,
             kernel_size=self.patch_size,
@@ -243,7 +243,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
-class SiglipAttention(nn.Module):
+class SiglipAttention(nn.Cell):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
     def __init__(self, config):
@@ -540,7 +540,7 @@ class SiglipVisionTransformer(nn.Cell):
             self.head = SiglipMultiheadAttentionPoolingHead(config)
 
     @can_return_tuple
-    def consturct(
+    def construct(
         self,
         pixel_values,
         interpolate_pos_encoding: Optional[bool] = False,
