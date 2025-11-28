@@ -21,7 +21,7 @@
 # to defer the actual importing for when the objects are requested. This way `import transformers` provides the names
 # in the namespace without actually importing anything (and especially none of the backends).
 
-__version__ = "4.54.1"
+__version__ = "4.57.1"
 import transformers
 from packaging import version
 
@@ -1550,12 +1550,10 @@ if version.parse(transformers.__version__) >= version.parse("4.53.0"):
     from .models.glm4v import (
         Glm4vForConditionalGeneration,
         Glm4vImageProcessor,
-        Glm4vImageProcessorFast,
         Glm4vModel,
         Glm4vPreTrainedModel,
         Glm4vProcessor,
         Glm4vTextModel,
-        Glm4vVideoProcessor,
         Glm4vVisionModel,
     )
     from .models.minimax import (
