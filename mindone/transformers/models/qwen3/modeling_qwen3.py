@@ -852,7 +852,6 @@ class Qwen3ForCausalLM(Qwen3PreTrainedModel, GenerationMixin):
         slot_mapping = Tensor(shape=[None], dtype=ms.int32)
         batch_valid_length = ms.mutable(Tensor(shape=[None], dtype=ms.int32))
         logits_to_keep = 1
-        return_dict = False
 
         self.set_inputs(
             input_ids,
@@ -869,7 +868,6 @@ class Qwen3ForCausalLM(Qwen3PreTrainedModel, GenerationMixin):
             slot_mapping,
             batch_valid_length,
             logits_to_keep,
-            return_dict,
         )
 
     # @can_return_tuple
