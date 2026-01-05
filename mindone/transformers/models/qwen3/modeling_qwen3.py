@@ -371,12 +371,7 @@ class Qwen3DecoderLayer(GradientCheckpointingLayer):
         hidden_states = self.mlp(hidden_states)
         hidden_states = residual + hidden_states
 
-        outputs = (hidden_states,)
-
-        if output_attentions:
-            outputs += (self_attn_weights,)
-
-        return outputs
+        return hidden_states
 
 
 class Qwen3RotaryEmbedding(nn.Cell):
@@ -619,7 +614,7 @@ class Qwen3Model(Qwen3PreTrainedModel):
         position_embeddings = self.rotary_emb(hidden_states, position_ids)
 
         for decoder_layer in self.layers[: self.config.num_hidden_layers]:
-            layer_outputs = decoder_layer(
+             hidden_states = decoder_layer(
                 hidden_states,
                 attention_mask=causal_mask,
                 position_ids=position_ids,
@@ -635,7 +630,6 @@ class Qwen3Model(Qwen3PreTrainedModel):
                 batch_valid_length=batch_valid_length,
                 **kwargs,
             )
-            hidden_states = layer_outputs[0]
 
         hidden_states = self.norm(hidden_states)
 
@@ -953,7 +947,7 @@ class Qwen3ForCausalLM(Qwen3PreTrainedModel, GenerationMixin):
             **kwargs,
         )
 
-        hidden_states = outputs[0]
+        hidden_states = outputs.last_hidden_state
         # Only compute necessary logits, and do not upcast them to float if we are not computing the loss
         slice_indices = slice(-logits_to_keep, None) if isinstance(logits_to_keep, int) else logits_to_keep
         logits = self.lm_head(hidden_states[:, slice_indices, :])
