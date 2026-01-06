@@ -57,6 +57,7 @@ from ...modeling_rope_utils import ROPE_INIT_FUNCTIONS
 from ...modeling_utils import ALL_ATTENTION_FUNCTIONS, PreTrainedModel
 from ...processing_utils import Unpack
 from ...utils import TransformersKwargs
+from ...utils.generic import check_model_inputs
 
 logger = logging.get_logger(__name__)
 
@@ -560,6 +561,7 @@ class Qwen3Model(Qwen3PreTrainedModel):
     # mindspore graph not support @can_return_tuple decorator
     # @can_return_tuple
     @add_start_docstrings_to_model_forward(QWEN3_INPUTS_DOCSTRING)
+    @check_model_inputs
     def construct(
         self,
         input_ids: Optional[ms.Tensor] = None,
@@ -614,7 +616,7 @@ class Qwen3Model(Qwen3PreTrainedModel):
         position_embeddings = self.rotary_emb(hidden_states, position_ids)
 
         for decoder_layer in self.layers[: self.config.num_hidden_layers]:
-             hidden_states = decoder_layer(
+            hidden_states = decoder_layer(
                 hidden_states,
                 attention_mask=causal_mask,
                 position_ids=position_ids,
